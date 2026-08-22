@@ -1,0 +1,36 @@
+{
+    "name": "IceClashInput",
+    "maps": [
+        {
+            "name": "Gameplay",
+            "id": "331a431d-340d-4a1f-a065-a0bf7f4595e7",
+            "actions": [
+                { "name": "Move", "type": "Value", "id": "f8134085-4a03-48f2-a1a2-e5e48949540d", "expectedControlType": "Vector2", "processors": "", "interactions": "" },
+                { "name": "Sprint", "type": "Button", "id": "d2f5ec17-12ea-4a48-a91c-2e8998b8100e", "expectedControlType": "Button", "processors": "", "interactions": "" },
+                { "name": "Shoot", "type": "Button", "id": "a7a63281-4584-4cb1-b3be-56d4b278a26a", "expectedControlType": "Button", "processors": "", "interactions": "" },
+                { "name": "Pass", "type": "Button", "id": "9876c76e-3444-4365-af0a-77397876aac3", "expectedControlType": "Button", "processors": "", "interactions": "" },
+                { "name": "Check", "type": "Button", "id": "d3922f6f-f4c8-418c-9fdf-7f6b64cd0065", "expectedControlType": "Button", "processors": "", "interactions": "" }
+            ],
+            "bindings": [
+                { "name": "WASD", "id": "2d974923-27f2-4b9d-a1bf-d0d9e1ad75ed", "path": "2DVector", "action": "Move", "isComposite": true },
+                { "name": "up", "id": "55e75d6b-6bca-49f0-8d8b-b44611428942", "path": "<Keyboard>/w", "action": "Move", "isPartOfComposite": true },
+                { "name": "down", "id": "8d58ed45-8b22-443c-bbcb-dcf03ea8d3ee", "path": "<Keyboard>/s", "action": "Move", "isPartOfComposite": true },
+                { "name": "left", "id": "e94fe6fd-0fd2-4c8d-b0d0-77fcaa1b2c5d", "path": "<Keyboard>/a", "action": "Move", "isPartOfComposite": true },
+                { "name": "right", "id": "f82f15b6-c7b0-4e4a-83d3-bda048c9c14a", "path": "<Keyboard>/d", "action": "Move", "isPartOfComposite": true },
+                { "name": "", "id": "0a0efcaf-3c36-4c2f-aa8a-0a6a37c90b22", "path": "<Gamepad>/leftStick", "action": "Move" },
+                { "name": "", "id": "c7d19cce-b1fe-4edf-9adf-218c0ab5e0aa", "path": "<Keyboard>/leftShift", "action": "Sprint" },
+                { "name": "", "id": "40d586eb-8986-44a2-840e-3c50df3a94e9", "path": "<Gamepad>/leftStickPress", "action": "Sprint" },
+                { "name": "", "id": "e0b118bb-9db4-42c2-a24c-0cb987f3f0db", "path": "<Keyboard>/space", "action": "Shoot" },
+                { "name": "", "id": "8a7e7503-3397-405a-8e76-d388a11d0b71", "path": "<Gamepad>/rightTrigger", "action": "Shoot" },
+                { "name": "", "id": "fe14a0fa-871d-41fa-ab77-90dc04ac5d15", "path": "<Keyboard>/e", "action": "Pass" },
+                { "name": "", "id": "e8a9563d-161a-449d-979d-0dbe10978777", "path": "<Gamepad>/buttonWest", "action": "Pass" },
+                { "name": "", "id": "1bdc43ea-1e88-4ebf-bce8-3ba7c0f80c15", "path": "<Keyboard>/q", "action": "Check" },
+                { "name": "", "id": "7f8d15e9-9a9f-4b0c-b60a-0b8a65d07a26", "path": "<Gamepad>/buttonEast", "action": "Check" }
+            ]
+        }
+    ],
+    "controlSchemes": [
+        { "name": "Keyboard", "bindingGroup": "Keyboard", "devices": [{ "devicePath": "<Keyboard>", "isOptional": false, "isOR": false }] },
+        { "name": "Gamepad", "bindingGroup": "Gamepad", "devices": [{ "devicePath": "<Gamepad>", "isOptional": false, "isOR": false }] }
+    ]
+}
