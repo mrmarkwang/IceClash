@@ -12,6 +12,7 @@ Create a standalone Unity project for iOS and Android containing a local 2v2 pra
 
 - [ ] The Unity project opens without missing-script errors and follows the agreed `_Project` folder structure for gameplay, UI, input, data, prefabs, scenes, and tests.
 - [ ] Pressing Play launches a main menu; PLAY starts a practice match with one human player, one allied AI, two opposing AI players, a puck, two goals, and a basic marked rink.
+- [ ] The rink is recognizable as a hockey rink: rounded board corners, long side boards, goal-end boards, goals inset from the end boards with visible netting, red center line, blue lines, goal lines, visible goal creases, a blue center faceoff circle, four red zone faceoff circles, and faceoff dots. Faceoff circles must read as smooth curves rather than visibly segmented blocks. Placeholder primitive geometry remains acceptable.
 - [ ] The in-game camera presents the rink in a vertical play orientation: the long skating direction and the opposing goals read from the bottom toward the top of the screen, not side-to-side.
 - [ ] The human player can move with WASD, sprint with Shift, shoot with Space, pass with E, and check with Q in the Unity Editor; controller input and placeholder mobile controls are represented through the Unity Input System.
 - [ ] Player movement, team identity, player ID, puck possession, stamina placeholder, and the defined movement/action states are represented as modular gameplay state rather than one monolithic component.

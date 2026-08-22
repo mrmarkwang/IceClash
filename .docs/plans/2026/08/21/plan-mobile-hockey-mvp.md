@@ -30,12 +30,15 @@ Deliver a small, playable local 2v2 arcade hockey prototype in Unity: one human 
 - [x] Create `Assets/_Project/{Art,Audio,Materials,Prefabs,Scenes,Scripts,ScriptableObjects,Tests}` plus the required script domains: `Core`, `Player`, `Puck`, `Hockey`, `AI`, `Camera`, `UI`, `Input`, and `Match`.
 - [x] Configure the Unity Input System and create an input action asset supporting Editor WASD, Shift, Space, E, Q, and a controller map; ensure actions are readable through `IPlayerInput` rather than directly from movement code.
 - [x] Build a `PrototypeArena` scene containing an ice plane, boards, center line, goal areas, two placeholder goals, lighting, and a fixed game-start location.
+- [x] Replace the square-corner arena geometry in `PrototypeArenaBootstrap` with a vertical hockey-rink outline: straight side/end boards connected by rounded-corner board segments, inset goals, red center/goal lines, blue lines, and visible crease markings.
+- [x] Add reference-style faceoff markings to `PrototypeArenaBootstrap`: blue center circle/dot, four red zone circles with center dots, and neutral-zone faceoff dots; keep their layout symmetric about the vertical rink axis.
+- [x] Replace block-segment faceoff/crease circles in `PrototypeArenaBootstrap` with smooth low-poly line or mesh curves, and add lightweight visible net geometry behind each inset goal frame without changing puck-board collision behavior.
 - [x] Implement the initial `PlayerController`, player data/team identity, movement state, sprint placeholder, and `LocalPlayerInput` so one visible skater moves and turns correctly in the arena.
 - [x] Implement an independent puck prefab with Rigidbody, Collider, tunable drag/friction/bounce values, and `IPuckController` ownership metadata; verify it collides with boards without being parented to the player.
 - [x] Add a separate elevated follow camera that tracks the controlled player while keeping the puck and immediate play area in view.
-- [ ] Update `PrototypeArenaBootstrap` and `ElevatedFollowCamera` so the rink's long axis and goals are presented vertically in the Game view; keep camera-relative movement aligned with that orientation.
+- [x] Update `PrototypeArenaBootstrap` and `ElevatedFollowCamera` so the rink's long axis and goals are presented vertically in the Game view; keep camera-relative movement aligned with that orientation.
 - [x] Run the Unity Editor compile check and the headless `IceClash.Hockey.PrototypeArenaSmokeCheck.Run` verification; confirm it creates the player, elevated camera, and unparented Rigidbody puck.
-- [ ] Manually open `PrototypeArena`, press Play, move/sprint the human skater with WASD/Shift, and observe the independently colliding puck in the Unity Editor.
+- [ ] Manually open `PrototypeArena`, press Play, confirm the vertical rounded hockey-rink shape, then move/sprint the human skater with WASD/Shift and observe the independently colliding puck in the Unity Editor.
 
 ### Phase 2 - Core puck interactions and player actions
 

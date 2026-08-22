@@ -14,7 +14,7 @@ Mobile 2v2 arcade hockey prototype, beginning with a local playable Unity slice.
 2. Open `Assets/_Project/Scenes/PrototypeArena.unity`.
 3. Enter Play Mode.
 
-The scene generates a vertically oriented placeholder rink (goals at the top and bottom of the Game view), boards, goal frames, a local blue skater, a free physics puck, and an elevated follow camera.
+The scene generates a vertically oriented hockey rink with rounded boards, inset goals, center/blue/goal lines, goal creases, center/zone faceoff circles and dots, a local blue skater, a free physics puck, and an elevated follow camera.
 
 ## Editor controls
 
