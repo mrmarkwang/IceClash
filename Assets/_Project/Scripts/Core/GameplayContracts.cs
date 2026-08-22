@@ -1,7 +1,8 @@
 /*
  * IceClash prototype contracts.
  * Defines the small, shared gameplay boundary between input sources, player control,
- * and puck ownership. Phase 1 intentionally has no network implementation.
+ * and puck ownership. Phase 2 adds carrier/action metadata without coupling a
+ * local input source, AI source, or future network source to a concrete controller.
  */
 
 using UnityEngine;
@@ -42,5 +43,6 @@ namespace IceClash.Core
     {
         TeamId? PossessionTeam { get; }
         string LastPlayerTouchId { get; }
+        string CarrierPlayerId { get; }
     }
 }

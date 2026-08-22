@@ -2,6 +2,7 @@
  * IceClash Phase 1 playable arena bootstrap.
  * Generates a vertically presented hockey-rink outline with a solid ice foundation, rounded boards, inset goals,
  * smooth center/faceoff markings, netted goals, a local skater, independent physics puck, and camera at runtime.
+ * Phase 2 attaches the configurable action/control components to the existing local skater.
  */
 
 using System.Collections.Generic;

@@ -42,13 +42,13 @@ Deliver a small, playable local 2v2 arcade hockey prototype in Unity: one human 
 
 ### Phase 2 - Core puck interactions and player actions
 
-- [ ] Add a configurable control-radius and stick/control-point influence so eligible players can gain and carry an independently simulated puck.
-- [ ] Implement player action transitions for idle, skating, sprinting, controlling puck, passing, shooting, checking, and knocked down, keeping action cooldowns owned by gameplay components.
-- [ ] Implement shoot from the configured Input System action with configurable minimum/maximum power, accuracy, cooldown, and maximum speed; release possession before applying puck impulse.
-- [ ] Implement assisted teammate selection and passing with configurable pass speed, range, assist strength, and interception radius.
-- [ ] Implement arcade checking with configurable range, force, active duration, and cooldown; apply knockdown/dispossession only to valid opposing targets.
+- [x] Add a configurable control-radius and stick/control-point influence so eligible players can gain and carry an independently simulated puck.
+- [x] Implement player action transitions for idle, skating, sprinting, controlling puck, passing, shooting, checking, and knocked down, keeping action cooldowns owned by gameplay components.
+- [x] Implement shoot from the configured Input System action so puck possession—not distance to the opposing goal—is the only range gate; buffer a recent input through a short action/cooldown boundary, target the opposing net, use configurable per-player minimum/maximum power, accuracy, cooldown, and maximum speed, and release possession before applying puck impulse.
+- [x] Implement assisted teammate selection and passing with configurable pass speed, range, assist strength, and interception radius.
+- [x] Implement arcade checking with configurable range, force, active duration, and cooldown; apply knockdown/dispossession only to valid opposing targets.
 - [ ] Add focused edit/play-mode tests for possession release, shot cooldown, pass targeting, and check eligibility once the Unity test assemblies exist.
-- [ ] Manually verify all Editor action controls against a free puck and record observed limitations in `README.md`.
+- [ ] Manually verify all Editor action controls against a free puck and record observed limitations in `README.md` (requires the Phase 3 teammate/opponent spawns for pass/check coverage).
 
 ### Phase 3 - Local 2v2 setup and basic AI
 

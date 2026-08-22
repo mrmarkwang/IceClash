@@ -18,7 +18,7 @@ Create a standalone Unity project for iOS and Android containing a local 2v2 pra
 - [ ] Player movement, team identity, player ID, puck possession, stamina placeholder, and the defined movement/action states are represented as modular gameplay state rather than one monolithic component.
 - [ ] The puck uses a Rigidbody and Collider, remains independently physics-simulated, has configurable friction/bounce/control behavior, and records team possession and last player touch.
 - [ ] A nearby eligible player can gain, carry, pass, and shoot the puck; possession can break through a shot, pass, interception, or successful check.
-- [ ] Passing targets a suitable nearby teammate and remains interceptable; shooting releases the puck and respects configurable power, accuracy, speed, and cooldown settings.
+- [ ] Passing targets a suitable nearby teammate and remains interceptable; a player who possesses the puck can shoot from anywhere on the rink toward the opposing goal. Shooting releases the puck and respects configurable per-player power, accuracy, speed, input-buffer, and cooldown settings.
 - [ ] Checking has a configurable range, force, duration, and cooldown; a valid hit can knock down an opponent and dislodge possession without realistic violence or injury systems.
 - [ ] The three AI players use a simple, observable finite-state behavior to chase the puck, support the carrier, defend, attack, recover, and make basic shooting/passing decisions.
 - [ ] A puck entering either goal awards the correct team, pauses play, shows a goal message, resets skaters and puck, and resumes after about two seconds.
