@@ -1,6 +1,6 @@
 /*
  * IceClash Phase 1 independent physics puck.
- * Owns single-carrier possession, force-based stick following, physical releases,
+ * Owns velocity-matched possession, high-speed collision-safe physical releases,
  * save impulses, reclaim locks, carrier events, and deterministic match resets.
  */
 
@@ -16,8 +16,8 @@ namespace IceClash.Puck
     {
         [SerializeField] private float linearDamping = 0.55f;
         [SerializeField] private float angularDamping = 1.2f;
-        [SerializeField] private float controlStrength = 24f;
-        [SerializeField] private float controlVelocityDamping = 6.5f;
+        [SerializeField] private float controlStrength = 32f;
+        [SerializeField] private float controlVelocityDamping = 10f;
         [SerializeField] private float maximumCarrySpeed = 14f;
         [SerializeField, Min(0f)] private float releasingPlayerReclaimDelay = 0.22f;
 
@@ -41,6 +41,8 @@ namespace IceClash.Puck
             body = GetComponent<Rigidbody>();
             body.linearDamping = linearDamping;
             body.angularDamping = angularDamping;
+            body.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
+            body.interpolation = RigidbodyInterpolation.Interpolate;
         }
 
         public bool TryClaim(PlayerController player, StickPuckInteraction stick)
@@ -117,9 +119,16 @@ namespace IceClash.Puck
             if (carrier == null || carrierStick == null) return;
             Vector3 target = carrierStick.ControlPoint;
             target.y = body.position.y;
-            Vector3 error = target - body.position;
-            body.AddForce(error * controlStrength - body.linearVelocity * controlVelocityDamping, ForceMode.Acceleration);
+            Vector3 carrierVelocity = carrier.Movement != null ? carrier.Movement.Velocity : Vector3.zero;
+            body.AddForce(CalculateCarryAcceleration(target, carrierVelocity), ForceMode.Acceleration);
             body.linearVelocity = Vector3.ClampMagnitude(body.linearVelocity, maximumCarrySpeed);
+        }
+
+        internal Vector3 CalculateCarryAcceleration(Vector3 target, Vector3 targetVelocity)
+        {
+            Vector3 positionError = target - body.position;
+            Vector3 velocityError = targetVelocity - body.linearVelocity;
+            return positionError * controlStrength + velocityError * controlVelocityDamping;
         }
     }
 }

@@ -1,7 +1,7 @@
 /*
  * IceClash Phase 1 stick/puck interaction.
- * Owns the forward, subtly moving control point and proximity claim attempts so
- * puck feel remains independent from locomotion and action selection.
+ * Owns a clearly forward, subtly moving control point and forgiving proximity
+ * claims so possession reads ahead of the skater without becoming hard to collect.
  */
 
 using IceClash.Player;
@@ -11,10 +11,10 @@ namespace IceClash.Puck
 {
     public sealed class StickPuckInteraction : MonoBehaviour
     {
-        [SerializeField] private float forwardOffset = 0.92f;
-        [SerializeField] private float lateralSway = 0.13f;
+        [SerializeField] private float forwardOffset = 1.15f;
+        [SerializeField] private float lateralSway = 0.1f;
         [SerializeField] private float swayFrequency = 5f;
-        [SerializeField] private float claimRadius = 1.25f;
+        [SerializeField] private float claimRadius = 1.55f;
         [SerializeField] private float maximumClaimSpeed = 15f;
 
         private PlayerController player;

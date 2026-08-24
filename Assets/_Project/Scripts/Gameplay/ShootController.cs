@@ -1,7 +1,7 @@
 /*
  * IceClash Phase 1 one-button shooting.
- * Tracks held charge and releases bounded facing/goal-assisted shots with
- * configurable strength and inaccuracy, never reading movement input directly.
+ * Tracks held charge and releases forceful bounded facing/goal-assisted shots
+ * with configurable inaccuracy, never reading movement input directly.
  */
 
 using IceClash.Player;
@@ -12,9 +12,9 @@ namespace IceClash.Gameplay
 {
     public sealed class ShootController : MonoBehaviour
     {
-        [SerializeField] private float minimumPower = 9f;
-        [SerializeField] private float maximumPower = 19f;
-        [SerializeField] private float fullChargeSeconds = 1.15f;
+        [SerializeField] private float minimumPower = 11f;
+        [SerializeField] private float maximumPower = 26f;
+        [SerializeField] private float fullChargeSeconds = 0.95f;
         [SerializeField] private float cooldown = 0.4f;
         [SerializeField, Range(0f, 16f)] private float accuracyDegrees = 5f;
         [SerializeField, Range(0f, 1f)] private float goalTargetAssist = 0.72f;
@@ -46,8 +46,10 @@ namespace IceClash.Gameplay
             Vector3 direction = AssistedDirection();
             float spread = Random.Range(-accuracyDegrees, accuracyDegrees) * Mathf.Lerp(1.45f, 0.8f, Mathf.Clamp01(quality));
             direction = Quaternion.Euler(0f, spread, 0f) * direction;
-            if (puck.Release(player, direction, Mathf.Lerp(minimumPower, maximumPower, charge))) nextShotTime = Time.time + cooldown;
+            if (puck.Release(player, direction, EvaluatePower(charge))) nextShotTime = Time.time + cooldown;
         }
+
+        internal float EvaluatePower(float normalizedCharge) => Mathf.Lerp(minimumPower, maximumPower, Mathf.Clamp01(normalizedCharge));
 
         private Vector3 AssistedDirection()
         {

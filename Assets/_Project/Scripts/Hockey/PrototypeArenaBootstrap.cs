@@ -1,7 +1,7 @@
 /*
  * IceClash Phase 1 local PvE arena bootstrap.
- * Generates the placeholder marked rink, one-way goals/triggers, independent
- * puck, 3v3-plus-goalies roster, local match flow, mobile HUD, and hockey camera.
+ * Generates the placeholder marked rink, one-way goals/triggers, a compact
+ * box-collider puck, 3v3-plus-goalies roster, match flow, HUD, and hockey camera.
  */
 
 using System.Collections.Generic;
@@ -25,6 +25,8 @@ namespace IceClash.Hockey
         private const float BoardHeight = 2.3f;
         private const float BoardThickness = 0.45f;
         private const float IceThickness = 0.45f;
+        private const float PuckDiameter = 0.42f;
+        private const float PuckHeight = 0.12f;
         private bool hasBuilt;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
@@ -74,8 +76,13 @@ namespace IceClash.Hockey
             GameObject puck = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
             puck.name = "Puck (Physics)";
             puck.transform.SetPositionAndRotation(new Vector3(0f, 0.55f, 0f), Quaternion.identity);
-            puck.transform.localScale = new Vector3(0.65f, 0.1f, 0.65f);
+            // Unity's cylinder is one unit wide and two units tall.
+            puck.transform.localScale = new Vector3(PuckDiameter, PuckHeight * 0.5f, PuckDiameter);
             puck.GetComponent<Renderer>().material = black;
+            Collider primitiveCollider = puck.GetComponent<Collider>();
+            primitiveCollider.enabled = false;
+            puck.AddComponent<BoxCollider>();
+            Destroy(primitiveCollider);
             Rigidbody body = puck.AddComponent<Rigidbody>();
             body.mass = 0.17f;
             body.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;

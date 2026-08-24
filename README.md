@@ -25,10 +25,11 @@ The scene builds the marked rink, six skaters, two AI goalies, physics puck, two
 | --- | --- | --- | --- |
 | Skate only | WASD | Left stick | Bottom-left joystick |
 | Recommended pass | Tap E | Tap west button | Tap PASS |
+| Deke input (debug only) | — | — | Tap DEKE |
 | Charge / release shot | Hold/release Space | Hold/release right trigger | Hold/release SHOOT |
-| Switch skater | Q | North button | SWITCH |
+| Switch skater | Q | North button | — |
 
-WASD and the left joystick never aim passes or shots. While the human player possesses the puck, a subtle dotted path shows the currently recommended teammate. Tap PASS to release an imperfect, interceptable physics pass along that recommendation; no drag is required and successful reception is not guaranteed. There is no sprint, deke, poke check, stick lift, separate shot-type button, or special ability in Phase 1.
+WASD and the floating left joystick never aim passes or shots. While the human player possesses the puck, a subtle dotted path shows the currently recommended teammate. Tap PASS to release an imperfect, interceptable physics pass along that recommendation; no drag is required and successful reception is not guaranteed. DEKE currently emits an input/debug signal only. There is no sprint, deke gameplay, poke check, stick lift, separate shot-type button, or special ability in Phase 1.
 
 ## Architecture and tuning
 
@@ -39,7 +40,7 @@ WASD and the left joystick never aim passes or shots. While the human player pos
 - `PlayerControlManager` automatically selects the established human-team puck carrier or a useful defender after opponent possession; it never switches from puck trajectory. `PlayerSwitchController` remains the manual SWITCH override and performs the input/AI/marker/camera transfer.
 - `HockeyPlayerAI` uses the required eight-state local state machine; `AIFormationController` supplies count-independent formation slots; `HockeyGoalieAI` handles crease tracking and saves.
 - `MatchController`, `FaceoffController`, and `GoalTrigger` own clock, score, resets, and results.
-- `HockeyCameraController`, `MobileJoystick`, `ActionButton`, `MobileInputSource`, and `MatchHUD` provide the stable landscape presentation.
+- `HockeyCameraController`, `VirtualJoystick`, `MobileActionButton`, `PlayerInputController`, `MobileControlsBuilder`, `SafeAreaFitter`, and `MatchHUD` provide the stable landscape presentation and shared input route.
 
 Gameplay feel values are serialized fields on these focused components so they can be tuned in the Inspector without changing team or match architecture.
 

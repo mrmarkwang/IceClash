@@ -1,8 +1,8 @@
 /*
  * IceClash Phase 1 local PvE roster and systems composition.
- * Builds count-driven three-skater teams, two goalies, one shared human/mobile
- * input with recommended-target tap PASS, per-skater AI, possession-based control,
- * manual switching, match flow, HUD, and live snapshots.
+ * Builds count-driven three-skater teams, two goalies, one shared hardware/mobile
+ * input controller with Unity UI controls, per-skater AI, possession-based control,
+ * keyboard switching, match flow, HUD, and live snapshots.
  */
 
 using System;
@@ -34,7 +34,7 @@ namespace IceClash.Match
         public PlayerSwitchController SwitchController { get; private set; }
         public PlayerControlManager ControlManager { get; private set; }
         public MatchController MatchController { get; private set; }
-        public MobileInputSource HumanInput { get; private set; }
+        public PlayerInputController HumanInput { get; private set; }
 
         public PlayerController BuildRoster(GameObject skaterPrefab, PuckController controlledPuck, Material blueMaterial, Material redMaterial)
         {
@@ -93,22 +93,14 @@ namespace IceClash.Match
             return ai;
         }
 
-        private MobileInputSource BuildInputAndHud()
+        private PlayerInputController BuildInputAndHud()
         {
-            GameObject controls = new("Mobile Controls and HUD");
-            controls.transform.SetParent(transform);
-            LocalPlayerInput hardware = controls.AddComponent<LocalPlayerInput>();
-            MobileJoystick joystick = controls.AddComponent<MobileJoystick>();
-            ActionButton pass = controls.AddComponent<ActionButton>();
-            pass.Configure("PASS", new Rect(0.68f, 0.08f, 0.12f, 0.17f));
-            ActionButton shoot = controls.AddComponent<ActionButton>();
-            shoot.Configure("SHOOT", new Rect(0.84f, 0.12f, 0.13f, 0.2f));
-            ActionButton playerSwitch = controls.AddComponent<ActionButton>();
-            playerSwitch.Configure("SWITCH", new Rect(0.68f, 0.34f, 0.14f, 0.16f));
-            MobileInputSource composite = controls.AddComponent<MobileInputSource>();
-            composite.Configure(hardware, joystick, pass, shoot, playerSwitch);
-            controls.AddComponent<MatchHUD>();
-            return composite;
+            MobileControlBindings controls = MobileControlsBuilder.Build(transform);
+            LocalPlayerInput hardware = controls.CanvasRoot.AddComponent<LocalPlayerInput>();
+            PlayerInputController input = controls.CanvasRoot.AddComponent<PlayerInputController>();
+            input.Configure(hardware, controls.Joystick, controls.Pass, controls.Deke, controls.Shoot);
+            controls.CanvasRoot.AddComponent<MatchHUD>();
+            return input;
         }
 
         private Transform BuildControlledMarker()

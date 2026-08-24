@@ -124,13 +124,13 @@ Given a landscape mobile Game view or device
 
 When Play Mode starts
 
-Then score and `MM:SS` appear at the top, one virtual joystick appears bottom-left, and only PASS, SHOOT, and SWITCH appear bottom-right
+Then score and `MM:SS` appear at the top, one floating virtual joystick activates bottom-left, and PASS, DEKE, and a larger SHOOT appear bottom-right
 
-When the tester holds the joystick and simultaneously taps or drags PASS, or holds another action
+When the tester holds the joystick and simultaneously taps PASS, DEKE, or SHOOT with another finger
 
-Then both inputs remain active, buttons are comfortably sized, and no sprint, deke, poke, stick-lift, separate shot-type, or special-ability control appears
+Then both inputs remain active, buttons are comfortably sized inside the safe area, and no sprint, poke, stick-lift, separate shot-type, SWITCH, or special-ability touch control appears
 
-And PASS dragging remains attached to the finger that began on PASS even after it moves outside the button
+And the joystick and each action remain attached to the pointer that began on that control
 
 ## Scenario: Keep the play readable
 
