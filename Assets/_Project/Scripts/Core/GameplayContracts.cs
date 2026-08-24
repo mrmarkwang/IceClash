@@ -1,35 +1,27 @@
 /*
- * IceClash prototype contracts.
- * Defines the small, shared gameplay boundary between input sources, player control,
- * and puck ownership. Phase 2 adds carrier/action metadata without coupling a
- * local input source, AI source, or future network source to a concrete controller.
+ * IceClash Phase 1 local gameplay contracts.
+ * Defines the compact movement/pass/charged-shot/switch input seam shared by
+ * hardware, touch, and AI without networking or service concerns.
  */
 
+using System;
 using UnityEngine;
 
 namespace IceClash.Core
 {
     public enum TeamId { Blue, Red }
-
-    public enum PlayerMovementState
-    {
-        Idle,
-        Skating,
-        Sprinting,
-        ControllingPuck,
-        Passing,
-        Shooting,
-        Checking,
-        KnockedDown
-    }
+    public enum PlayerMovementState { Idle, Skating, ControllingPuck, Passing, Shooting }
+    public enum HockeyAIState { Idle, Support, Attack, Defend, ChasePuck, ReceivePass, Shoot, ReturnToPosition }
+    public enum AIDifficulty { Easy, Normal }
+    public enum MatchStateSnapshot { Setup, Faceoff, Playing, GoalPause, Finished }
 
     public interface IPlayerInput
     {
         Vector2 Move { get; }
-        bool SprintHeld { get; }
-        bool ShootPressed { get; }
         bool PassPressed { get; }
-        bool CheckPressed { get; }
+        bool ShootHeld { get; }
+        bool ShootReleased { get; }
+        bool SwitchPressed { get; }
     }
 
     public interface IPlayerController
@@ -44,5 +36,15 @@ namespace IceClash.Core
         TeamId? PossessionTeam { get; }
         string LastPlayerTouchId { get; }
         string CarrierPlayerId { get; }
+    }
+
+    public interface IResettableActor { void ResetActor(); }
+
+    public static class GameplayEvents
+    {
+        public static event Action<string> ControlledPlayerChanged;
+        public static event Action<int, int, float, MatchStateSnapshot> MatchChanged;
+        public static void RaiseControlledPlayerChanged(string playerId) => ControlledPlayerChanged?.Invoke(playerId);
+        public static void RaiseMatchChanged(int blue, int red, float time, MatchStateSnapshot state) => MatchChanged?.Invoke(blue, red, time, state);
     }
 }

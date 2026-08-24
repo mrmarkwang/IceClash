@@ -1,11 +1,10 @@
 /*
- * IceClash physics puck controller.
- * Keeps puck state independent from players, steers possession through Rigidbody
- * forces, records causal impulse-release metadata, and briefly prevents a releasing
- * skater from reclaiming their own shot or pass while still allowing immediate
- * interception by every other player.
+ * IceClash Phase 1 independent physics puck.
+ * Owns single-carrier possession, force-based stick following, physical releases,
+ * save impulses, reclaim locks, carrier events, and deterministic match resets.
  */
 
+using System;
 using IceClash.Core;
 using IceClash.Player;
 using UnityEngine;
@@ -15,27 +14,27 @@ namespace IceClash.Puck
     [RequireComponent(typeof(Rigidbody), typeof(Collider))]
     public sealed class PuckController : MonoBehaviour, IPuckController
     {
-        [Header("Physics")]
-        [SerializeField] private float linearDamping = 0.65f;
+        [SerializeField] private float linearDamping = 0.55f;
         [SerializeField] private float angularDamping = 1.2f;
-        [SerializeField] private float bounciness = 0.35f;
-        [SerializeField] private float controlRadius = 1.4f;
-        [SerializeField] private float controlStrength = 22f;
-        [SerializeField] private float controlVelocityDamping = 6f;
-        [SerializeField, Min(0f)] private float releasingPlayerReclaimDelay = 0.18f;
+        [SerializeField] private float controlStrength = 24f;
+        [SerializeField] private float controlVelocityDamping = 6.5f;
+        [SerializeField] private float maximumCarrySpeed = 14f;
+        [SerializeField, Min(0f)] private float releasingPlayerReclaimDelay = 0.22f;
 
         private Rigidbody body;
         private PlayerController carrier;
+        private StickPuckInteraction carrierStick;
         private string reclaimLockedPlayerId = string.Empty;
         private float reclaimLockedUntil;
 
+        public event Action<PlayerController> CarrierChanged;
         public TeamId? PossessionTeam { get; private set; }
         public string LastPlayerTouchId { get; private set; } = string.Empty;
         public string CarrierPlayerId => carrier != null ? carrier.PlayerId : string.Empty;
+        public PlayerController Carrier => carrier;
+        public Rigidbody Body => body;
         public int ImpulseReleaseSequence { get; private set; }
         public string LastImpulseReleasePlayerId { get; private set; } = string.Empty;
-        public Rigidbody Body => body;
-        public float ControlRadius => controlRadius;
 
         private void Awake()
         {
@@ -44,25 +43,18 @@ namespace IceClash.Puck
             body.angularDamping = angularDamping;
         }
 
-        public void RecordTouch(string playerId, TeamId team)
+        public bool TryClaim(PlayerController player, StickPuckInteraction stick)
         {
-            LastPlayerTouchId = playerId;
-            PossessionTeam = team;
-        }
-
-        public void ClearPossession() => PossessionTeam = null;
-
-        public bool TryClaim(PlayerController player)
-        {
-            if (player == null || carrier != null
+            if (player == null || stick == null || carrier != null
                 || (player.PlayerId == reclaimLockedPlayerId && Time.time < reclaimLockedUntil)
-                || Vector3.Distance(player.ControlPoint, transform.position) > controlRadius)
-            {
-                return false;
-            }
+                || Vector3.Distance(stick.ControlPoint, transform.position) > stick.ClaimRadius
+                || body.linearVelocity.magnitude > stick.MaximumClaimSpeed) return false;
 
             carrier = player;
-            RecordTouch(player.PlayerId, player.Team);
+            carrierStick = stick;
+            LastPlayerTouchId = player.PlayerId;
+            PossessionTeam = player.Team;
+            CarrierChanged?.Invoke(carrier);
             return true;
         }
 
@@ -70,50 +62,64 @@ namespace IceClash.Puck
 
         public bool Release(PlayerController player, Vector3 direction, float speed)
         {
-            if (!IsCarriedBy(player)) return false;
-
-            carrier = null;
+            if (!IsCarriedBy(player) || direction.sqrMagnitude < 0.01f) return false;
             LastPlayerTouchId = player.PlayerId;
-            PossessionTeam = null;
-            ImpulseReleaseSequence++;
             LastImpulseReleasePlayerId = player.PlayerId;
-            LockReclaim(player);
+            ImpulseReleaseSequence++;
+            ClearCarrier(true);
             body.linearVelocity = Vector3.zero;
-            body.AddForce(direction.normalized * speed, ForceMode.VelocityChange);
+            body.AddForce(Vector3.ProjectOnPlane(direction, Vector3.up).normalized * speed, ForceMode.VelocityChange);
             return true;
         }
 
         public void ForceRelease(PlayerController player)
         {
-            if (!IsCarriedBy(player)) return;
-            carrier = null;
-            ClearPossession();
-            LockReclaim(player);
+            if (IsCarriedBy(player)) ClearCarrier(true);
         }
 
-        private void LockReclaim(PlayerController player)
+        public void ApplySave(Vector3 direction, float speed, TeamId goalieTeam)
         {
-            reclaimLockedPlayerId = player.PlayerId;
-            reclaimLockedUntil = Time.time + releasingPlayerReclaimDelay;
+            if (carrier != null) ClearCarrier(false);
+            PossessionTeam = goalieTeam;
+            body.linearVelocity = Vector3.zero;
+            body.AddForce(Vector3.ProjectOnPlane(direction, Vector3.up).normalized * speed, ForceMode.VelocityChange);
+        }
+
+        public void ResetPuck(Vector3 position)
+        {
+            carrier = null;
+            carrierStick = null;
+            PossessionTeam = null;
+            LastPlayerTouchId = string.Empty;
+            reclaimLockedPlayerId = string.Empty;
+            body.position = position;
+            body.rotation = Quaternion.identity;
+            body.linearVelocity = Vector3.zero;
+            body.angularVelocity = Vector3.zero;
+            CarrierChanged?.Invoke(null);
+        }
+
+        private void ClearCarrier(bool lockReclaim)
+        {
+            if (lockReclaim && carrier != null)
+            {
+                reclaimLockedPlayerId = carrier.PlayerId;
+                reclaimLockedUntil = Time.time + releasingPlayerReclaimDelay;
+            }
+            carrier = null;
+            carrierStick = null;
+            PossessionTeam = null;
+            CarrierChanged?.Invoke(null);
         }
 
         private void FixedUpdate()
         {
-            if (carrier == null) return;
-
-            Vector3 target = carrier.ControlPoint;
+            if (carrier == null || carrierStick == null) return;
+            Vector3 target = carrierStick.ControlPoint;
             target.y = body.position.y;
             Vector3 error = target - body.position;
             body.AddForce(error * controlStrength - body.linearVelocity * controlVelocityDamping, ForceMode.Acceleration);
-            body.linearVelocity = Vector3.ClampMagnitude(body.linearVelocity, carrier.ControlSpeedLimit);
-        }
-
-        private void OnCollisionEnter(Collision collision)
-        {
-            if (collision.relativeVelocity.sqrMagnitude > 1f)
-            {
-                body.AddForce(-body.linearVelocity.normalized * bounciness, ForceMode.VelocityChange);
-            }
+            body.linearVelocity = Vector3.ClampMagnitude(body.linearVelocity, maximumCarrySpeed);
         }
     }
 }

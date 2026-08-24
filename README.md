@@ -1,44 +1,65 @@
-# IceClash
+# IceClash — Phase 1 Local PvE Hockey
 
-Mobile 2v2 arcade hockey prototype, beginning with a local playable Unity slice.
+IceClash is a mobile-first Unity hockey prototype focused on simple controls and meaningful team decisions. Phase 1 is a completely local match: three human-team skaters and one goalie versus three AI-team skaters and one goalie. The user controls one human-team skater at a time; AI controls everyone else.
+
+Multiplayer, networking, Photon Fusion, matchmaking, accounts, Firebase, backend services, monetization, and store integration are intentionally excluded until the local hockey loop is fun.
 
 ## Development baseline
 
-- Unity `6000.5.9f1` (Unity 6) using the default 3D project baseline.
-- Unity Input System `1.19.0` for keyboard and gamepad input.
-- iOS and Android modules are installed locally; device builds are not part of Phase 1.
+- Unity `6000.5.9f1` (Unity 6), default 3D baseline.
+- Unity Input System `1.19.0` for keyboard, gamepad, mouse, and touch input.
+- Runtime placeholder geometry and the reusable `Assets/_Project/Prefabs/Resources/Skater.prefab`.
+- Landscape mobile layout with a 60 FPS target.
 
-## Run the local 2v2 prototype
+## Run the prototype
 
 1. Open this folder in Unity Hub with Unity `6000.5.9f1`.
 2. Open `Assets/_Project/Scenes/PrototypeArena.unity`.
 3. Enter Play Mode.
 
-The scene generates a vertically oriented hockey rink with rounded boards, inset goals, center/blue/goal lines, goal creases, center/zone faceoff circles and dots, one local blue skater, one allied AI, two red AI opponents, a free physics puck, and an elevated follow camera.
+The scene builds the marked rink, six skaters, two AI goalies, physics puck, two goal triggers, faceoff/match state, hockey camera, controlled-player marker, scoreboard, timer, joystick, and three action buttons at runtime.
 
-## Editor controls
+## Controls
 
-| Action | Keyboard | Controller |
-| --- | --- | --- |
-| Move | WASD | Left stick |
-| Sprint | Left Shift | Left-stick click |
-| Shoot (Phase 2) | Space | Right trigger |
-| Pass (Phase 2) | E | West button |
-| Check (Phase 2) | Q | East button |
+| Action | Keyboard | Gamepad | Touch |
+| --- | --- | --- | --- |
+| Skate / aim | WASD | Left stick | Bottom-left joystick |
+| Pass | E | West button | PASS |
+| Charge / release shot | Hold/release Space | Hold/release right trigger | Hold/release SHOOT |
+| Switch skater | Q | North button | SWITCH |
 
-## Phase 2 status
+There is no sprint, deke, poke check, stick lift, separate shot-type button, or special ability in Phase 1.
 
-- The local skater can claim a nearby free puck. Carrying steers the physics puck to a forward stick point without parenting it.
-- Space shoots from anywhere while the skater possesses the puck; the prototype sends the shot toward the opposing net and buffers a very recent press through its short action lock. E passes to the nearest eligible teammate when one exists, and Q checks a valid nearby opposing skater. All values are Inspector-tunable on `PlayerController` and `PuckController`.
-- The Phase 3 roster now supplies pass and check targets; use the Editor controls above for manual action-feel checks while AI skaters exercise the same gameplay contracts.
+## Architecture and tuning
 
-## Phase 3 status
+- `PlayerMovementController` owns acceleration, deceleration, momentum, analog speed, and speed-aware turning.
+- `StickPuckInteraction` and `PuckController` keep possession force-based on an independent Rigidbody.
+- `PassController` weights aim, distance, openness, lane safety, defender separation, and offensive progress.
+- `ShootController` converts one held/released input into bounded charge, direction, power, and spread.
+- `PlayerControlManager` automatically selects the established human-team puck carrier or a useful defender after opponent possession; it never switches from puck trajectory. `PlayerSwitchController` remains the manual SWITCH override and performs the input/AI/marker/camera transfer.
+- `HockeyPlayerAI` uses the required eight-state local state machine; `AIFormationController` supplies count-independent formation slots; `HockeyGoalieAI` handles crease tracking and saves.
+- `MatchController`, `FaceoffController`, and `GoalTrigger` own clock, score, resets, and results.
+- `HockeyCameraController`, `MobileJoystick`, `ActionButton`, `MobileInputSource`, and `MatchHUD` provide the stable landscape presentation.
 
-- The reusable `Assets/_Project/Prefabs/Resources/Skater.prefab` supplies the common skater shell. `LocalMatchSetup` spawns the one-human/three-AI roster with stable IDs, team identity, reset positions, and live `MatchData`/`TeamData`/`PlayerData` snapshots.
-- Each `AiPlayerInput` selects Defend, ChasePuck, Support, Attack, Shoot, or Recover behavior and sends movement, sprint, pass, shoot, and check commands through the same `IPlayerInput` path as keyboard/controller input.
-- In Unity, choose **IceClash > Run Phase 3 Smoke Check** to verify the generated rink, local 2v2 roster, snapshot identity, shared command path, and observable AI movement with chase/defend role selection.
+Gameplay feel values are serialized fields on these focused components so they can be tuned in the Inspector without changing team or match architecture.
 
-## Current limitations
+## Verification
 
-- Scoring, menus, HUD, mobile buttons, and match flow are later phases. Phase 3 AI intentionally uses direct steering and simple distance decisions rather than pathfinding or advanced tactics.
-- The rink is generated from primitives so it can be tuned/replaced without asset dependencies.
+With the Editor out of Play Mode, choose **IceClash > Run Phase 1 PvE Smoke Check**. The check enters Play Mode, builds the real arena, verifies the 3v3-plus-goalies roster and one-human invariant, checks modular gameplay/camera/HUD wiring, scores and resets a goal, expires the timer, and exits. A passing run logs:
+
+`PHASE1_PVE_SMOKE_PASS`
+
+Static Phase 1 boundary check:
+
+```sh
+rg -n -i 'Photon|Fusion|Unity\.Netcode|Relay|Matchmaking|Firebase|AuthenticationService|Lobby' Assets Packages/manifest.json Packages/packages-lock.json ProjectSettings
+```
+
+The expected result is no matches. Manual feel and mobile multi-touch scenarios are documented in `.docs/tests/test-mobile-hockey-mvp.md`.
+
+## Current prototype limitations
+
+- Placeholder primitives, no final character/stick animation, limited audio/feedback, and no production art.
+- Direct steering and lightweight formation logic rather than NavMesh or a behavior tree.
+- Simplified possession contests, goalie reach, faceoffs, and hockey rules; no penalties, icing, offsides, or overtime.
+- Device-specific safe-area, performance, thermal, and multi-touch feel still require testing on the intended phones/emulators.

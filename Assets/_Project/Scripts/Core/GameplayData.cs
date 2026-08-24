@@ -1,7 +1,7 @@
 /*
- * IceClash local simulation data snapshots.
- * Represents match, team, and player identity/state without coupling the data model
- * to local input, AI decisions, scene objects, or a future network transport.
+ * IceClash Phase 1 local match snapshots.
+ * Captures count-independent skater identity, score, clock, state, possession, and
+ * current human selection without coupling data to UI or AI implementation.
  */
 
 using System;
@@ -12,8 +12,6 @@ using UnityEngine;
 
 namespace IceClash.Core
 {
-    public enum MatchStateSnapshot { Setup, Countdown, Playing, GoalPause, Finished }
-
     [Serializable]
     public sealed class PlayerData
     {
@@ -22,18 +20,12 @@ namespace IceClash.Core
         public Vector3 Position;
         public Quaternion Rotation = Quaternion.identity;
         public PlayerMovementState State;
-        public float Stamina;
         public bool HasPuck;
 
         public void Capture(PlayerController player, PuckController puck)
         {
-            PlayerId = player.PlayerId;
-            Team = player.Team;
-            Position = player.transform.position;
-            Rotation = player.transform.rotation;
-            State = player.State;
-            Stamina = player.Stamina;
-            HasPuck = puck != null && puck.IsCarriedBy(player);
+            PlayerId = player.PlayerId; Team = player.Team; Position = player.transform.position;
+            Rotation = player.transform.rotation; State = player.State; HasPuck = puck != null && puck.IsCarriedBy(player);
         }
     }
 
@@ -43,16 +35,16 @@ namespace IceClash.Core
         public TeamId Team;
         public int Score;
         public List<PlayerData> Players = new();
-
         public TeamData(TeamId team) { Team = team; }
     }
 
     [Serializable]
     public sealed class MatchData
     {
-        public string MatchId = "local-practice";
+        public string MatchId = "local-pve";
         public MatchStateSnapshot State = MatchStateSnapshot.Setup;
         public float RemainingSeconds = 180f;
+        public string ControlledPlayerId = string.Empty;
         public TeamData BlueTeam = new(TeamId.Blue);
         public TeamData RedTeam = new(TeamId.Red);
 
@@ -64,26 +56,12 @@ namespace IceClash.Core
 
         private static void CaptureTeam(TeamData team, IReadOnlyList<PlayerController> players, PuckController puck)
         {
-            int playerCount = CountPlayers(team.Team, players);
-            while (team.Players.Count < playerCount) team.Players.Add(new PlayerData());
-            while (team.Players.Count > playerCount) team.Players.RemoveAt(team.Players.Count - 1);
-
-            int dataIndex = 0;
-            for (int index = 0; index < players.Count; index++)
-            {
-                if (players[index].Team != team.Team) continue;
-                team.Players[dataIndex++].Capture(players[index], puck);
-            }
-        }
-
-        private static int CountPlayers(TeamId team, IReadOnlyList<PlayerController> players)
-        {
             int count = 0;
-            for (int index = 0; index < players.Count; index++)
-            {
-                if (players[index].Team == team) count++;
-            }
-            return count;
+            for (int i = 0; i < players.Count; i++) if (players[i].Team == team.Team) count++;
+            while (team.Players.Count < count) team.Players.Add(new PlayerData());
+            while (team.Players.Count > count) team.Players.RemoveAt(team.Players.Count - 1);
+            int dataIndex = 0;
+            for (int i = 0; i < players.Count; i++) if (players[i].Team == team.Team) team.Players[dataIndex++].Capture(players[i], puck);
         }
     }
 }

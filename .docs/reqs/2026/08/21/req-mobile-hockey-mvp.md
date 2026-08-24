@@ -1,50 +1,48 @@
-# Mobile 2v2 Hockey MVP — Requirements
+# Local PvE Hockey Prototype — Requirements
 
 ## Problem
 
-IceClash needs a first playable mobile hockey prototype that proves the core arcade loop is fun before the team invests in online multiplayer, production art, accounts, or live-service features. The prototype must be simple to open and test in the Unity Editor while retaining clear seams for a later network-authoritative 2v2 game.
+IceClash has a small local 2v2 foundation, but it does not yet provide a complete mobile hockey match. The prototype needs to prove that one-stick movement and three actions can produce readable, replayable team hockey before any multiplayer, service, account, monetization, or production-art work begins.
 
 ## Requirement
 
-Create a standalone Unity project for iOS and Android containing a local 2v2 practice match: one human-controlled player, three AI players, an independently simulated puck, two goals, basic scoring, and a three-minute match flow. The player must be able to test keyboard/controller input in the Editor and have placeholder mobile controls available for later device testing.
+Deliver a fully playable local PvE match in Unity for mobile landscape play. The human team and AI team each field three skaters and one AI goalie. The user controls one human-team skater at a time while AI controls every other player. A complete match must support skating, physics-based possession, assisted passing, charged shooting, useful player switching, believable imperfect team AI, goalie saves, scoring, faceoff resets, a timer, match results, a hockey camera, and uncluttered touch controls.
+
+The prototype should optimize for simple controls and meaningful positional decisions. Placeholder geometry and visuals are expected; gameplay feel and modular tuning take priority.
 
 ## Acceptance Criteria
 
-- [ ] The Unity project opens without missing-script errors and follows the agreed `_Project` folder structure for gameplay, UI, input, data, prefabs, scenes, and tests.
-- [ ] Pressing Play launches a main menu; PLAY starts a practice match with one human player, one allied AI, two opposing AI players, a puck, two goals, and a basic marked rink.
-- [ ] The rink is recognizable as a hockey rink: rounded board corners, long side boards, goal-end boards, goals inset from the end boards with visible netting, red center line, blue lines, goal lines, visible goal creases, a blue center faceoff circle, four red zone faceoff circles, and faceoff dots. Faceoff circles must read as smooth curves rather than visibly segmented blocks. Placeholder primitive geometry remains acceptable.
-- [ ] The in-game camera presents the rink in a vertical play orientation: the long skating direction and the opposing goals read from the bottom toward the top of the screen, not side-to-side.
-- [ ] The human player can move with WASD, sprint with Shift, shoot with Space, pass with E, and check with Q in the Unity Editor; controller input and placeholder mobile controls are represented through the Unity Input System.
-- [ ] Player movement, team identity, player ID, puck possession, stamina placeholder, and the defined movement/action states are represented as modular gameplay state rather than one monolithic component.
-- [ ] The puck uses a Rigidbody and Collider, remains independently physics-simulated, has configurable friction/bounce/control behavior, and records team possession and last player touch.
-- [ ] A nearby eligible player can gain, carry, pass, and shoot the puck; possession can break through a shot, pass, interception, or successful check.
-- [ ] Passing targets a suitable nearby teammate and remains interceptable; a player who possesses the puck can shoot from anywhere on the rink toward the opposing goal. Shooting releases the puck and respects configurable per-player power, accuracy, speed, input-buffer, and cooldown settings.
-- [ ] Checking has a configurable range, force, duration, and cooldown; a valid hit can knock down an opponent and dislodge possession without realistic violence or injury systems.
-- [ ] The three AI players use a simple, observable finite-state behavior to chase the puck, support the carrier, defend, attack, recover, and make basic shooting/passing decisions.
-- [ ] A puck entering either goal awards the correct team, pauses play, shows a goal message, resets skaters and puck, and resumes after about two seconds.
-- [ ] The HUD displays both scores, a three-minute countdown, player/team/possession context, goal notifications, and placeholder mobile action controls.
-- [ ] At match end, the game displays WIN or LOSS with the final score and supports REMATCH and MAIN MENU. Overtime is excluded.
-- [ ] Local input, AI commands, and future network input can drive the same player-control path through small, practical interfaces or equivalent abstractions; no online multiplayer is implemented.
-- [ ] The completed prototype can be run through documented Unity steps, and its known limitations and next recommended milestone are documented.
+- [x] The Unity `6000.5.9f1` project opens and compiles without missing-script errors, with gameplay systems modular under `Assets/_Project/Scripts` and no multiplayer, networking, backend, account, Firebase, matchmaking, monetization, or store implementation.
+- [x] `PrototypeArena` launches a local match containing three Blue skaters plus one Blue goalie, three Red skaters plus one Red goalie, one independent Rigidbody puck, two goals, and a clear small marked rink built from placeholder geometry.
+- [x] Exactly one Blue skater is human-controlled at a time; the other Blue skaters and all Red skaters are AI-controlled, and roster construction remains count-driven so a later 5v5 expansion does not require rewriting gameplay systems.
+- [x] `PlayerMovementController` provides 360-degree camera-relative skating with analog speed, smooth acceleration/deceleration, responsive momentum, speed-aware turning, and rotation toward travel direction without sprint or a separate rotation input.
+- [x] Puck possession remains physics-based and modular through `PuckController` and `StickPuckInteraction`; the puck follows a moving stick-control point with visible bounded motion rather than parenting or permanent gluing, and can be contested after release.
+- [x] One PASS action scores eligible teammates by joystick direction, distance, openness, defender separation, lane obstruction, and offensive progress; it releases an interceptable imperfect pass toward the best target without manual target selection.
+- [x] One SHOOT action charges while held and releases on button-up; short holds release quickly at lower power, longer holds produce stronger bounded shots, joystick/facing determines approximate direction, and configured inaccuracy permits misses.
+- [x] One SWITCH action selects a useful non-goalie Blue skater with stable scoring based on puck proximity, puck-carrier pressure while defending, and offensive support while attacking; input, highlight, and camera transfer together without control flicker.
+- [x] Non-controlled skaters use a simple `HockeyPlayerAI` state machine containing Idle, Support, Attack, Defend, ChasePuck, ReceivePass, Shoot, and ReturnToPosition states and visibly perform formation support, passing-lane movement, puck pressure, goal-side defense, backchecking, passing, and shooting.
+- [x] AI difficulty exposes EASY and NORMAL only; EASY has slower reaction/decision timing, lower movement and pass quality, and less accurate shots than NORMAL, while both levels intentionally allow mistakes.
+- [x] Each `HockeyGoalieAI` stays near its crease anchor, tracks the puck laterally, attempts bounded saves or covers, releases playable rebounds, and returns to its anchor after match resets.
+- [x] `HockeyCameraController` smoothly follows the controlled skater while biasing framing toward the puck, keeps play direction understandable, avoids excessive rotation, and retargets on switch/reset.
+- [x] A match runs through Faceoff, Playing, GoalPause, and Finished states; a valid goal increments the correct score once, pauses play, resets every actor and the puck, resumes with a faceoff, and time expiry produces the correct Human Win, AI Win, or Draw result.
+- [x] The landscape HUD shows Human Team score, AI Team score, and `MM:SS`; touch UI provides one bottom-left virtual joystick and only PASS, SHOOT, and SWITCH on the bottom right, with large multi-touch-safe controls and no sprint, deke, poke, stick-lift, shot-type, or special-ability buttons.
+- [x] Keyboard/gamepad Editor controls exercise the same input contract as touch controls so movement, pass, held shoot/release, and switch can be tested without a device.
+- [x] Automated smoke verification confirms the generated 3v3-plus-goalies roster, one-local-input invariant, modular movement/puck/AI/camera/match/UI wiring, score/reset behavior, and absence of networking/service packages or namespaces.
+- [x] README documentation explains how to run the match, Editor and touch controls, tuning locations, verification commands, current placeholder limitations, and the explicit Phase 1 networking prohibition.
+- [ ] A development build launches `PrototypeArena` on a phone or emulator and completes one touch-controlled match without a blocking runtime, layout, input, scoring, reset, goalie, AI, camera, or result defect.
 
 ## Constraints
 
-- Use Unity and C#, the Unity Input System, and Unity Physics. NavMesh or a simple alternative may be used only if it supports the MVP cleanly.
-- Target iOS and Android, while treating the Unity Editor keyboard/controller controls as the primary fast test path.
-- Use low-poly/primitive placeholder art, simple lighting/materials, and inexpensive effects with a 60 FPS target on a typical current mobile device.
-- Keep gameplay systems modular under `Assets/_Project`; separate input, player control, puck control, match state, camera, AI, UI, and data concerns.
-- Expose gameplay tuning values in the Inspector or ScriptableObjects where the prototype brief identifies them as configurable.
-- Verify compilation after each major subsystem once implementation starts.
+- Use Unity/C#, the Unity Input System, Unity Physics, and placeholder primitives/assets already present in the repository.
+- Target mobile landscape and 60 FPS while retaining keyboard/gamepad Editor testing.
+- Keep movement, puck/stick interaction, pass, shoot, switching, AI, goalie, camera, match flow, and UI in focused components with Inspector-tunable values.
+- Use three skaters and one goalie per team for Phase 1; keep roster/formation data extensible to five skaters later.
+- Prefer deterministic scoring/selection rules with small bounded AI/action error over complex navigation, animation, or simulation systems.
 
 ## Non-Goals
 
-- Online multiplayer, matchmaking, networking SDKs, server authority, lag compensation, or replication.
-- Authentication, Firebase, account/profile/social screens, commerce, or analytics.
-- Production-quality graphics, character customization, advanced animation, realistic hockey simulation, injuries, penalties, overtime, or sophisticated tactical AI.
-- Flutter gameplay integration.
-- Feature flags, environment-based fallbacks, compatibility layers, or premature backend/data persistence.
-
-## Open Questions
-
-- Which Unity LTS version and render pipeline should be the project baseline? Default recommendation: the current Unity LTS with URP only if the project is created from a mobile URP template; otherwise use the default 3D template to keep Phase 1 lean.
-- Should initial device testing prioritize touch UI responsiveness or establish the editor gameplay loop first? Default plan: establish editor gameplay first, then enable the placeholder touch layout once core actions work.
+- Multiplayer, PvP, Photon Fusion, Netcode for GameObjects, Relay, networking, matchmaking, lobbies, accounts, authentication, Firebase, backend services, cloud saves, analytics, ads, commerce, store integration, or season passes.
+- Full 5v5, line changes, penalties, offsides, icing, fighting, injuries, overtime, user-controlled goalies, advanced faceoffs, or NHL-level goalie simulation.
+- Sprint, deke, poke check, stick lift, separate wrist/slap-shot buttons, special abilities, or additional on-screen gameplay buttons.
+- Final graphics, licensed content, production animation, cosmetics, progression, commentary, or polished audio.
+- Feature flags, environment-specific gameplay forks, service fallbacks, or speculative networking abstractions.
