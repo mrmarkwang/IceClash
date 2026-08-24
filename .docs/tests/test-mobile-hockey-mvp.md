@@ -36,15 +36,27 @@ When the puck is released or contested
 
 Then reclaim locks and physical motion permit interception or possession by another eligible skater
 
-## Scenario: Select and execute an assisted pass
+## Scenario: Observe and execute a recommended assisted pass
 
-Given the controlled carrier has multiple teammates at different angles with defenders between some lanes
+Given the human-controlled player possesses the puck with multiple teammates and defenders in different positions
 
-When the tester aims toward one teammate and presses PASS
+When possession is established
 
-Then joystick direction strongly influences selection while distance, openness, defender separation, lane obstruction, and offensive progress also affect the target
+Then one teammate is continuously recommended using facing and tactical context
 
-And the puck releases physically toward a lead point with bounded error so misses and interceptions remain possible
+And a subtle dotted projected path appears from the puck toward that recommendation
+
+When the tester changes WASD or joystick input without materially changing the player's facing or teammate/defender positions
+
+Then the movement input itself does not alter the recommendation
+
+When the tester taps PASS once
+
+Then the puck releases physically toward the recommendation's lead direction with bounded error and no homing behavior
+
+And defenders, lane obstruction, player motion, pass error, or failed reception can cause an interception or unsuccessful pass
+
+And the dotted path disappears as soon as possession is released
 
 ## Scenario: Charge and aim one-button shots
 
@@ -52,7 +64,7 @@ Given the controlled skater has the puck
 
 When the tester briefly presses and releases SHOOT
 
-Then a prompt lower-power shot follows the approximate joystick/facing direction
+Then a prompt lower-power shot follows assisted goal/facing direction without directly reading joystick or WASD direction
 
 When the tester holds SHOOT longer and releases
 
@@ -114,9 +126,11 @@ When Play Mode starts
 
 Then score and `MM:SS` appear at the top, one virtual joystick appears bottom-left, and only PASS, SHOOT, and SWITCH appear bottom-right
 
-When the tester holds the joystick and simultaneously presses or holds an action
+When the tester holds the joystick and simultaneously taps or drags PASS, or holds another action
 
 Then both inputs remain active, buttons are comfortably sized, and no sprint, deke, poke, stick-lift, separate shot-type, or special-ability control appears
+
+And PASS dragging remains attached to the finger that began on PASS even after it moves outside the button
 
 ## Scenario: Keep the play readable
 

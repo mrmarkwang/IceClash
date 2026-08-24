@@ -17,14 +17,14 @@ Turn the current local 2v2 foundation into a complete, replayable three-skaters-
 ## Decisions
 
 - Keep `PrototypeArenaBootstrap` as a composition root for placeholder geometry only. Runtime game rules live in focused components created/configured by `LocalMatchSetup`.
-- Use `IPlayerInput` as the shared input seam, changing it to Move plus Pass, Shoot-held/released, and Switch. Touch, keyboard/gamepad, and AI all use that contract; sprint/check inputs are removed.
+- Use `IPlayerInput` as the shared input seam with movement isolated from a single PASS press signal, Shoot-held/released, and Switch. Touch, keyboard/gamepad, and AI all use that contract; sprint/check inputs are removed.
 - Make `PlayerController` the skater identity/composition root. `PlayerMovementController` owns locomotion; `StickPuckInteraction` owns claim/control-point behavior; `PassController` and `ShootController` own actions. No gameplay feature is hidden behind a network-ready abstraction.
 - Use count-driven team definitions and spawn records in `LocalMatchSetup`, with three explicit formation slots now. Extending the arrays later supports five skaters without changing puck, match, action, camera, or UI contracts.
 - Use a direct, allocation-conscious state machine in `HockeyPlayerAI`. Formation/home slots provide structure; state decisions use puck carrier, team possession, distance, threat, and pass intent. EASY/NORMAL profiles alter reaction, movement scale, pass error, and shot error.
 - Use one `PlayerSwitchController` to own the controlled Blue skater, retarget one persistent local input source through a proxy, enable AI on all non-controlled Blue skaters, drive the marker, and notify the camera. A score margin prevents rapid flicker.
 - Keep the puck as an independent Rigidbody. Stick control applies forces toward a slightly animated lateral control point. Passes/shots set velocity and reclaim locks; no parenting, kinematic carry mode, or teleport-follow is introduced.
-- Assisted pass selection uses a weighted score across direction alignment, range, forward progress, nearest-defender separation, and a capsule/raycast lane penalty. Add bounded directional error so interception and bad passes remain possible.
-- Held shooting records charge time and releases between configured minimum/maximum power. Aim uses Move, then facing fallback, with bounded random spread supplied by the acting player's difficulty/input profile.
+- `PassTargetSelector` continuously recommends one teammate for the human puck carrier using facing plus tactical weights. `PassController` renders a dotted projected path and releases one imperfect, interceptable physics pass on a simple PASS tap. PASS drag targeting and open-space dump gestures are removed.
+- Held shooting records charge time and releases between configured minimum/maximum power. Aim uses player facing and goal assistance without reading Move, with bounded random spread supplied by the acting player's difficulty/input profile.
 - Implement goalies as dedicated agents, not skaters. They move laterally around crease anchors and apply bounded save deflections/covers to nearby incoming pucks.
 - Implement `MatchController` as the only clock/score/state/reset owner and `GoalTrigger` as a one-shot event source. Faceoff is a timed reset phase; overtime and advanced draw mechanics are excluded.
 - Build the landscape Canvas, joystick, action buttons, marker, score/timer, goal message, and result panel at runtime. `MobileJoystick` supports pointer drag; `ActionButton` tracks press/release for charged shots; UI remains minimal.
@@ -45,8 +45,17 @@ Turn the current local 2v2 foundation into a complete, replayable three-skaters-
 
 - [x] Extend `PuckController.cs` with safe claim/release/reset/save hooks, carrier change events, bounded carry physics, and reclaim/interception behavior while keeping the Rigidbody independent.
 - [x] Add `StickPuckInteraction.cs` so possession claims and a subtly moving stick-control point are separate from movement and action logic.
-- [x] Add `PassController.cs` with weighted target selection, defender/open-lane evaluation, joystick-dominant intent, lead calculation, imperfection, cooldown, and interceptable release.
-- [x] Add `ShootController.cs` with hold/release charge, aim/facing fallback, bounded power/spread, cooldown, and reset behavior.
+- [x] Add the initial `PassController.cs` baseline with weighted target selection, defender/open-lane evaluation, lead calculation, imperfection, cooldown, and interceptable release; Phase 2A replaces its temporary movement-coupled intent.
+- [x] Add the initial `ShootController.cs` baseline with hold/release charge, bounded power/spread, cooldown, and reset behavior; Phase 2A removes its temporary movement-coupled aim.
+
+### Phase 2A - Correct independent action targeting
+
+- [x] Simplify `GameplayContracts.cs`, `LocalPlayerInput.cs`, `MobileInputSource.cs`, and `HockeyPlayerAI.cs` back to one movement-independent PASS press signal while preserving Move exclusively for locomotion.
+- [x] Remove `PassInputController.cs` and its runtime wiring so no PASS drag threshold, direction, release, or open-space dump gesture remains.
+- [x] Simplify `PassTargetSelector.cs` to continuously recommend one teammate using facing, range, openness, distance, lane/interception risk, and offensive progress without directional gesture input.
+- [x] Refactor `PassController.cs` to maintain the recommendation during human possession, render a subtle dotted projected path, release toward the current recommendation on tap, and clear recommendation feedback when possession ends.
+- [x] Preserve bounded release error, target lead, independent puck physics, reclaim delay, and interception so a recommended pass is not guaranteed to arrive.
+- [x] Keep `PlayerController.cs` and `ShootController.cs` action paths movement-independent and remove obsolete drag feedback state or APIs.
 
 ### Phase 3 - Selection and team AI
 
@@ -80,11 +89,17 @@ Turn the current local 2v2 foundation into a complete, replayable three-skaters-
 - [x] Update `README.md` with Phase 1 setup, controls, architecture/tuning summary, smoke command, limitations, and the networking prohibition.
 - [ ] Build and launch the development player on an attached phone or emulator, complete one touch-controlled match, and record device/runtime/layout/input evidence.
 
+### Phase 6A - Recommended PASS regression verification
+
+- [x] Extend `PrototypeArenaSmokeCheck.cs` with assertions that possession creates one recommendation and dotted path, movement input cannot directly alter it, tapping releases an imperfect non-homing puck, and feedback clears after release.
+- [x] Update `.docs/tests/test-mobile-hockey-mvp.md` and `README.md` to document the always-visible possession recommendation, dotted path, tap-only PASS, and movement-only joystick/WASD invariant.
+- [x] Run Unity compilation and the Phase 1 smoke flow, record `PHASE1_PVE_SMOKE_PASS`, and run `git diff --check` plus the static forbidden-service search.
+
 ## Validation
 
 - Compile and run the automated Editor smoke flow with Unity `6000.5.9f1`, using the installed editor executable and a clean log path. Expected evidence: exit code `0`, no C# compiler errors, and `PHASE1_PVE_SMOKE_PASS`.
 - Run `rg -n -i 'Photon|Fusion|Unity.Netcode|Relay|Matchmaking|Firebase|AuthenticationService|Lobby' Assets Packages/manifest.json ProjectSettings` and confirm no Phase 1 implementation/package references (documentation exclusions are intentional).
-- In Play Mode at a landscape Game view, exercise WASD/left stick, E/controller west PASS, Space/right trigger hold/release SHOOT, and Q/controller north SWITCH. Observe smooth skating, stable camera retarget, independent puck, imperfect pass/shot outcomes, AI offense/defense, goalie saves, one-count goal reset, clock, and result.
+- In Play Mode at a landscape Game view, exercise WASD/left stick movement independently, E/controller west/touch tap PASS, Space/right trigger held SHOOT, and Q/controller north SWITCH. Confirm the dotted recommendation appears only during human possession and PASS requires no drag.
 - Exercise touch controls in a mobile simulator/device when available and verify simultaneous joystick plus action input, control sizing, landscape layout, and no extra gameplay buttons.
 - Execute the scenarios in `.docs/tests/test-mobile-hockey-mvp.md`; retain the Unity log and explicitly distinguish automated, Editor-observed, and device-pending evidence.
 
@@ -94,5 +109,6 @@ Turn the current local 2v2 foundation into a complete, replayable three-skaters-
 - Physics possession can oscillate during contests. Use a single carrier, release reclaim locks, relative-speed checks, and bounded claim priority; tune only after the complete loop compiles.
 - AI may cluster or feel too perfect. Formation homes, one designated puck challenger, decision intervals, difficulty error, and bounded action probabilities reduce clustering and robotic execution.
 - Runtime-built UI must coexist with keyboard/gamepad testing. Route touch and hardware through one composite input source and avoid EventSystem pointer state becoming the gameplay authority.
+- The dotted recommendation must remain subtle and allocation-conscious while updating during possession; pool its visual dots and disable them instead of creating/destroying objects every frame.
 - Existing scene/prefab/meta files and generated placeholder art remain reusable. Rollback is file-local: restore the prior committed Phase 3 sources/docs without data migration or service cleanup.
 - No network/service package or external state is introduced, so rollback has no backend, account, schema, cloud-project, or compatibility concerns.

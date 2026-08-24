@@ -1,7 +1,7 @@
 /*
  * IceClash Phase 1 imperfect skater AI.
- * Runs the required eight-state hockey decision loop and emits the same movement,
- * pass, and charged-shot input contract as a human, with Easy/Normal profiles.
+ * Runs the required eight-state hockey decision loop and emits independent movement,
+ * tap-pass, and charged-shot input signals with Easy/Normal profiles.
  */
 
 using IceClash.Core;

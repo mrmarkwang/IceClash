@@ -1,7 +1,7 @@
 /*
  * IceClash Phase 1 composite local input.
- * Merges Editor hardware with landscape touch joystick/action controls into one
- * IPlayerInput source used by the current controlled skater and switch router.
+ * Merges Editor hardware with landscape touch controls while keeping movement
+ * isolated from the simple recommended-target PASS tap on the right side.
  */
 
 using IceClash.Core;

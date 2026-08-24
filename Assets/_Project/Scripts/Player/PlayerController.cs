@@ -1,7 +1,7 @@
 /*
- * IceClash Phase 1 skater composition controller.
- * Owns identity and input routing while delegating skating, stick interaction,
- * passing, and charged shooting to focused sibling components.
+ * IceClash modular skater composition and action routing.
+ * Sends Move only to skating, one tap to recommended-target passing, and charged
+ * SHOOT signals to assisted shooting while retaining identity and reset state.
  */
 
 using IceClash.AI;
@@ -73,7 +73,7 @@ namespace IceClash.Player
             gameplayEnabled = value;
             Movement.SetMovementEnabled(value);
             Stick.SetInteractionEnabled(value);
-            if (!value) Shoot.ResetCharge();
+            if (!value) { Pass.Cancel(); Shoot.ResetCharge(); }
         }
 
         private void Update()
@@ -81,9 +81,9 @@ namespace IceClash.Player
             if (Movement == null || Stick == null || Pass == null || Shoot == null) EnsureComponents();
             if (!gameplayEnabled || inputSource == null) { Movement.SetInput(Vector2.zero); State = PlayerMovementState.Idle; return; }
             Movement.SetInput(inputSource.Move);
-            if (inputSource.PassPressed && Pass.TryPass(inputSource.Move, InputQuality))
+            if (Pass.Tick(inputSource.PassPressed, inputSource is not HockeyPlayerAI, InputQuality))
             { State = PlayerMovementState.Passing; actionStateUntil = Time.time + 0.14f; }
-            Shoot.Tick(inputSource.ShootHeld, inputSource.ShootReleased, inputSource.Move, InputQuality);
+            Shoot.Tick(inputSource.ShootHeld, inputSource.ShootReleased, InputQuality);
             if (inputSource.ShootReleased && Puck != null && !Puck.IsCarriedBy(this))
             { State = PlayerMovementState.Shooting; actionStateUntil = Time.time + 0.18f; }
 
@@ -94,6 +94,7 @@ namespace IceClash.Player
 
         public void ResetActor()
         {
+            Pass.Cancel();
             Shoot.ResetCharge();
             Movement.ResetMotion(resetPosition, resetRotation);
             State = PlayerMovementState.Idle;

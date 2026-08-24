@@ -1,7 +1,7 @@
 /*
  * IceClash Phase 1 local gameplay contracts.
- * Defines the compact movement/pass/charged-shot/switch input seam shared by
- * hardware, touch, and AI without networking or service concerns.
+ * Defines independent movement, tap PASS, charged-shot, and switch signals
+ * shared by hardware, touch, and AI without networking or service concerns.
  */
 
 using System;

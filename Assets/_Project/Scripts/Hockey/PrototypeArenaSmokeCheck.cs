@@ -1,8 +1,9 @@
 /*
  * IceClash Phase 1 local PvE smoke assertions.
  * Verifies the generated 3v3-plus-goalies slice, one-human routing, possession-only
- * automatic control, manual switching, smooth camera retargeting, modular systems,
- * minimal mobile controls, independent puck, snapshots, and goal/reset flow.
+ * automatic control, recommended tap passing with dotted feedback, manual switching,
+ * smooth camera retargeting, modular systems, controls, puck, snapshots, and
+ * one-way goals that reject entry from behind the net.
  */
 
 using IceClash.AI;
@@ -40,6 +41,7 @@ namespace IceClash.Hockey
             bool modular = Object.FindObjectsByType<PlayerMovementController>().Length == 6
                 && Object.FindObjectsByType<StickPuckInteraction>().Length == 6
                 && Object.FindObjectsByType<PassController>().Length == 6
+                && Object.FindObjectsByType<PassTargetSelector>().Length == 6
                 && Object.FindObjectsByType<ShootController>().Length == 6
                 && setup != null && setup.SwitchController != null && setup.ControlManager != null && setup.MatchController != null;
             bool presentation = Object.FindAnyObjectByType<HockeyCameraController>() != null
@@ -52,10 +54,33 @@ namespace IceClash.Hockey
 
             setup.MatchController.StartPlayImmediatelyForValidation();
             HockeyCameraController hockeyCamera = Object.FindAnyObjectByType<HockeyCameraController>();
+            PlayerController passer = FindPlayer(players, "blue-1");
             PlayerController receiver = FindPlayer(players, "blue-2");
             PlayerController expectedDefender = FindPlayer(players, "blue-3");
             PlayerController opponentCarrier = FindPlayer(players, "red-1");
             Vector3 cameraBeforeAutoSwitch = hockeyCamera.transform.position;
+
+            passer.Movement.ResetMotion(new Vector3(0f, 1f, -4f), Quaternion.identity);
+            receiver.Movement.ResetMotion(new Vector3(0f, 1f, 1f), Quaternion.identity);
+            expectedDefender.Movement.ResetMotion(new Vector3(4f, 1f, 0f), Quaternion.identity);
+            StagePuckAtStick(puck, passer);
+            bool passerClaimed = puck.TryClaim(passer, passer.Stick);
+            passer.Pass.Tick(false, true);
+            PlayerController recommendationBeforeMove = passer.Pass.RecommendedTarget;
+            bool recommendationShown = recommendationBeforeMove != null
+                && passer.Pass.FeedbackVisible && passer.Pass.VisiblePathDotCount == 9;
+            passer.Movement.SetInput(Vector2.left);
+            passer.Pass.Tick(false, true);
+            bool movementInputIndependent = passer.Pass.RecommendedTarget == recommendationBeforeMove;
+            int releasesBeforePass = puck.ImpulseReleaseSequence;
+            bool carriedBeforePassTap = puck.IsCarriedBy(passer);
+            bool tapReleased = passer.Pass.Tick(true, true);
+            bool recommendedPassReleased = tapReleased
+                && puck.ImpulseReleaseSequence == releasesBeforePass + 1
+                && puck.Carrier == null
+                && !passer.Pass.FeedbackVisible && passer.Pass.RecommendedTarget == null;
+            bool recommendedPassFlow = passerClaimed
+                && recommendationShown && movementInputIndependent && recommendedPassReleased;
 
             StagePuckAtStick(puck, receiver);
             bool receiverClaimed = puck.TryClaim(receiver, receiver.Stick);
@@ -85,8 +110,22 @@ namespace IceClash.Hockey
                 && setup.ControlManager.AutomaticSelectionCount == 2
                 && hockeyCamera.Target == setup.SwitchController.ControlledPlayer.transform;
 
-            setup.MatchController.RegisterGoal(TeamId.Blue);
-            bool goalFlow = setup.MatchController.BlueScore == 1 && setup.MatchController.RedScore == 0
+            GoalTrigger blueScoringGoal = FindGoal(TeamId.Blue);
+            GoalTrigger redScoringGoal = FindGoal(TeamId.Red);
+            puck.ResetPuck(blueScoringGoal.transform.position + blueScoringGoal.ScoringDirection * 0.5f);
+            puck.Body.linearVelocity = -blueScoringGoal.ScoringDirection * 5f;
+            bool backSideGoalRejected = !blueScoringGoal.TryRegisterGoal(puck)
+                && setup.MatchController.BlueScore == 0 && setup.MatchController.RedScore == 0
+                && setup.MatchController.State == MatchStateSnapshot.Playing;
+            bool bothGoalDirectionsConfigured = blueScoringGoal.ScoringDirection == Vector3.forward
+                && redScoringGoal.ScoringDirection == Vector3.back;
+
+            puck.ResetPuck(blueScoringGoal.transform.position - blueScoringGoal.ScoringDirection * 0.5f);
+            puck.Body.linearVelocity = blueScoringGoal.ScoringDirection * 5f;
+            bool frontSideGoalRegistered = blueScoringGoal.TryRegisterGoal(puck);
+            bool goalFlow = frontSideGoalRegistered
+                && backSideGoalRejected && bothGoalDirectionsConfigured
+                && setup.MatchController.BlueScore == 1 && setup.MatchController.RedScore == 0
                 && setup.MatchController.State == MatchStateSnapshot.GoalPause
                 && Vector3.Distance(puck.Body.position, new Vector3(0f, 0.55f, 0f)) < 0.05f;
             setup.MatchController.ExpireImmediatelyForValidation();
@@ -95,10 +134,10 @@ namespace IceClash.Hockey
 
             if (!roster || !modular || !presentation || !puckIndependent || !snapshots
                 || !humanPossessionAutoControl || !noTrajectorySwitch || !opponentPossessionAutoDefense
-                || !manualOverride || !goalFlow || !resultFlow)
-                throw new System.InvalidOperationException($"PHASE1_PVE_SMOKE_FAIL roster={roster} modular={modular} presentation={presentation} puckIndependent={puckIndependent} snapshots={snapshots} humanPossessionAutoControl={humanPossessionAutoControl} noTrajectorySwitch={noTrajectorySwitch} opponentPossessionAutoDefense={opponentPossessionAutoDefense} manualOverride={manualOverride} goalFlow={goalFlow} resultFlow={resultFlow}");
+                || !manualOverride || !recommendedPassFlow || !goalFlow || !resultFlow)
+                throw new System.InvalidOperationException($"PHASE1_PVE_SMOKE_FAIL roster={roster} modular={modular} presentation={presentation} puckIndependent={puckIndependent} snapshots={snapshots} recommendedPassFlow={recommendedPassFlow} recommendationShown={recommendationShown} recommendedTarget={recommendationBeforeMove?.PlayerId} movementInputIndependent={movementInputIndependent} carriedBeforePassTap={carriedBeforePassTap} tapReleased={tapReleased} releaseSequenceBefore={releasesBeforePass} recommendedPassReleased={recommendedPassReleased} humanPossessionAutoControl={humanPossessionAutoControl} noTrajectorySwitch={noTrajectorySwitch} opponentPossessionAutoDefense={opponentPossessionAutoDefense} manualOverride={manualOverride} backSideGoalRejected={backSideGoalRejected} bothGoalDirectionsConfigured={bothGoalDirectionsConfigured} frontSideGoalRegistered={frontSideGoalRegistered} goalFlow={goalFlow} resultFlow={resultFlow}");
 
-            Debug.Log("PHASE1_PVE_SMOKE_PASS skaters=6 goalies=2 humanInputs=1 aiSkaters=5 controls=PASS_SHOOT_SWITCH possessionAutoControl=true noTrajectorySwitch=true opponentAutoDefense=true manualSwitchOverride=true cameraRetargetSmooth=true puckIndependent=true goalReset=true timerResult=true");
+            Debug.Log("PHASE1_PVE_SMOKE_PASS skaters=6 goalies=2 humanInputs=1 aiSkaters=5 controls=PASS_SHOOT_SWITCH movementOnly=true recommendedPassTarget=true dottedPassPath=true tapPass=true imperfectNonHomingPass=true possessionAutoControl=true noTrajectorySwitch=true opponentAutoDefense=true manualSwitchOverride=true cameraRetargetSmooth=true puckIndependent=true oneWayGoals=true backSideGoalRejected=true goalReset=true timerResult=true");
         }
 
         private static int CountTeam(PlayerController[] players, TeamId team)
@@ -118,6 +157,13 @@ namespace IceClash.Hockey
         {
             for (int i = 0; i < players.Length; i++) if (players[i].PlayerId == playerId) return players[i];
             throw new System.InvalidOperationException($"Smoke check could not find player '{playerId}'.");
+        }
+
+        private static GoalTrigger FindGoal(TeamId scoringTeam)
+        {
+            GoalTrigger[] goals = Object.FindObjectsByType<GoalTrigger>();
+            for (int i = 0; i < goals.Length; i++) if (goals[i].ScoringTeam == scoringTeam) return goals[i];
+            throw new System.InvalidOperationException($"Smoke check could not find the goal scored by '{scoringTeam}'.");
         }
 
         private static void StagePuckAtStick(PuckController puck, PlayerController player)

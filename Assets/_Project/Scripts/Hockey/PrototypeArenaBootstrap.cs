@@ -1,7 +1,7 @@
 /*
  * IceClash Phase 1 local PvE arena bootstrap.
- * Generates the placeholder marked rink, goals/triggers, independent puck,
- * 3v3-plus-goalies roster, local match flow, mobile HUD, and hockey camera.
+ * Generates the placeholder marked rink, one-way goals/triggers, independent
+ * puck, 3v3-plus-goalies roster, local match flow, mobile HUD, and hockey camera.
  */
 
 using System.Collections.Generic;
@@ -85,8 +85,8 @@ namespace IceClash.Hockey
             if (skaterPrefab == null) throw new System.InvalidOperationException("Missing Phase 3 skater prefab at Assets/_Project/Prefabs/Resources/Skater.prefab.");
             LocalMatchSetup matchSetup = new GameObject("Local PvE 3v3 Match").AddComponent<LocalMatchSetup>();
             PlayerController player = matchSetup.BuildRoster(skaterPrefab, puck.GetComponent<PuckController>(), blue, red);
-            CreateGoalTrigger("Blue Goal Trigger", new Vector3(0f, 0.95f, -RinkLength / 2f + 1.55f), TeamId.Red, matchSetup.MatchController);
-            CreateGoalTrigger("Red Goal Trigger", new Vector3(0f, 0.95f, RinkLength / 2f - 1.55f), TeamId.Blue, matchSetup.MatchController);
+            CreateGoalTrigger("Blue Goal Trigger", new Vector3(0f, 0.95f, -RinkLength / 2f + 1.55f), TeamId.Red, Vector3.back, matchSetup.MatchController);
+            CreateGoalTrigger("Red Goal Trigger", new Vector3(0f, 0.95f, RinkLength / 2f - 1.55f), TeamId.Blue, Vector3.forward, matchSetup.MatchController);
 
             if (Camera.main != null) Destroy(Camera.main.gameObject);
             GameObject cameraObject = new GameObject("Hockey Camera");
@@ -102,14 +102,14 @@ namespace IceClash.Hockey
             RenderSettings.ambientLight = new Color(0.7f, 0.78f, 0.9f);
         }
 
-        private static void CreateGoalTrigger(string triggerName, Vector3 position, TeamId scoringTeam, MatchController match)
+        private static void CreateGoalTrigger(string triggerName, Vector3 position, TeamId scoringTeam, Vector3 scoringDirection, MatchController match)
         {
             GameObject trigger = new(triggerName);
             trigger.transform.position = position;
             BoxCollider volume = trigger.AddComponent<BoxCollider>();
             volume.size = new Vector3(3.7f, 1.5f, 1.15f);
             GoalTrigger goal = trigger.AddComponent<GoalTrigger>();
-            goal.Configure(match, scoringTeam);
+            goal.Configure(match, scoringTeam, scoringDirection);
         }
 
         private static void CreateGoal(string goalName, Vector3 center, Material material, Material netMaterial)

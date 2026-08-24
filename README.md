@@ -23,19 +23,19 @@ The scene builds the marked rink, six skaters, two AI goalies, physics puck, two
 
 | Action | Keyboard | Gamepad | Touch |
 | --- | --- | --- | --- |
-| Skate / aim | WASD | Left stick | Bottom-left joystick |
-| Pass | E | West button | PASS |
+| Skate only | WASD | Left stick | Bottom-left joystick |
+| Recommended pass | Tap E | Tap west button | Tap PASS |
 | Charge / release shot | Hold/release Space | Hold/release right trigger | Hold/release SHOOT |
 | Switch skater | Q | North button | SWITCH |
 
-There is no sprint, deke, poke check, stick lift, separate shot-type button, or special ability in Phase 1.
+WASD and the left joystick never aim passes or shots. While the human player possesses the puck, a subtle dotted path shows the currently recommended teammate. Tap PASS to release an imperfect, interceptable physics pass along that recommendation; no drag is required and successful reception is not guaranteed. There is no sprint, deke, poke check, stick lift, separate shot-type button, or special ability in Phase 1.
 
 ## Architecture and tuning
 
 - `PlayerMovementController` owns acceleration, deceleration, momentum, analog speed, and speed-aware turning.
 - `StickPuckInteraction` and `PuckController` keep possession force-based on an independent Rigidbody.
-- `PassController` weights aim, distance, openness, lane safety, defender separation, and offensive progress.
-- `ShootController` converts one held/released input into bounded charge, direction, power, and spread.
+- `PassTargetSelector` continuously scores a recommended teammate using facing and tactical context; `PassController` owns pooled dotted-path feedback and the imperfect non-homing physics release triggered by one PASS tap.
+- `ShootController` converts one held/released input into bounded charge, facing/goal-assisted direction, power, and spread without consuming movement input.
 - `PlayerControlManager` automatically selects the established human-team puck carrier or a useful defender after opponent possession; it never switches from puck trajectory. `PlayerSwitchController` remains the manual SWITCH override and performs the input/AI/marker/camera transfer.
 - `HockeyPlayerAI` uses the required eight-state local state machine; `AIFormationController` supplies count-independent formation slots; `HockeyGoalieAI` handles crease tracking and saves.
 - `MatchController`, `FaceoffController`, and `GoalTrigger` own clock, score, resets, and results.

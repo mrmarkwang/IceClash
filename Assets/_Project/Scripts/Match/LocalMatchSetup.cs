@@ -1,8 +1,8 @@
 /*
  * IceClash Phase 1 local PvE roster and systems composition.
  * Builds count-driven three-skater teams, two goalies, one shared human/mobile
- * input, per-skater AI, possession-based control management, manual switching,
- * match flow, HUD, and live snapshots.
+ * input with recommended-target tap PASS, per-skater AI, possession-based control,
+ * manual switching, match flow, HUD, and live snapshots.
  */
 
 using System;

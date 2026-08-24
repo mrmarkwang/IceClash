@@ -1,7 +1,8 @@
 /*
  * IceClash Phase 1 mobile action button.
- * Tracks independent multi-touch held/pressed/released phases and draws one large
- * PASS, SHOOT, or SWITCH control without requiring a Canvas/UI package dependency.
+ * Captures the touch or mouse pointer that begins inside a mobile action control,
+ * retains stable held/pressed/released phases, and draws one large PASS, SHOOT,
+ * or SWITCH control without Canvas dependencies.
  */
 
 using UnityEngine;
@@ -9,11 +10,14 @@ using UnityEngine.InputSystem;
 
 namespace IceClash.UI
 {
+    [DefaultExecutionOrder(-300)]
     public sealed class ActionButton : MonoBehaviour
     {
         [SerializeField] private string label = "PASS";
         [SerializeField] private Rect normalizedRect = new(0.72f, 0.08f, 0.12f, 0.17f);
         private bool previousHeld;
+        private int activeTouchId = -1;
+        private bool mouseCaptured;
         public bool Held { get; private set; }
         public bool Pressed { get; private set; }
         public bool Released { get; private set; }
@@ -25,12 +29,55 @@ namespace IceClash.UI
         {
             previousHeld = Held;
             Held = false;
+            Pressed = false;
+            Released = false;
             Rect hit = ScreenRectBottomLeft();
             if (Touchscreen.current != null)
+            {
+                bool foundActiveTouch = false;
                 foreach (var touch in Touchscreen.current.touches)
-                    if (touch.press.isPressed && hit.Contains(touch.position.ReadValue())) { Held = true; break; }
-            if (!Held && Mouse.current != null && Mouse.current.leftButton.isPressed && hit.Contains(Mouse.current.position.ReadValue())) Held = true;
-            Pressed = Held && !previousHeld;
+                {
+                    int id = touch.touchId.ReadValue();
+                    if (activeTouchId == id)
+                    {
+                        foundActiveTouch = true;
+                        Held = touch.press.isPressed;
+                        if (!Held) activeTouchId = -1;
+                        break;
+                    }
+                }
+                if (activeTouchId >= 0 && !foundActiveTouch) activeTouchId = -1;
+
+                if (activeTouchId < 0 && !previousHeld)
+                {
+                    foreach (var touch in Touchscreen.current.touches)
+                    {
+                        Vector2 position = touch.position.ReadValue();
+                        if (!touch.press.wasPressedThisFrame || !hit.Contains(position)) continue;
+                        activeTouchId = touch.touchId.ReadValue();
+                        Held = true;
+                        Pressed = true;
+                        break;
+                    }
+                }
+            }
+
+            if (activeTouchId < 0 && Mouse.current != null)
+            {
+                if (!mouseCaptured && Mouse.current.leftButton.wasPressedThisFrame && hit.Contains(Mouse.current.position.ReadValue()))
+                {
+                    mouseCaptured = true;
+                    Held = true;
+                    Pressed = true;
+                }
+                else if (mouseCaptured)
+                {
+                    Held = Mouse.current.leftButton.isPressed;
+                    if (!Held) mouseCaptured = false;
+                }
+            }
+
+            if (Held && !previousHeld) Pressed = true;
             Released = !Held && previousHeld;
         }
 

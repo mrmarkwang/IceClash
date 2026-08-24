@@ -1,7 +1,7 @@
 /*
  * IceClash Phase 1 hardware input adapter.
- * Maps keyboard and gamepad to the same one-stick PASS/SHOOT/SWITCH contract
- * used by touch input, with held/released shooting for charge control.
+ * Maps keyboard and gamepad to movement-independent tap PASS, charged SHOOT,
+ * and SWITCH signals through the same compact contract used by touch controls.
  */
 
 using IceClash.Core;
