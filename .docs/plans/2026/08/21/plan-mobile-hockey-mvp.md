@@ -52,12 +52,12 @@ Deliver a small, playable local 2v2 arcade hockey prototype in Unity: one human 
 
 ### Phase 3 - Local 2v2 setup and basic AI
 
-- [ ] Add `MatchData`, `TeamData`, and `PlayerData` with IDs, team association, transform/state snapshots, puck status, and score/match state needed by the local simulation.
-- [ ] Create a reusable skater prefab and spawn/configure one human player, one allied AI, and two opponent AI players at clear reset positions.
-- [ ] Implement AI command generation through the same player-control path as local input, without letting AI call player movement internals directly.
-- [ ] Implement a simple finite-state AI behavior with Defend, ChasePuck, Support, Attack, Shoot, and Recover behavior using direct steering and configurable decision distances.
-- [ ] Add basic team role selection so the puck-side AI chases/attacks, a teammate supports, and defenders bias toward their own goal.
-- [ ] Verify that all four players move, AI can pursue/support/defend, and AI actions use the existing puck/action contracts rather than a special shortcut.
+- [x] Add `MatchData`, `TeamData`, and `PlayerData` with IDs, team association, transform/state snapshots, puck status, and score/match state needed by the local simulation.
+- [x] Create a reusable skater prefab and spawn/configure one human player, one allied AI, and two opponent AI players at clear reset positions.
+- [x] Implement AI command generation through the same player-control path as local input, without letting AI call player movement internals directly.
+- [x] Implement a simple finite-state AI behavior with Defend, ChasePuck, Support, Attack, Shoot, and Recover behavior using direct steering and configurable decision distances.
+- [x] Add basic team role selection so the puck-side AI chases/attacks, a teammate supports, and defenders bias toward their own goal.
+- [x] Verify that all four players move, AI can pursue/support/defend, and AI actions use the existing puck/action contracts rather than a special shortcut.
 
 ### Phase 4 - Goals, match flow, and results
 

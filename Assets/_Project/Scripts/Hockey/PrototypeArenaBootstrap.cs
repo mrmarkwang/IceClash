@@ -1,13 +1,14 @@
 /*
  * IceClash Phase 1 playable arena bootstrap.
  * Generates a vertically presented hockey-rink outline with a solid ice foundation, rounded boards, inset goals,
- * smooth center/faceoff markings, netted goals, a local skater, independent physics puck, and camera at runtime.
- * Phase 2 attaches the configurable action/control components to the existing local skater.
+ * smooth center/faceoff markings, netted goals, a reusable four-skater local roster,
+ * independent physics puck, and camera at runtime. Phase 3 wires local and AI command
+ * sources into the same player-control path.
  */
 
 using System.Collections.Generic;
 using IceClash.CameraSystem;
-using IceClash.Input;
+using IceClash.Match;
 using IceClash.Player;
 using IceClash.Puck;
 using UnityEngine;
@@ -25,6 +26,7 @@ namespace IceClash.Hockey
         private const float BoardHeight = 2.3f;
         private const float BoardThickness = 0.45f;
         private const float IceThickness = 0.45f;
+        private bool hasBuilt;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void CreateForPrototypeArena()
@@ -48,6 +50,8 @@ namespace IceClash.Hockey
 
         private void BuildArena()
         {
+            if (hasBuilt) return;
+            hasBuilt = true;
             Material ice = MakeMaterial(new Color(0.72f, 0.9f, 1f));
             Material board = MakeMaterial(new Color(0.08f, 0.15f, 0.24f));
             Material red = MakeMaterial(new Color(0.88f, 0.15f, 0.18f));
@@ -68,17 +72,6 @@ namespace IceClash.Hockey
             CreateGoal("Blue Goal", new Vector3(0f, 0.95f, -RinkLength / 2f + 2.1f), blue, net);
             CreateGoal("Red Goal", new Vector3(0f, 0.95f, RinkLength / 2f - 2.1f), red, net);
 
-            GameObject player = GameObject.CreatePrimitive(PrimitiveType.Capsule);
-            player.name = "Blue Skater (Local)";
-            player.transform.SetPositionAndRotation(new Vector3(-2f, 1f, -6f), Quaternion.identity);
-            player.GetComponent<Renderer>().material = blue;
-            Destroy(player.GetComponent<Collider>());
-            CharacterController controller = player.AddComponent<CharacterController>();
-            controller.height = 2f;
-            controller.radius = 0.45f;
-            player.AddComponent<LocalPlayerInput>();
-            player.AddComponent<PlayerController>();
-
             GameObject puck = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
             puck.name = "Puck (Physics)";
             puck.transform.SetPositionAndRotation(new Vector3(0f, 0.55f, 0f), Quaternion.identity);
@@ -88,6 +81,11 @@ namespace IceClash.Hockey
             body.mass = 0.17f;
             body.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
             puck.AddComponent<PuckController>();
+
+            GameObject skaterPrefab = Resources.Load<GameObject>("Skater");
+            if (skaterPrefab == null) throw new System.InvalidOperationException("Missing Phase 3 skater prefab at Assets/_Project/Prefabs/Resources/Skater.prefab.");
+            LocalMatchSetup matchSetup = new GameObject("Local 2v2 Match").AddComponent<LocalMatchSetup>();
+            PlayerController player = matchSetup.BuildRoster(skaterPrefab, puck.GetComponent<PuckController>(), blue, red);
 
             if (Camera.main != null) Destroy(Camera.main.gameObject);
             GameObject cameraObject = new GameObject("Elevated Follow Camera");

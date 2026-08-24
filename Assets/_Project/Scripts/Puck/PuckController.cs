@@ -1,7 +1,9 @@
 /*
- * IceClash Phase 1 puck controller.
- * Keeps puck state independent from players and exposes physics tuning plus touch/possession metadata.
- * Phase 2 carries the puck by steering its Rigidbody toward a stick point; it is never parented to a skater.
+ * IceClash physics puck controller.
+ * Keeps puck state independent from players, steers possession through Rigidbody
+ * forces, records causal impulse-release metadata, and briefly prevents a releasing
+ * skater from reclaiming their own shot or pass while still allowing immediate
+ * interception by every other player.
  */
 
 using IceClash.Core;
@@ -20,13 +22,18 @@ namespace IceClash.Puck
         [SerializeField] private float controlRadius = 1.4f;
         [SerializeField] private float controlStrength = 22f;
         [SerializeField] private float controlVelocityDamping = 6f;
+        [SerializeField, Min(0f)] private float releasingPlayerReclaimDelay = 0.18f;
 
         private Rigidbody body;
         private PlayerController carrier;
+        private string reclaimLockedPlayerId = string.Empty;
+        private float reclaimLockedUntil;
 
         public TeamId? PossessionTeam { get; private set; }
         public string LastPlayerTouchId { get; private set; } = string.Empty;
         public string CarrierPlayerId => carrier != null ? carrier.PlayerId : string.Empty;
+        public int ImpulseReleaseSequence { get; private set; }
+        public string LastImpulseReleasePlayerId { get; private set; } = string.Empty;
         public Rigidbody Body => body;
         public float ControlRadius => controlRadius;
 
@@ -47,7 +54,9 @@ namespace IceClash.Puck
 
         public bool TryClaim(PlayerController player)
         {
-            if (player == null || carrier != null || Vector3.Distance(player.ControlPoint, transform.position) > controlRadius)
+            if (player == null || carrier != null
+                || (player.PlayerId == reclaimLockedPlayerId && Time.time < reclaimLockedUntil)
+                || Vector3.Distance(player.ControlPoint, transform.position) > controlRadius)
             {
                 return false;
             }
@@ -66,6 +75,9 @@ namespace IceClash.Puck
             carrier = null;
             LastPlayerTouchId = player.PlayerId;
             PossessionTeam = null;
+            ImpulseReleaseSequence++;
+            LastImpulseReleasePlayerId = player.PlayerId;
+            LockReclaim(player);
             body.linearVelocity = Vector3.zero;
             body.AddForce(direction.normalized * speed, ForceMode.VelocityChange);
             return true;
@@ -76,6 +88,13 @@ namespace IceClash.Puck
             if (!IsCarriedBy(player)) return;
             carrier = null;
             ClearPossession();
+            LockReclaim(player);
+        }
+
+        private void LockReclaim(PlayerController player)
+        {
+            reclaimLockedPlayerId = player.PlayerId;
+            reclaimLockedUntil = Time.time + releasingPlayerReclaimDelay;
         }
 
         private void FixedUpdate()

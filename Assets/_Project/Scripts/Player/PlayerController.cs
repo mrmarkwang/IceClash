@@ -1,12 +1,11 @@
 /*
- * IceClash Phase 1 player controller.
- * Moves a skater from abstract commands and owns Phase 2 possession, shoot, pass,
- * check, cooldown, and knocked-down transitions. Shots buffer brief input and target
- * the opposing net; each player's Inspector values define its eventual shot profile.
+ * IceClash shared player controller.
+ * Moves every skater from an abstract IPlayerInput source and owns possession, shoot,
+ * pass, check, cooldown, and knocked-down transitions. Phase 3 adds runtime identity
+ * and input-source configuration so local and AI commands use the same control path.
  */
 
 using IceClash.Core;
-using IceClash.Input;
 using IceClash.Puck;
 using UnityEngine;
 
@@ -68,6 +67,7 @@ namespace IceClash.Player
         public TeamId Team => team;
         public PlayerMovementState State { get; private set; } = PlayerMovementState.Idle;
         public float Stamina => stamina;
+        public IPlayerInput InputSource => playerInput;
         public Vector3 ControlPoint => transform.position + transform.forward * stickOffset + Vector3.up * 0.28f;
         public float ControlSpeedLimit => controlSpeedLimit;
         public float InterceptionRadius => interceptionRadius;
@@ -75,12 +75,21 @@ namespace IceClash.Player
         private void Awake()
         {
             characterController = GetComponent<CharacterController>();
-            playerInput = GetComponent<LocalPlayerInput>();
-            puck = FindFirstObjectByType<PuckController>();
+            playerInput = FindInputSource();
+            puck = FindAnyObjectByType<PuckController>();
+        }
+
+        public void Configure(string id, TeamId playerTeam, IPlayerInput inputSource)
+        {
+            playerId = id;
+            team = playerTeam;
+            playerInput = inputSource;
+            if (puck == null) puck = FindAnyObjectByType<PuckController>();
         }
 
         private void Update()
         {
+            if (playerInput == null) playerInput = FindInputSource();
             if (playerInput == null) return;
 
             if (playerInput.ShootPressed)
@@ -137,7 +146,7 @@ namespace IceClash.Player
 
         private void TryGainPuckControl()
         {
-            if (puck == null) puck = FindFirstObjectByType<PuckController>();
+            if (puck == null) puck = FindAnyObjectByType<PuckController>();
             puck?.TryClaim(this);
         }
 
@@ -175,7 +184,7 @@ namespace IceClash.Player
         {
             PlayerController best = null;
             float closestDistance = passRange;
-            foreach (PlayerController candidate in FindObjectsByType<PlayerController>(FindObjectsSortMode.None))
+            foreach (PlayerController candidate in FindObjectsByType<PlayerController>())
             {
                 if (candidate == this || candidate.Team != team || candidate.State == PlayerMovementState.KnockedDown) continue;
                 float distance = Vector3.Distance(transform.position, candidate.transform.position);
@@ -227,6 +236,16 @@ namespace IceClash.Player
             Vector3 forward = viewCamera != null ? Vector3.ProjectOnPlane(viewCamera.transform.forward, Vector3.up).normalized : Vector3.forward;
             Vector3 right = viewCamera != null ? Vector3.ProjectOnPlane(viewCamera.transform.right, Vector3.up).normalized : Vector3.right;
             return Vector3.ClampMagnitude(forward * input.y + right * input.x, 1f);
+        }
+
+        private IPlayerInput FindInputSource()
+        {
+            MonoBehaviour[] behaviours = GetComponents<MonoBehaviour>();
+            for (int index = 0; index < behaviours.Length; index++)
+            {
+                if (behaviours[index] is IPlayerInput inputSource) return inputSource;
+            }
+            return null;
         }
     }
 }
