@@ -2,7 +2,8 @@
  * IceClash runtime mobile-control view builder.
  * Creates a safe-area-aware fixed joystick and circular action visuals with
  * generous independent hit regions, then returns shared input bindings.
- * Recent changes: anchored the stick lower-left and unified action-button sizing.
+ * Recent changes: anchored the stick lower-left and enlarged the unified action
+ * hit/visual sizes with safe non-overlapping right-thumb spacing.
  */
 
 using UnityEngine;
@@ -34,8 +35,8 @@ namespace IceClash.UI
     public static class MobileControlsBuilder
     {
         private const int CircleTextureSize = 128;
-        private static readonly Vector2 ActionButtonSize = new(160f, 160f);
-        private const float ActionVisualDiameter = 140f;
+        private static readonly Vector2 ActionButtonSize = new(220f, 220f);
+        private const float ActionVisualDiameter = 200f;
         private static readonly Vector2 JoystickZoneSize = new(360f, 360f);
         private static readonly Vector2 JoystickZoneCenter = new(390f, 430f);
         private static readonly Color JoystickRingColor = new(0.04f, 0.12f, 0.2f, 0.82f);
@@ -94,11 +95,11 @@ namespace IceClash.UI
             RectTransform actionButtons = CreateRect("ActionButtons", mobileControls,
                 new Vector2(0.58f, 0f), new Vector2(1f, 0.62f), Vector2.zero, Vector2.zero);
             MobileActionButton pass = CreateButton("PassButton", "PASS", actionButtons,
-                new Vector2(-365f, 250f));
+                new Vector2(-400f, 360f));
             MobileActionButton deke = CreateButton("DekeButton", "DEKE", actionButtons,
-                new Vector2(-390f, 90f));
+                new Vector2(-410f, 120f));
             MobileActionButton shoot = CreateButton("ShootButton", "SHOOT", actionButtons,
-                new Vector2(-135f, 120f));
+                new Vector2(-150f, 150f));
 
             return new MobileControlBindings(canvasObject, joystick, pass, deke, shoot);
         }
@@ -143,7 +144,7 @@ namespace IceClash.UI
             text.text = label;
             text.alignment = TextAnchor.MiddleCenter;
             text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-            text.fontSize = 34;
+            text.fontSize = 40;
             text.fontStyle = FontStyle.Bold;
             text.color = Color.white;
             text.raycastTarget = false;

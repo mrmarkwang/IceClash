@@ -2,7 +2,8 @@
  * IceClash Phase 1 local PvE arena bootstrap.
  * Generates the mobile-first marked rink, layered boards/glass, dimensional nets,
  * one-way goals/triggers, puck, 3v3-plus-goalies roster, match flow, HUD, and camera.
- * Recent changes: regulation-inspired proportions and a closer landscape framing.
+ * Recent changes: regulation-inspired rink/camera proportions and a compact hockey
+ * goal mouth with matching depth and scoring volume.
  */
 
 using System.Collections.Generic;
@@ -20,7 +21,7 @@ namespace IceClash.Hockey
     {
         internal const float Width = 24f;
         internal const float Length = 48f;
-        internal const float GoalDepth = 1.25f;
+        internal const float GoalDepth = 0.9f;
         internal const float GoalLineDistance = Length / 2f - 3.2f;
         internal const float GoalieAnchor = GoalLineDistance - 0.65f;
     }
@@ -39,11 +40,11 @@ namespace IceClash.Hockey
         private const float IceThickness = 0.45f;
         private const float PuckDiameter = 0.42f;
         private const float PuckHeight = 0.12f;
-        private const float GoalHalfWidth = 3f;
-        private const float GoalHeight = 1.9f;
+        private const float GoalHalfWidth = 1.5f;
+        private const float GoalHeight = 1.25f;
         private const float GoalDepth = PrototypeRinkGeometry.GoalDepth;
         private const float GoalLineDistance = PrototypeRinkGeometry.GoalLineDistance;
-        private const float GoalTriggerWidth = 5.8f;
+        private const float GoalTriggerWidth = 2.8f;
         private bool hasBuilt;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
@@ -114,8 +115,8 @@ namespace IceClash.Hockey
             if (skaterPrefab == null) throw new System.InvalidOperationException("Missing Phase 3 skater prefab at Assets/_Project/Prefabs/Resources/Skater.prefab.");
             LocalMatchSetup matchSetup = new GameObject("Local PvE 3v3 Match").AddComponent<LocalMatchSetup>();
             PlayerController player = matchSetup.BuildRoster(skaterPrefab, puck.GetComponent<PuckController>(), blue, red);
-            CreateGoalTrigger("Blue Goal Trigger", new Vector3(0f, GoalHeight / 2f, -GoalLineDistance - GoalDepth * 0.45f), TeamId.Red, Vector3.back, matchSetup.MatchController);
-            CreateGoalTrigger("Red Goal Trigger", new Vector3(0f, GoalHeight / 2f, GoalLineDistance + GoalDepth * 0.45f), TeamId.Blue, Vector3.forward, matchSetup.MatchController);
+            CreateGoalTrigger("Blue Goal Trigger", new Vector3(0f, GoalHeight / 2f, -GoalLineDistance - GoalDepth * 0.5f), TeamId.Red, Vector3.back, matchSetup.MatchController);
+            CreateGoalTrigger("Red Goal Trigger", new Vector3(0f, GoalHeight / 2f, GoalLineDistance + GoalDepth * 0.5f), TeamId.Blue, Vector3.forward, matchSetup.MatchController);
 
             if (Camera.main != null) Destroy(Camera.main.gameObject);
             GameObject cameraObject = new GameObject("Hockey Camera");
@@ -138,7 +139,7 @@ namespace IceClash.Hockey
             GameObject trigger = new(triggerName);
             trigger.transform.position = position;
             BoxCollider volume = trigger.AddComponent<BoxCollider>();
-            volume.size = new Vector3(GoalTriggerWidth, 1.5f, 1.15f);
+            volume.size = new Vector3(GoalTriggerWidth, 1.5f, GoalDepth);
             GoalTrigger goal = trigger.AddComponent<GoalTrigger>();
             goal.Configure(match, scoringTeam, scoringDirection);
         }

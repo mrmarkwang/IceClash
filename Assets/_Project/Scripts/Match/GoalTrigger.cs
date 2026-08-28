@@ -1,8 +1,8 @@
 /*
  * IceClash Phase 1 goal event source.
  * Reports a dynamic puck entering the goal volume to MatchController. Goals are
- * one-way: the puck must enter from the rink side while travelling into the net.
- * Score ownership and one-count state validation remain centralized in the match.
+ * one-way: the puck center must enter the bounded goal volume from the rink side
+ * while travelling into the net. Match state and one-count ownership stay central.
  */
 
 using IceClash.Core;
@@ -42,6 +42,12 @@ namespace IceClash.Match
             if (puck != null) TryRegisterGoal(puck);
         }
 
+        private void OnTriggerStay(Collider other)
+        {
+            PuckController puck = other.GetComponent<PuckController>();
+            if (puck != null) TryRegisterGoal(puck);
+        }
+
         internal bool TryRegisterGoal(PuckController puck)
         {
             if (puck == null || match == null || match.State != MatchStateSnapshot.Playing
@@ -53,9 +59,15 @@ namespace IceClash.Match
 
         internal bool IsValidEntry(Vector3 puckPosition, Vector3 puckVelocity)
         {
+            BoxCollider volume = GetComponent<BoxCollider>();
+            Vector3 localPosition = transform.InverseTransformPoint(puckPosition) - volume.center;
+            Vector3 halfExtents = volume.size * 0.5f;
+            bool centerInsideVolume = Mathf.Abs(localPosition.x) <= halfExtents.x
+                && Mathf.Abs(localPosition.y) <= halfExtents.y
+                && Mathf.Abs(localPosition.z) <= halfExtents.z;
             float entrySide = Vector3.Dot(puckPosition - transform.position, scoringDirection);
             float inwardSpeed = Vector3.Dot(puckVelocity, scoringDirection);
-            return entrySide < -EntrySideTolerance && inwardSpeed > MinimumInwardSpeed;
+            return centerInsideVolume && entrySide < -EntrySideTolerance && inwardSpeed > MinimumInwardSpeed;
         }
     }
 }
