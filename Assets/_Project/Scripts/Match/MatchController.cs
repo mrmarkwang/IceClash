@@ -1,7 +1,7 @@
 /*
  * IceClash Phase 1 local match flow.
  * Owns clock, scores, faceoff/playing/goal-pause/finished transitions, one-count
- * goals, actor resets, HUD events, and final Human/AI/Draw result text.
+ * goals, role-aware actor resets, HUD events, and final Human/AI/Draw result text.
  */
 
 using System.Collections.Generic;
@@ -69,6 +69,10 @@ namespace IceClash.Match
 
 #if UNITY_EDITOR
         public void StartPlayImmediatelyForValidation() => SetState(MatchStateSnapshot.Playing);
+        public void CompleteGoalPauseForValidation()
+        {
+            if (State == MatchStateSnapshot.GoalPause) BeginFaceoff();
+        }
         public void ExpireImmediatelyForValidation()
         {
             RemainingSeconds = 0f;

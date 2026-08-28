@@ -1,9 +1,8 @@
 /*
  * IceClash modular skater composition and action routing.
  * Sends Move only to skating, one tap to recommended-target passing, and charged
- * SHOOT signals to assisted shooting while retaining identity and reset state.
- * Recent changes: composes a pass-reception zone and exposes gameplay enablement
- * so team-level defensive checks cannot run during pauses or resets.
+ * SHOOT signals to assisted shooting while retaining team, conventional skater
+ * role, and role-aware faceoff reset state across control changes.
  */
 
 using IceClash.AI;
@@ -20,6 +19,7 @@ namespace IceClash.Player
     {
         [SerializeField] private string playerId = "skater";
         [SerializeField] private TeamId team = TeamId.Blue;
+        [SerializeField] private SkaterRole role = SkaterRole.Center;
 
         private IPlayerInput inputSource;
         private Vector3 resetPosition;
@@ -29,6 +29,7 @@ namespace IceClash.Player
 
         public string PlayerId => playerId;
         public TeamId Team => team;
+        public SkaterRole Role => role;
         public PlayerMovementState State { get; private set; }
         public float Stamina => 100f;
         public bool GameplayEnabled => gameplayEnabled;
@@ -57,11 +58,13 @@ namespace IceClash.Player
             Shoot = GetComponent<ShootController>() ?? gameObject.AddComponent<ShootController>();
         }
 
-        public void Configure(string id, TeamId playerTeam, IPlayerInput source, PuckController controlledPuck, Vector3 spawnPosition)
+        public void Configure(string id, TeamId playerTeam, SkaterRole playerRole, IPlayerInput source,
+            PuckController controlledPuck, Vector3 spawnPosition)
         {
             EnsureComponents();
             playerId = id;
             team = playerTeam;
+            role = playerRole;
             inputSource = source;
             Puck = controlledPuck;
             resetPosition = spawnPosition;

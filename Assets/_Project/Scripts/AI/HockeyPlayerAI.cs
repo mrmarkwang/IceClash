@@ -3,7 +3,8 @@
  * Runs the required eight-state hockey decision loop and emits independent movement,
  * tactical tap-pass, charged-shot, and active forechecking signals with Easy/Normal
  * profiles. The closest defender pressures and checks an opposing puck carrier,
- * loose-puck pursuit outranks formation recovery, and attacks align to the goal line.
+ * loose-puck pursuit outranks formation recovery, and each AI returns to its
+ * configured conventional role's faceoff/home position.
  */
 
 using IceClash.Core;
@@ -64,7 +65,7 @@ namespace IceClash.AI
             formationSlot = slot;
             formationCount = count;
             difficulty = level;
-            homePosition = AIFormationController.Home(owner.Team, slot, count);
+            homePosition = AIFormationController.Home(owner.Team, owner.Role);
             player.Movement.SetSpeedScale(level == AIDifficulty.Easy ? 0.82f : 0.94f);
         }
 

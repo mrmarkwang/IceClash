@@ -1,7 +1,8 @@
 /*
  * IceClash Phase 1 local gameplay contracts.
- * Defines independent movement, tap PASS, charged-shot, switch, and contextual
- * defensive-check signals shared by hardware, touch, and AI.
+ * Defines team and skater-role identity plus independent movement, tap PASS,
+ * charged-shot, switch, and contextual defensive-check signals shared by hardware,
+ * touch, snapshots, and AI.
  */
 
 using System;
@@ -10,6 +11,7 @@ using UnityEngine;
 namespace IceClash.Core
 {
     public enum TeamId { Blue, Red }
+    public enum SkaterRole { Center, LeftWing, RightWing, LeftDefense, RightDefense }
     public enum PlayerMovementState { Idle, Skating, ControllingPuck, Passing, Shooting }
     public enum HockeyAIState { Idle, Support, Attack, Defend, ChasePuck, ReceivePass, Shoot, ReturnToPosition }
     public enum AIDifficulty { Easy, Normal }
@@ -29,6 +31,7 @@ namespace IceClash.Core
     {
         string PlayerId { get; }
         TeamId Team { get; }
+        SkaterRole Role { get; }
         PlayerMovementState State { get; }
     }
 

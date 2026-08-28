@@ -1,6 +1,6 @@
 # IceClash — Phase 1 Local PvE Hockey
 
-IceClash is a mobile-first Unity hockey prototype focused on simple controls and meaningful team decisions. Phase 1 is a completely local match: five human-team skaters and one goalie versus five AI-team skaters and one goalie. The user controls one human-team skater at a time; AI controls everyone else.
+IceClash is a mobile-first Unity hockey prototype focused on simple controls and meaningful team decisions. Phase 1 is a completely local match: three forwards, two defensemen, and one goalie per team. The user controls one human-team skater at a time; AI controls everyone else.
 
 Multiplayer, networking, Photon Fusion, matchmaking, accounts, Firebase, backend services, monetization, and store integration are intentionally excluded until the local hockey loop is fun.
 
@@ -17,7 +17,7 @@ Multiplayer, networking, Photon Fusion, matchmaking, accounts, Firebase, backend
 2. Open `Assets/_Project/Scenes/PrototypeArena.unity`.
 3. Enter Play Mode.
 
-The scene builds the marked rink, ten skaters, two AI goalies, physics puck, two goal triggers, faceoff/match state, hockey camera, controlled-player marker, scoreboard, timer, joystick, and possession-adaptive action buttons at runtime.
+The scene builds the marked rink, ten skaters, two AI goalies, physics puck, two goal triggers, faceoff/match state, hockey camera, controlled-player marker, scoreboard, timer, joystick, and possession-adaptive action buttons at runtime. Each lineup has a Center, Left Wing, Right Wing, Left Defense, and Right Defense. Opening and post-goal faceoffs place centers at the center dot, wings outside the circle, defensemen goal-side, and goalies at their crease anchors.
 
 ## Controls
 
@@ -42,8 +42,8 @@ While the human player possesses the puck, a subtle dotted path shows the curren
 - `ShootController` converts one held/released input into bounded charge, facing/goal-assisted direction, power, and spread without consuming movement input.
 - `PlayerControlManager` automatically selects the established human-team puck carrier or the human-team skater closest to the puck after opponent possession; it never switches from puck trajectory. `PlayerSwitchController` remains the manual SWITCH override and performs the input/AI/marker/camera transfer.
 - `PlayerInputController` reacts to established carrier changes and safely reuses the offensive action slots as SWITCH/CHECK during opponent possession. `DefensiveCheckController` owns the human-team cooldown and contextual body/pull result; `DefensiveCheckTuning` is the persisted Inspector tuning asset for ranges, cone, cooldown, puck pace, and bounded separation.
-- `HockeyPlayerAI` uses the required eight-state local state machine; `AIFormationController` supplies count-independent formation slots; `HockeyGoalieAI` handles crease tracking and saves.
-- `MatchController`, `FaceoffController`, and `GoalTrigger` own clock, score, resets, and results.
+- `HockeyPlayerAI` uses the required eight-state local state machine; `AIFormationController` maps C/LW/RW/LD/RD roles to mirrored faceoff/home positions; `HockeyGoalieAI` handles crease tracking and saves.
+- `MatchController`, `FaceoffController`, and `GoalTrigger` own clock, score, role-aware center-faceoff resets, and results.
 - `HockeyCameraController`, `VirtualJoystick`, `MobileActionButton`, `PlayerInputController`, `MobileControlsBuilder`, `SafeAreaFitter`, and `MatchHUD` provide the stable landscape presentation and shared input route.
 
 Gameplay feel values are serialized fields on these focused components so they can be tuned in the Inspector without changing team or match architecture.

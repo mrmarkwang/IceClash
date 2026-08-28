@@ -1,10 +1,8 @@
 /*
  * IceClash Phase 1 local PvE roster and systems composition.
- * Builds count-driven five-skater teams, two goalies, one shared hardware/mobile
- * input controller with Unity UI controls, per-skater AI, possession-based control,
- * adaptive offense/defense touch actions, contextual human and opponent forechecks,
- * match flow, HUD, and live snapshots. Skater and goalie silhouettes retain
- * rink-relative scaling.
+ * Builds count-driven five-skater teams with three forwards and two defensemen,
+ * mirrored center-faceoff reset positions, two goalies, shared input/HUD systems,
+ * per-skater AI, possession control, defensive checks, match flow, and snapshots.
  */
 
 using System;
@@ -81,16 +79,17 @@ namespace IceClash.Match
 
         private PlayerController SpawnSkater(GameObject prefab, string id, TeamId team, int slot, Material material, AIDifficulty difficulty)
         {
+            SkaterRole role = AIFormationController.RoleForSlot(slot);
             Vector3 position = AIFormationController.Home(team, slot, SkatersPerTeam);
             Quaternion rotation = team == TeamId.Blue ? Quaternion.identity : Quaternion.Euler(0f, 180f, 0f);
             GameObject skater = Instantiate(prefab, position, rotation, transform);
-            skater.name = $"{team} Skater {slot + 1}";
+            skater.name = $"{team} {RoleDisplayName(role)}";
             skater.transform.localScale = Vector3.one * SkaterScale;
             Renderer renderer = skater.GetComponentInChildren<Renderer>();
             if (renderer != null) renderer.sharedMaterial = material;
             HockeyPlayerAI ai = skater.AddComponent<HockeyPlayerAI>();
             PlayerController controller = skater.AddComponent<PlayerController>();
-            controller.Configure(id, team, ai, puck, position);
+            controller.Configure(id, team, role, ai, puck, position);
             ai.Configure(controller, puck, slot, SkatersPerTeam, difficulty);
             players.Add(controller);
             return controller;
@@ -131,6 +130,11 @@ namespace IceClash.Match
         }
 
         private void LateUpdate() => CaptureData();
+
+#if UNITY_EDITOR
+        internal void CaptureDataForValidation() => CaptureData();
+#endif
+
         private void CaptureData()
         {
             if (puck == null) return;
@@ -143,6 +147,19 @@ namespace IceClash.Match
                 matchData.RedTeam.Score = MatchController.RedScore;
             }
             matchData.ControlledPlayerId = SwitchController != null && SwitchController.ControlledPlayer != null ? SwitchController.ControlledPlayer.PlayerId : string.Empty;
+        }
+
+        private static string RoleDisplayName(SkaterRole role)
+        {
+            return role switch
+            {
+                SkaterRole.Center => "Center",
+                SkaterRole.LeftWing => "Left Wing",
+                SkaterRole.RightWing => "Right Wing",
+                SkaterRole.LeftDefense => "Left Defense",
+                SkaterRole.RightDefense => "Right Defense",
+                _ => throw new ArgumentOutOfRangeException(nameof(role), role, "Unsupported skater role.")
+            };
         }
     }
 }

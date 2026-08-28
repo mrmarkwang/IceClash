@@ -8,7 +8,9 @@ Given `PrototypeArena` is opened in Unity `6000.5.9f1`
 
 When Play Mode starts
 
-Then the marked small rink contains five Blue skaters, one Blue goalie, five Red skaters, one Red goalie, two goals, and one independent physics puck
+Then the marked small rink contains a Center, Left Wing, Right Wing, Left Defense, and Right Defense plus one goalie for both Blue and Red, two goals, and one independent physics puck
+
+And the centers face each other nearest the center puck, wings are outside the center circle, defensemen are goal-side of the forwards, and goalies remain at their crease anchors
 
 And exactly one Blue skater has human input while every other skater has AI input
 
@@ -112,7 +114,7 @@ Given an active timed match
 
 When the puck fully enters either goal
 
-Then the correct Human Team or AI Team score increments exactly once, play pauses with a goal message, all actors and the puck reset, and a faceoff resumes play
+Then the correct Human Team or AI Team score increments exactly once, play pauses with a goal message, all actors and the puck reset to the mirrored center-ice faceoff formation, and play resumes
 
 When the timer reaches zero
 

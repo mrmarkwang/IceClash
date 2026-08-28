@@ -2,8 +2,8 @@
  * IceClash Phase 1 local PvE arena bootstrap.
  * Generates the mobile-first marked rink, layered boards/glass, dimensional nets,
  * one-way goals/triggers, puck, 5v5-plus-goalies roster, match flow, HUD, and camera.
- * Recent changes: regulation-inspired rink/camera proportions and a compact hockey
- * goal mouth with matching depth and scoring volume.
+ * Shared rink geometry now includes the center-circle radius used by role-aware
+ * faceoff formation and validation.
  */
 
 using System.Collections.Generic;
@@ -24,6 +24,7 @@ namespace IceClash.Hockey
         internal const float GoalDepth = 0.9f;
         internal const float GoalLineDistance = Length / 2f - 3.2f;
         internal const float GoalieAnchor = GoalLineDistance - 0.65f;
+        internal const float CenterFaceoffCircleRadius = 2.4f;
     }
 
     public sealed class PrototypeArenaBootstrap : MonoBehaviour
@@ -298,7 +299,7 @@ namespace IceClash.Hockey
 
         private static void CreateFaceoffMarkings(Material red, Material blue, Material redLine, Material blueLine)
         {
-            CreateCircleMark("Center Faceoff Circle", Vector3.up * 0.23f, 2.4f, blueLine, 36);
+            CreateCircleMark("Center Faceoff Circle", Vector3.up * 0.23f, PrototypeRinkGeometry.CenterFaceoffCircleRadius, blueLine, 36);
             CreateFaceoffDot("Center Faceoff Dot", Vector3.up * 0.25f, blue);
 
             float zoneCircleX = RinkWidth * 0.21f;
