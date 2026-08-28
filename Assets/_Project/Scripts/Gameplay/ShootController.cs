@@ -2,9 +2,10 @@
  * IceClash Phase 1 one-button shooting.
  * Tracks held charge and releases forceful bounded facing/goal-assisted shots
  * with configurable inaccuracy, never reading movement input directly. Recent
- * change: further increased shot power and goal assistance for easier scoring.
+ * changes: stronger shots and aim assistance aligned to the current rink goal line.
  */
 
+using IceClash.Hockey;
 using IceClash.Player;
 using IceClash.Puck;
 using UnityEngine;
@@ -54,7 +55,9 @@ namespace IceClash.Gameplay
 
         private Vector3 AssistedDirection()
         {
-            float goalZ = player.Team == IceClash.Core.TeamId.Blue ? 14.4f : -14.4f;
+            float goalZ = player.Team == IceClash.Core.TeamId.Blue
+                ? PrototypeRinkGeometry.GoalLineDistance
+                : -PrototypeRinkGeometry.GoalLineDistance;
             Vector3 towardGoal = Vector3.ProjectOnPlane(new Vector3(0f, transform.position.y, goalZ) - transform.position, Vector3.up).normalized;
             Vector3 facing = Vector3.ProjectOnPlane(transform.forward, Vector3.up).normalized;
             return Vector3.Slerp(facing, towardGoal, goalTargetAssist).normalized;

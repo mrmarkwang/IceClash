@@ -1,8 +1,8 @@
 /*
  * IceClash Phase 1 mobile hockey camera.
- * Smoothly follows the selected skater, biases framing toward the puck, preserves
- * a stable rink orientation, and blends both position and look focus across manual
- * or possession-driven control transfers without snapping.
+ * Smoothly follows the selected skater with a close landscape-mobile composition,
+ * biases framing toward the puck, preserves rink orientation, and blends position
+ * and focus across manual or possession-driven control transfers without snapping.
  */
 
 using UnityEngine;
@@ -14,7 +14,7 @@ namespace IceClash.CameraSystem
     {
         [SerializeField] private Transform target;
         [SerializeField] private Transform puck;
-        [SerializeField] private Vector3 offset = new(0f, 16.5f, -15f);
+        [SerializeField] private Vector3 offset = new(0f, 12f, -15f);
         [SerializeField] private float smoothTime = 0.2f;
         [SerializeField] private float retargetFocusSmoothTime = 0.3f;
         [SerializeField, Range(0f, 0.6f)] private float puckBias = 0.32f;

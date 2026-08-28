@@ -1,10 +1,12 @@
 /*
  * IceClash Phase 1 imperfect skater AI.
  * Runs the required eight-state hockey decision loop and emits independent movement,
- * tap-pass, and charged-shot input signals with Easy/Normal profiles.
+ * tap-pass, and charged-shot input signals with Easy/Normal profiles. Attack targets
+ * stay aligned to the current procedural rink goal line.
  */
 
 using IceClash.Core;
+using IceClash.Hockey;
 using IceClash.Player;
 using IceClash.Puck;
 using UnityEngine;
@@ -92,7 +94,9 @@ namespace IceClash.AI
             }
             else if (ownsPuck)
             {
-                float goalZ = player.Team == TeamId.Blue ? 14.4f : -14.4f;
+                float goalZ = player.Team == TeamId.Blue
+                    ? PrototypeRinkGeometry.GoalLineDistance
+                    : -PrototypeRinkGeometry.GoalLineDistance;
                 Vector3 goal = new(0f, transform.position.y, goalZ);
                 if (Vector3.Distance(transform.position, goal) <= shootDistance && !shootHeld)
                 {

@@ -2,8 +2,8 @@
  * IceClash Phase 1 local PvE roster and systems composition.
  * Builds count-driven three-skater teams, two goalies, one shared hardware/mobile
  * input controller with Unity UI controls, per-skater AI, possession-based control,
- * keyboard switching, match flow, HUD, and live snapshots. Recent changes: reduced
- * all player visuals to one shared scale and prefab geometry, including goalies.
+ * keyboard switching, match flow, HUD, and live snapshots. Recent changes: smaller
+ * rink-relative skaters and similarly tall, broader padded goalie silhouettes.
  */
 
 using System;
@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using IceClash.AI;
 using IceClash.Core;
 using IceClash.Gameplay;
+using IceClash.Hockey;
 using IceClash.Input;
 using IceClash.Player;
 using IceClash.Puck;
@@ -22,7 +23,8 @@ namespace IceClash.Match
     public sealed class LocalMatchSetup : MonoBehaviour
     {
         private const int SkatersPerTeam = 3;
-        private const float PlayerScale = 0.8f;
+        private const float SkaterScale = 0.68f;
+        private static readonly Vector3 GoalieScale = new(0.9f, 0.72f, 0.78f);
         [SerializeField] private AIDifficulty opponentDifficulty = AIDifficulty.Normal;
         [SerializeField] private MatchData matchData = new();
         private readonly List<PlayerController> players = new();
@@ -52,8 +54,8 @@ namespace IceClash.Match
                 SpawnSkater(skaterPrefab, $"red-{slot + 1}", TeamId.Red, slot, redMaterial, opponentDifficulty);
             }
 
-            goalies.Add(SpawnGoalie(skaterPrefab, "Blue Goalie", TeamId.Blue, new Vector3(0f, 1f, -14.25f), blueMaterial));
-            goalies.Add(SpawnGoalie(skaterPrefab, "Red Goalie", TeamId.Red, new Vector3(0f, 1f, 14.25f), redMaterial));
+            goalies.Add(SpawnGoalie(skaterPrefab, "Blue Goalie", TeamId.Blue, new Vector3(0f, 1f, -PrototypeRinkGeometry.GoalieAnchor), blueMaterial));
+            goalies.Add(SpawnGoalie(skaterPrefab, "Red Goalie", TeamId.Red, new Vector3(0f, 1f, PrototypeRinkGeometry.GoalieAnchor), redMaterial));
 
             Transform marker = BuildControlledMarker();
             SwitchController = gameObject.AddComponent<PlayerSwitchController>();
@@ -72,7 +74,7 @@ namespace IceClash.Match
             Quaternion rotation = team == TeamId.Blue ? Quaternion.identity : Quaternion.Euler(0f, 180f, 0f);
             GameObject skater = Instantiate(prefab, position, rotation, transform);
             skater.name = $"{team} Skater {slot + 1}";
-            skater.transform.localScale = Vector3.one * PlayerScale;
+            skater.transform.localScale = Vector3.one * SkaterScale;
             Renderer renderer = skater.GetComponentInChildren<Renderer>();
             if (renderer != null) renderer.sharedMaterial = material;
             HockeyPlayerAI ai = skater.AddComponent<HockeyPlayerAI>();
@@ -88,7 +90,7 @@ namespace IceClash.Match
             Quaternion rotation = team == TeamId.Blue ? Quaternion.identity : Quaternion.Euler(0f, 180f, 0f);
             GameObject goalie = Instantiate(prefab, position, rotation, transform);
             goalie.name = name;
-            goalie.transform.localScale = Vector3.one * PlayerScale;
+            goalie.transform.localScale = GoalieScale;
             Renderer renderer = goalie.GetComponentInChildren<Renderer>();
             if (renderer != null) renderer.sharedMaterial = material;
             HockeyGoalieAI ai = goalie.AddComponent<HockeyGoalieAI>();

@@ -1,8 +1,8 @@
 /*
  * IceClash Phase 1 local PvE arena bootstrap.
- * Generates the placeholder marked rink, one-way goals/triggers, a compact
- * box-collider puck, 3v3-plus-goalies roster, match flow, HUD, and hockey camera.
- * Recent change: widened the visible goal mouth and scoring volume to six metres.
+ * Generates the mobile-first marked rink, layered boards/glass, dimensional nets,
+ * one-way goals/triggers, puck, 3v3-plus-goalies roster, match flow, HUD, and camera.
+ * Recent changes: regulation-inspired proportions and a closer landscape framing.
  */
 
 using System.Collections.Generic;
@@ -16,19 +16,33 @@ using UnityEngine.SceneManagement;
 
 namespace IceClash.Hockey
 {
+    internal static class PrototypeRinkGeometry
+    {
+        internal const float Width = 24f;
+        internal const float Length = 48f;
+        internal const float GoalDepth = 1.25f;
+        internal const float GoalLineDistance = Length / 2f - 3.2f;
+        internal const float GoalieAnchor = GoalLineDistance - 0.65f;
+    }
+
     public sealed class PrototypeArenaBootstrap : MonoBehaviour
     {
         // World X maps across the Game view; world Z maps up the Game view.
-        private const float RinkWidth = 20f;
-        private const float RinkLength = 34f;
-        private const float CornerRadius = 3.6f;
-        private const int CornerSegments = 6;
-        private const float BoardHeight = 2.3f;
-        private const float BoardThickness = 0.45f;
+        private const float RinkWidth = PrototypeRinkGeometry.Width;
+        private const float RinkLength = PrototypeRinkGeometry.Length;
+        private const float CornerRadius = 5f;
+        private const int CornerSegments = 8;
+        private const float BoardHeight = 1.05f;
+        private const float BoardThickness = 0.36f;
+        private const float GlassHeight = 1.25f;
+        private const float IceSurfaceY = 0.2f;
         private const float IceThickness = 0.45f;
         private const float PuckDiameter = 0.42f;
         private const float PuckHeight = 0.12f;
         private const float GoalHalfWidth = 3f;
+        private const float GoalHeight = 1.9f;
+        private const float GoalDepth = PrototypeRinkGeometry.GoalDepth;
+        private const float GoalLineDistance = PrototypeRinkGeometry.GoalLineDistance;
         private const float GoalTriggerWidth = 5.8f;
         private bool hasBuilt;
 
@@ -56,25 +70,30 @@ namespace IceClash.Hockey
         {
             if (hasBuilt) return;
             hasBuilt = true;
-            Material ice = MakeMaterial(new Color(0.72f, 0.9f, 1f));
-            Material board = MakeMaterial(new Color(0.08f, 0.15f, 0.24f));
+            Material ice = MakeMaterial(new Color(0.9f, 0.96f, 1f));
+            Material arenaFloor = MakeMaterial(new Color(0.035f, 0.065f, 0.1f));
+            Material board = MakeMaterial(new Color(0.92f, 0.94f, 0.95f));
+            Material kickplate = MakeMaterial(new Color(0.98f, 0.72f, 0.08f));
+            Material rail = MakeMaterial(new Color(0.04f, 0.2f, 0.55f));
+            Material glass = MakeTransparentMaterial(new Color(0.72f, 0.9f, 1f, 0.22f));
             Material red = MakeMaterial(new Color(0.88f, 0.15f, 0.18f));
             Material blue = MakeMaterial(new Color(0.08f, 0.37f, 0.9f));
             Material black = MakeMaterial(new Color(0.03f, 0.04f, 0.06f));
-            Material net = MakeMaterial(new Color(0.92f, 0.95f, 1f));
+            Material net = MakeTransparentMaterial(new Color(0.94f, 0.98f, 1f, 0.72f));
             Material redLine = MakeLineMaterial(red.color);
             Material blueLine = MakeLineMaterial(blue.color);
 
             List<Vector3> rinkOutline = CreateRinkOutline();
+            CreateCube("Arena Floor", new Vector3(0f, -0.38f, 0f), new Vector3(RinkWidth + 7f, 0.25f, RinkLength + 7f), arenaFloor, false);
             CreateRoundedIce(rinkOutline, ice);
-            CreateRoundedBoards(rinkOutline, board);
+            CreateRoundedBoards(rinkOutline, board, kickplate, rail, glass);
             CreateCube("Center Line", new Vector3(0f, 0.22f, 0f), new Vector3(RinkWidth - 1f, 0.03f, 0.25f), red, false);
             CreateCube("Blue Line A", new Vector3(0f, 0.22f, -RinkLength * 0.18f), new Vector3(RinkWidth - 1f, 0.03f, 0.16f), blue, false);
             CreateCube("Blue Line B", new Vector3(0f, 0.22f, RinkLength * 0.18f), new Vector3(RinkWidth - 1f, 0.03f, 0.16f), blue, false);
             CreateHockeyMarkings(red, blue, redLine, blueLine);
 
-            CreateGoal("Blue Goal", new Vector3(0f, 0.95f, -RinkLength / 2f + 2.1f), blue, net);
-            CreateGoal("Red Goal", new Vector3(0f, 0.95f, RinkLength / 2f - 2.1f), red, net);
+            CreateGoal("Blue Goal", new Vector3(0f, GoalHeight / 2f, -GoalLineDistance), red, net);
+            CreateGoal("Red Goal", new Vector3(0f, GoalHeight / 2f, GoalLineDistance), red, net);
 
             GameObject puck = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
             puck.name = "Puck (Physics)";
@@ -95,14 +114,16 @@ namespace IceClash.Hockey
             if (skaterPrefab == null) throw new System.InvalidOperationException("Missing Phase 3 skater prefab at Assets/_Project/Prefabs/Resources/Skater.prefab.");
             LocalMatchSetup matchSetup = new GameObject("Local PvE 3v3 Match").AddComponent<LocalMatchSetup>();
             PlayerController player = matchSetup.BuildRoster(skaterPrefab, puck.GetComponent<PuckController>(), blue, red);
-            CreateGoalTrigger("Blue Goal Trigger", new Vector3(0f, 0.95f, -RinkLength / 2f + 1.55f), TeamId.Red, Vector3.back, matchSetup.MatchController);
-            CreateGoalTrigger("Red Goal Trigger", new Vector3(0f, 0.95f, RinkLength / 2f - 1.55f), TeamId.Blue, Vector3.forward, matchSetup.MatchController);
+            CreateGoalTrigger("Blue Goal Trigger", new Vector3(0f, GoalHeight / 2f, -GoalLineDistance - GoalDepth * 0.45f), TeamId.Red, Vector3.back, matchSetup.MatchController);
+            CreateGoalTrigger("Red Goal Trigger", new Vector3(0f, GoalHeight / 2f, GoalLineDistance + GoalDepth * 0.45f), TeamId.Blue, Vector3.forward, matchSetup.MatchController);
 
             if (Camera.main != null) Destroy(Camera.main.gameObject);
             GameObject cameraObject = new GameObject("Hockey Camera");
             cameraObject.tag = "MainCamera";
             Camera gameCamera = cameraObject.AddComponent<Camera>();
-            gameCamera.fieldOfView = 58f;
+            gameCamera.fieldOfView = 46f;
+            gameCamera.clearFlags = CameraClearFlags.SolidColor;
+            gameCamera.backgroundColor = new Color(0.025f, 0.045f, 0.075f);
             cameraObject.AddComponent<AudioListener>();
             HockeyCameraController followCamera = cameraObject.AddComponent<HockeyCameraController>();
             followCamera.Configure(player.transform, puck.transform);
@@ -124,28 +145,47 @@ namespace IceClash.Hockey
 
         private static void CreateGoal(string goalName, Vector3 center, Material material, Material netMaterial)
         {
-            CreateCube(goalName + " Post A", center + new Vector3(-GoalHalfWidth, 0f, 0f), new Vector3(0.2f, 1.9f, 0.2f), material, false);
-            CreateCube(goalName + " Post B", center + new Vector3(GoalHalfWidth, 0f, 0f), new Vector3(0.2f, 1.9f, 0.2f), material, false);
-            CreateCube(goalName + " Crossbar", center + new Vector3(0f, 0.95f, 0f), new Vector3(GoalHalfWidth * 2f + 0.2f, 0.2f, 0.2f), material, false);
+            float direction = center.z > 0f ? 1f : -1f;
+            float backZ = center.z + direction * GoalDepth;
+            CreateCube(goalName + " Post A", center + new Vector3(-GoalHalfWidth, 0f, 0f), new Vector3(0.18f, GoalHeight, 0.18f), material, false);
+            CreateCube(goalName + " Post B", center + new Vector3(GoalHalfWidth, 0f, 0f), new Vector3(0.18f, GoalHeight, 0.18f), material, false);
+            CreateCube(goalName + " Crossbar", center + new Vector3(0f, GoalHeight / 2f, 0f), new Vector3(GoalHalfWidth * 2f + 0.18f, 0.18f, 0.18f), material, false);
+            CreateCube(goalName + " Rear Post A", new Vector3(-GoalHalfWidth, center.y, backZ), new Vector3(0.14f, GoalHeight, 0.14f), material, false);
+            CreateCube(goalName + " Rear Post B", new Vector3(GoalHalfWidth, center.y, backZ), new Vector3(0.14f, GoalHeight, 0.14f), material, false);
+            CreateCube(goalName + " Rear Crossbar", new Vector3(0f, center.y + GoalHeight / 2f, backZ), new Vector3(GoalHalfWidth * 2f, 0.14f, 0.14f), material, false);
+            CreateCube(goalName + " Roof Rail A", new Vector3(-GoalHalfWidth, center.y + GoalHeight / 2f, center.z + direction * GoalDepth / 2f), new Vector3(0.14f, 0.14f, GoalDepth), material, false);
+            CreateCube(goalName + " Roof Rail B", new Vector3(GoalHalfWidth, center.y + GoalHeight / 2f, center.z + direction * GoalDepth / 2f), new Vector3(0.14f, 0.14f, GoalDepth), material, false);
+            CreateCube(goalName + " Base Rail A", new Vector3(-GoalHalfWidth, IceSurfaceY + 0.05f, center.z + direction * GoalDepth / 2f), new Vector3(0.14f, 0.1f, GoalDepth), material, false);
+            CreateCube(goalName + " Base Rail B", new Vector3(GoalHalfWidth, IceSurfaceY + 0.05f, center.z + direction * GoalDepth / 2f), new Vector3(0.14f, 0.1f, GoalDepth), material, false);
             CreateGoalNet(goalName, center, netMaterial);
         }
 
         private static void CreateGoalNet(string goalName, Vector3 center, Material material)
         {
-            float backOffset = center.z > 0f ? 0.85f : -0.85f;
+            float backOffset = center.z > 0f ? GoalDepth : -GoalDepth;
             float backZ = center.z + backOffset;
-            for (int index = -2; index <= 2; index++)
+            for (int index = -4; index <= 4; index++)
             {
-                CreateCube($"{goalName} Net Vertical {index + 2}", new Vector3(index * GoalHalfWidth / 2f, 0.95f, backZ), new Vector3(0.045f, 1.85f, 0.045f), material, false);
+                float x = index * GoalHalfWidth / 4f;
+                CreateCube($"{goalName} Net Back Vertical {index + 4}", new Vector3(x, center.y, backZ), new Vector3(0.035f, GoalHeight, 0.035f), material, false);
+                CreateCube($"{goalName} Net Roof Longitudinal {index + 4}", new Vector3(x, center.y + GoalHeight / 2f, center.z + backOffset / 2f), new Vector3(0.035f, 0.035f, GoalDepth), material, false);
             }
 
-            for (int index = 0; index < 5; index++)
+            for (int index = 0; index <= 6; index++)
             {
-                CreateCube($"{goalName} Net Horizontal {index}", new Vector3(0f, 0.12f + index * 0.44f, backZ), new Vector3(GoalHalfWidth * 2f + 0.05f, 0.045f, 0.045f), material, false);
+                float y = IceSurfaceY + index * (GoalHeight - IceSurfaceY) / 6f;
+                CreateCube($"{goalName} Net Back Horizontal {index}", new Vector3(0f, y, backZ), new Vector3(GoalHalfWidth * 2f, 0.035f, 0.035f), material, false);
+                CreateCube($"{goalName} Net Side A Horizontal {index}", new Vector3(-GoalHalfWidth, y, center.z + backOffset / 2f), new Vector3(0.035f, 0.035f, GoalDepth), material, false);
+                CreateCube($"{goalName} Net Side B Horizontal {index}", new Vector3(GoalHalfWidth, y, center.z + backOffset / 2f), new Vector3(0.035f, 0.035f, GoalDepth), material, false);
             }
 
-            CreateCube($"{goalName} Net Side A", new Vector3(-GoalHalfWidth, 0.12f, center.z + backOffset / 2f), new Vector3(0.05f, 0.05f, Mathf.Abs(backOffset)), material, false);
-            CreateCube($"{goalName} Net Side B", new Vector3(GoalHalfWidth, 0.12f, center.z + backOffset / 2f), new Vector3(0.05f, 0.05f, Mathf.Abs(backOffset)), material, false);
+            for (int index = 1; index < 4; index++)
+            {
+                float z = center.z + backOffset * index / 4f;
+                CreateCube($"{goalName} Net Roof Transverse {index}", new Vector3(0f, center.y + GoalHeight / 2f, z), new Vector3(GoalHalfWidth * 2f, 0.035f, 0.035f), material, false);
+                CreateCube($"{goalName} Net Side A Vertical {index}", new Vector3(-GoalHalfWidth, center.y, z), new Vector3(0.035f, GoalHeight, 0.035f), material, false);
+                CreateCube($"{goalName} Net Side B Vertical {index}", new Vector3(GoalHalfWidth, center.y, z), new Vector3(0.035f, GoalHeight, 0.035f), material, false);
+            }
         }
 
         private static List<Vector3> CreateRinkOutline()
@@ -174,7 +214,7 @@ namespace IceClash.Hockey
         {
             GameObject ice = new("Ice");
             Mesh mesh = new();
-            float topY = 0.2f;
+            float topY = IceSurfaceY;
             float bottomY = topY - IceThickness;
             int topCenter = 0;
             int bottomCenter = outline.Count + 1;
@@ -218,24 +258,36 @@ namespace IceClash.Hockey
             ice.AddComponent<MeshCollider>().sharedMesh = mesh;
         }
 
-        private static void CreateRoundedBoards(List<Vector3> outline, Material material)
+        private static void CreateRoundedBoards(List<Vector3> outline, Material boardMaterial, Material kickplateMaterial, Material railMaterial, Material glassMaterial)
         {
             for (int index = 0; index < outline.Count; index++)
             {
                 Vector3 start = outline[index];
                 Vector3 end = outline[(index + 1) % outline.Count];
                 Vector3 direction = end - start;
-                GameObject board = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                board.name = $"Rounded Board {index:00}";
-                board.transform.SetPositionAndRotation((start + end) / 2f + Vector3.up * (BoardHeight / 2f), Quaternion.LookRotation(direction.normalized, Vector3.up));
-                board.transform.localScale = new Vector3(BoardThickness, BoardHeight, direction.magnitude + BoardThickness * 0.35f);
-                board.GetComponent<Renderer>().material = material;
+                Vector3 midpoint = (start + end) / 2f;
+                Quaternion rotation = Quaternion.LookRotation(direction.normalized, Vector3.up);
+                float length = direction.magnitude + BoardThickness * 0.35f;
+                CreateBoardLayer($"Rink Board {index:00}", midpoint + Vector3.up * (IceSurfaceY + BoardHeight / 2f), rotation, new Vector3(BoardThickness, BoardHeight, length), boardMaterial, true);
+                CreateBoardLayer($"Yellow Kickplate {index:00}", midpoint + Vector3.up * (IceSurfaceY + 0.1f), rotation, new Vector3(BoardThickness + 0.025f, 0.2f, length), kickplateMaterial, false);
+                CreateBoardLayer($"Blue Top Rail {index:00}", midpoint + Vector3.up * (IceSurfaceY + BoardHeight + 0.06f), rotation, new Vector3(BoardThickness + 0.05f, 0.12f, length), railMaterial, false);
+                CreateBoardLayer($"Rink Glass {index:00}", midpoint + Vector3.up * (IceSurfaceY + BoardHeight + GlassHeight / 2f), rotation, new Vector3(0.055f, GlassHeight, direction.magnitude), glassMaterial, false);
             }
+        }
+
+        private static void CreateBoardLayer(string objectName, Vector3 position, Quaternion rotation, Vector3 scale, Material material, bool collider)
+        {
+            GameObject layer = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            layer.name = objectName;
+            layer.transform.SetPositionAndRotation(position, rotation);
+            layer.transform.localScale = scale;
+            layer.GetComponent<Renderer>().material = material;
+            if (!collider) Destroy(layer.GetComponent<Collider>());
         }
 
         private static void CreateHockeyMarkings(Material red, Material blue, Material redLine, Material blueLine)
         {
-            float goalLineDistance = RinkLength / 2f - 3.3f;
+            float goalLineDistance = GoalLineDistance;
             CreateCube("Blue Goal Line", new Vector3(0f, 0.22f, -goalLineDistance), new Vector3(RinkWidth - CornerRadius * 2f, 0.03f, 0.13f), red, false);
             CreateCube("Red Goal Line", new Vector3(0f, 0.22f, goalLineDistance), new Vector3(RinkWidth - CornerRadius * 2f, 0.03f, 0.13f), red, false);
             CreateGoalCrease("Blue Goal Crease", new Vector3(0f, 0.23f, -goalLineDistance + 0.4f), true, blueLine);
@@ -334,6 +386,24 @@ namespace IceClash.Hockey
         {
             Shader shader = Shader.Find("Sprites/Default") ?? Shader.Find("Unlit/Color") ?? Shader.Find("Standard");
             Material material = new(shader) { color = color };
+            return material;
+        }
+
+        private static Material MakeTransparentMaterial(Color color)
+        {
+            Material material = MakeMaterial(color);
+            material.SetOverrideTag("RenderType", "Transparent");
+            material.SetFloat("_Mode", 2f);
+            material.SetFloat("_Surface", 1f);
+            material.SetFloat("_Blend", 0f);
+            material.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.SrcAlpha);
+            material.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+            material.SetFloat("_ZWrite", 0f);
+            material.DisableKeyword("_ALPHATEST_ON");
+            material.DisableKeyword("_ALPHAPREMULTIPLY_ON");
+            material.EnableKeyword("_ALPHABLEND_ON");
+            material.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+            material.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
             return material;
         }
     }

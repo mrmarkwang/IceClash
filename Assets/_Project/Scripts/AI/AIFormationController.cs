@@ -1,10 +1,11 @@
 /*
  * IceClash Phase 1 formation helper.
- * Converts count-independent slot indexes into mirrored home/support positions so
- * the three-skater MVP can expand without changing team decision systems.
+ * Converts count-independent slot indexes into mirrored home/support/defensive
+ * positions aligned to the enlarged mobile rink and its deeper goalie anchors.
  */
 
 using IceClash.Core;
+using IceClash.Hockey;
 using UnityEngine;
 
 namespace IceClash.AI
@@ -28,7 +29,7 @@ namespace IceClash.AI
 
         public static Vector3 Defend(TeamId team, int slot, int count, Vector3 threatPosition)
         {
-            float ownGoalZ = team == TeamId.Blue ? -14.2f : 14.2f;
+            float ownGoalZ = team == TeamId.Blue ? -PrototypeRinkGeometry.GoalieAnchor : PrototypeRinkGeometry.GoalieAnchor;
             Vector3 home = Home(team, slot, count);
             return Vector3.Lerp(new Vector3(home.x, 1f, ownGoalZ), threatPosition, 0.28f);
         }

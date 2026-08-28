@@ -3,11 +3,13 @@
  * Reacts only to established PuckController carrier changes: human possession
  * selects that carrier, opponent possession selects a useful defender, and free
  * puck movement never changes control. PlayerSwitchController remains the manual
- * override and performs the actual input/AI/marker/camera transfer.
+ * override and performs the actual input/AI/marker/camera transfer. Defensive
+ * selection remains goal-side using the current procedural rink anchors.
  */
 
 using System.Collections.Generic;
 using IceClash.Core;
+using IceClash.Hockey;
 using IceClash.Player;
 using IceClash.Puck;
 using UnityEngine;
@@ -67,7 +69,9 @@ namespace IceClash.Gameplay
 
         private PlayerController FindBestDefender(PlayerController opponentCarrier)
         {
-            Vector3 ownGoal = humanTeamId == TeamId.Blue ? new Vector3(0f, 1f, -14.25f) : new Vector3(0f, 1f, 14.25f);
+            Vector3 ownGoal = humanTeamId == TeamId.Blue
+                ? new Vector3(0f, 1f, -PrototypeRinkGeometry.GoalieAnchor)
+                : new Vector3(0f, 1f, PrototypeRinkGeometry.GoalieAnchor);
             Vector3 goalSideDirection = Vector3.ProjectOnPlane(ownGoal - opponentCarrier.transform.position, Vector3.up).normalized;
             Vector3 challengePoint = opponentCarrier.transform.position + goalSideDirection * challengeOffsetFromCarrier;
             PlayerController best = null;
