@@ -29,7 +29,7 @@ The scene builds the marked rink, six skaters, two AI goalies, physics puck, two
 | Charge / release shot | Hold/release Space | Hold/release right trigger | Hold/release SHOOT |
 | Switch skater | Q | North button | — |
 
-WASD and the floating left joystick never aim passes or shots. While the human player possesses the puck, a subtle dotted path shows the currently recommended teammate. Tap PASS to release an imperfect, interceptable physics pass along that recommendation; no drag is required and successful reception is not guaranteed. DEKE currently emits an input/debug signal only. There is no sprint, deke gameplay, poke check, stick lift, separate shot-type button, or special ability in Phase 1.
+WASD and the fixed, always-visible lower-left joystick never aim passes or shots. While the human player possesses the puck, a subtle dotted path shows the currently recommended teammate. Tap PASS to release an imperfect, interceptable physics pass along that recommendation; no drag is required and successful reception is not guaranteed. DEKE currently emits an input/debug signal only. There is no sprint, deke gameplay, poke check, stick lift, separate shot-type button, or special ability in Phase 1.
 
 ## Architecture and tuning
 

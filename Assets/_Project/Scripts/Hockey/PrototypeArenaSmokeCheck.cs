@@ -3,7 +3,9 @@
  * Verifies the generated 3v3-plus-goalies slice, one-human routing, possession-only
  * automatic control, recommended tap passing with dotted feedback, manual switching,
  * smooth camera retargeting, modular systems, safe multi-touch Unity UI controls,
- * responsive puck possession, forceful charged shots, snapshots, and one-way goals.
+ * circular visual/hit separation, responsive puck possession, forceful charged
+ * shots, snapshots, and one-way goals. Recent changes: fixed-joystick assertions
+ * plus equal action sizes, equal-size players, harder shots, and easier goals.
  */
 
 using IceClash.AI;
@@ -57,7 +59,16 @@ namespace IceClash.Hockey
             bool controlScaling = scaler != null && scaler.uiScaleMode == CanvasScaler.ScaleMode.ScaleWithScreenSize
                 && scaler.referenceResolution == new Vector2(1920f, 1080f);
             bool actionLayout = buttons.Length == 3 && passButton != null && dekeButton != null && shootButton != null
-                && ButtonArea(shootButton) > ButtonArea(passButton) && ButtonArea(shootButton) > ButtonArea(dekeButton);
+                && Mathf.Approximately(ButtonArea(passButton), ButtonArea(dekeButton))
+                && Mathf.Approximately(ButtonArea(passButton), ButtonArea(shootButton));
+            bool refinedControlVisuals = VerifyJoystickVisuals(joystickArea)
+                && VerifyActionVisual(passButton) && VerifyActionVisual(dekeButton) && VerifyActionVisual(shootButton)
+                && Mathf.Approximately(VisualArea(passButton), VisualArea(dekeButton))
+                && Mathf.Approximately(VisualArea(passButton), VisualArea(shootButton))
+                && !RectTransformsOverlap(passButton, dekeButton)
+                && !RectTransformsOverlap(passButton, shootButton)
+                && !RectTransformsOverlap(dekeButton, shootButton);
+            bool fixedJoystick = VerifyFixedJoystick(joystickArea);
             bool analogInput = virtualJoystick != null && virtualJoystick.DeadZone >= 0.1f && virtualJoystick.DeadZone <= 0.15f
                 && VirtualJoystick.ApplyDeadZone(new Vector2(0.05f, 0f), virtualJoystick.DeadZone) == Vector2.zero
                 && Mathf.Abs(VirtualJoystick.ApplyDeadZone(Vector2.one, virtualJoystick.DeadZone).magnitude - 1f) < 0.001f;
@@ -67,6 +78,8 @@ namespace IceClash.Hockey
 
             bool roster = players.Length == 6 && skaterAi.Length == 6 && goalies.Length == 2
                 && CountTeam(players, TeamId.Blue) == 3 && CountTeam(players, TeamId.Red) == 3 && humanRouted == 1;
+            bool smallerSkaters = AllSkatersUseScale(players, 0.8f);
+            bool equalSizeGoalies = AllGoaliesMatchPlayerSize(goalies, players[0]);
             bool modular = Object.FindObjectsByType<PlayerMovementController>().Length == 6
                 && Object.FindObjectsByType<StickPuckInteraction>().Length == 6
                 && Object.FindObjectsByType<PassController>().Length == 6
@@ -76,7 +89,8 @@ namespace IceClash.Hockey
             bool presentation = Object.FindAnyObjectByType<HockeyCameraController>() != null
                 && virtualJoystick != null
                 && Object.FindAnyObjectByType<MatchHUD>() != null
-                && controlHierarchy && controlScaling && actionLayout && analogInput && sourceSelection && pointerOwnership;
+                && controlHierarchy && controlScaling && actionLayout && refinedControlVisuals && fixedJoystick
+                && analogInput && sourceSelection && pointerOwnership;
             bool puckIndependent = puck != null && puck.transform.parent == null && puck.Body != null;
             bool snapshots = setup != null && setup.Data.BlueTeam.Players.Count == 3 && setup.Data.RedTeam.Players.Count == 3
                 && !string.IsNullOrEmpty(setup.Data.ControlledPlayerId);
@@ -109,7 +123,7 @@ namespace IceClash.Hockey
             bool velocityMatchedControl = puck.CalculateCarryAcceleration(puck.Body.position, matchedVelocity).sqrMagnitude < 0.001f;
             float tapShotPower = passer.Shoot.EvaluatePower(0f);
             float chargedShotPower = passer.Shoot.EvaluatePower(1f);
-            bool hardShotTuning = tapShotPower >= 11f && chargedShotPower >= 26f
+            bool hardShotTuning = tapShotPower >= 20f && chargedShotPower >= 44f
                 && chargedShotPower > tapShotPower * 2f
                 && puck.Body.collisionDetectionMode == CollisionDetectionMode.ContinuousDynamic;
             StagePuckAtStick(puck, passer);
@@ -161,6 +175,8 @@ namespace IceClash.Hockey
 
             GoalTrigger blueScoringGoal = FindGoal(TeamId.Blue);
             GoalTrigger redScoringGoal = FindGoal(TeamId.Red);
+            bool easierGoals = GoalWidth(blueScoringGoal) >= 5.8f && GoalWidth(redScoringGoal) >= 5.8f
+                && GoalPostHalfWidth("Blue Goal") >= 3f && GoalPostHalfWidth("Red Goal") >= 3f;
             puck.ResetPuck(blueScoringGoal.transform.position + blueScoringGoal.ScoringDirection * 0.5f);
             puck.Body.linearVelocity = -blueScoringGoal.ScoringDirection * 5f;
             bool backSideGoalRejected = !blueScoringGoal.TryRegisterGoal(puck)
@@ -181,13 +197,56 @@ namespace IceClash.Hockey
             bool resultFlow = setup.MatchController.State == MatchStateSnapshot.Finished
                 && setup.MatchController.RemainingSeconds == 0f && setup.MatchController.ResultText == "HUMAN TEAM WINS";
 
-            if (!roster || !modular || !presentation || !puckIndependent || !snapshots
+            if (!roster || !smallerSkaters || !equalSizeGoalies || !modular || !presentation || !puckIndependent || !snapshots
                 || !humanPossessionAutoControl || !noTrajectorySwitch || !opponentPossessionAutoDefense
                 || !manualOverride || !recommendedPassFlow || !puckSizeAndPosition || !forgivingPickup
-                || !velocityMatchedControl || !hardShotTuning || !goalFlow || !resultFlow)
-                throw new System.InvalidOperationException($"PHASE1_PVE_SMOKE_FAIL roster={roster} modular={modular} presentation={presentation} controlHierarchy={controlHierarchy} controlScaling={controlScaling} actionLayout={actionLayout} analogInput={analogInput} sourceSelection={sourceSelection} pointerOwnership={pointerOwnership} puckIndependent={puckIndependent} snapshots={snapshots} puckSizeAndPosition={puckSizeAndPosition} forgivingPickup={forgivingPickup} velocityMatchedControl={velocityMatchedControl} hardShotTuning={hardShotTuning} tapShotPower={tapShotPower} chargedShotPower={chargedShotPower} puckScale={puckScale} controlOffset={controlOffset} recommendedPassFlow={recommendedPassFlow} recommendationShown={recommendationShown} recommendedTarget={recommendationBeforeMove?.PlayerId} movementInputIndependent={movementInputIndependent} carriedBeforePassTap={carriedBeforePassTap} tapReleased={tapReleased} releaseSequenceBefore={releasesBeforePass} recommendedPassReleased={recommendedPassReleased} humanPossessionAutoControl={humanPossessionAutoControl} noTrajectorySwitch={noTrajectorySwitch} opponentPossessionAutoDefense={opponentPossessionAutoDefense} manualOverride={manualOverride} backSideGoalRejected={backSideGoalRejected} bothGoalDirectionsConfigured={bothGoalDirectionsConfigured} frontSideGoalRegistered={frontSideGoalRegistered} goalFlow={goalFlow} resultFlow={resultFlow}");
+                || !velocityMatchedControl || !hardShotTuning || !easierGoals || !goalFlow || !resultFlow)
+                throw new System.InvalidOperationException($"PHASE1_PVE_SMOKE_FAIL roster={roster} smallerSkaters={smallerSkaters} equalSizeGoalies={equalSizeGoalies} modular={modular} presentation={presentation} controlHierarchy={controlHierarchy} controlScaling={controlScaling} actionLayout={actionLayout} refinedControlVisuals={refinedControlVisuals} fixedJoystick={fixedJoystick} analogInput={analogInput} sourceSelection={sourceSelection} pointerOwnership={pointerOwnership} puckIndependent={puckIndependent} snapshots={snapshots} puckSizeAndPosition={puckSizeAndPosition} forgivingPickup={forgivingPickup} velocityMatchedControl={velocityMatchedControl} hardShotTuning={hardShotTuning} tapShotPower={tapShotPower} chargedShotPower={chargedShotPower} easierGoals={easierGoals} puckScale={puckScale} controlOffset={controlOffset} recommendedPassFlow={recommendedPassFlow} recommendationShown={recommendationShown} recommendedTarget={recommendationBeforeMove?.PlayerId} movementInputIndependent={movementInputIndependent} carriedBeforePassTap={carriedBeforePassTap} tapReleased={tapReleased} releaseSequenceBefore={releasesBeforePass} recommendedPassReleased={recommendedPassReleased} humanPossessionAutoControl={humanPossessionAutoControl} noTrajectorySwitch={noTrajectorySwitch} opponentPossessionAutoDefense={opponentPossessionAutoDefense} manualOverride={manualOverride} backSideGoalRejected={backSideGoalRejected} bothGoalDirectionsConfigured={bothGoalDirectionsConfigured} frontSideGoalRegistered={frontSideGoalRegistered} goalFlow={goalFlow} resultFlow={resultFlow}");
 
-            Debug.Log("PHASE1_PVE_SMOKE_PASS skaters=6 goalies=2 humanInputs=1 aiSkaters=5 controls=FLOATING_JOYSTICK_PASS_DEKE_SHOOT unityUI=true safeArea=true referenceResolution=1920x1080 deadZone=true analog=true independentPointers=true movementClamped=true movementOnly=true recommendedPassTarget=true dottedPassPath=true tapPass=true imperfectNonHomingPass=true hardChargedShot=true continuousPuckCollision=true possessionAutoControl=true noTrajectorySwitch=true opponentAutoDefense=true keyboardSwitchOverride=true cameraRetargetSmooth=true puckIndependent=true smallerPuck=true frontPuckControl=true forgivingPickup=true velocityMatchedPuck=true oneWayGoals=true backSideGoalRejected=true goalReset=true timerResult=true");
+            Debug.Log("PHASE1_PVE_SMOKE_PASS skaters=6 smallerSkaters=true goalies=2 equalSizeGoalies=true humanInputs=1 aiSkaters=5 controls=FIXED_JOYSTICK_PASS_DEKE_SHOOT equalActionSizes=true unityUI=true safeArea=true referenceResolution=1920x1080 fixedJoystick=true persistentJoystick=true circularControls=true separateHitVisuals=true nonOverlappingActions=true deadZone=true analog=true independentPointers=true movementClamped=true movementOnly=true recommendedPassTarget=true dottedPassPath=true tapPass=true imperfectNonHomingPass=true harderShots=true hardChargedShot=true continuousPuckCollision=true easierGoals=true possessionAutoControl=true noTrajectorySwitch=true opponentAutoDefense=true keyboardSwitchOverride=true cameraRetargetSmooth=true puckIndependent=true smallerPuck=true frontPuckControl=true forgivingPickup=true velocityMatchedPuck=true oneWayGoals=true backSideGoalRejected=true goalReset=true timerResult=true");
+        }
+
+        private static bool AllSkatersUseScale(PlayerController[] players, float expectedScale)
+        {
+            Vector3 expected = Vector3.one * expectedScale;
+            for (int i = 0; i < players.Length; i++)
+            {
+                if ((players[i].transform.localScale - expected).sqrMagnitude > 0.0001f) return false;
+            }
+            return true;
+        }
+
+        private static bool AllGoaliesMatchPlayerSize(HockeyGoalieAI[] goalies, PlayerController referencePlayer)
+        {
+            Renderer referenceRenderer = referencePlayer != null ? referencePlayer.GetComponentInChildren<Renderer>() : null;
+            CharacterController referenceController = referencePlayer != null ? referencePlayer.GetComponent<CharacterController>() : null;
+            if (referenceRenderer == null || referenceController == null) return false;
+
+            for (int i = 0; i < goalies.Length; i++)
+            {
+                GameObject goalie = goalies[i].gameObject;
+                Renderer goalieRenderer = goalie.GetComponentInChildren<Renderer>();
+                CharacterController goalieController = goalie.GetComponent<CharacterController>();
+                if (goalieRenderer == null || goalieController == null
+                    || (goalieRenderer.bounds.size - referenceRenderer.bounds.size).sqrMagnitude > 0.0001f
+                    || Mathf.Abs(goalieController.height - referenceController.height) > 0.0001f
+                    || Mathf.Abs(goalieController.radius - referenceController.radius) > 0.0001f)
+                    return false;
+            }
+            return true;
+        }
+
+        private static float GoalWidth(GoalTrigger goal)
+        {
+            BoxCollider volume = goal != null ? goal.GetComponent<BoxCollider>() : null;
+            return volume != null ? volume.size.x : 0f;
+        }
+
+        private static float GoalPostHalfWidth(string goalName)
+        {
+            GameObject first = GameObject.Find(goalName + " Post A");
+            GameObject second = GameObject.Find(goalName + " Post B");
+            return first != null && second != null ? Mathf.Abs(second.transform.position.x - first.transform.position.x) * 0.5f : 0f;
         }
 
         private static int CountTeam(PlayerController[] players, TeamId team)
@@ -209,9 +268,83 @@ namespace IceClash.Hockey
             return rect != null ? rect.rect.width * rect.rect.height : 0f;
         }
 
+        private static float VisualArea(MobileActionButton button)
+        {
+            RectTransform visual = button != null ? button.transform.Find("Visual") as RectTransform : null;
+            return visual != null ? visual.rect.width * visual.rect.height : 0f;
+        }
+
+        private static bool VerifyJoystickVisuals(Transform joystickArea)
+        {
+            Image hitArea = joystickArea != null ? joystickArea.GetComponent<Image>() : null;
+            Image background = joystickArea != null
+                ? joystickArea.Find("JoystickBackground")?.GetComponent<Image>() : null;
+            Image handle = joystickArea != null
+                ? joystickArea.Find("JoystickBackground/JoystickHandle")?.GetComponent<Image>() : null;
+            return hitArea != null && hitArea.raycastTarget && hitArea.color.a == 0f
+                && background != null && background.sprite != null && background.preserveAspect && !background.raycastTarget
+                && background.gameObject.activeSelf
+                && handle != null && handle.sprite != null && handle.preserveAspect && !handle.raycastTarget;
+        }
+
+        private static bool VerifyFixedJoystick(Transform joystickArea)
+        {
+            RectTransform area = joystickArea as RectTransform;
+            RectTransform background = joystickArea != null
+                ? joystickArea.Find("JoystickBackground") as RectTransform : null;
+            RectTransform handle = joystickArea != null
+                ? joystickArea.Find("JoystickBackground/JoystickHandle") as RectTransform : null;
+            if (area == null || background == null || handle == null) return false;
+
+            Rect areaBounds = OffsetRect(area.rect, area.anchoredPosition);
+            return area.anchorMin == Vector2.zero && area.anchorMax == Vector2.zero
+                && Mathf.Abs(area.rect.width - area.rect.height) < 0.01f
+                && area.rect.width > background.rect.width
+                && areaBounds.xMin >= 0f && areaBounds.yMin >= 0f
+                && background.anchorMin == new Vector2(0.5f, 0.5f)
+                && background.anchorMax == new Vector2(0.5f, 0.5f)
+                && background.anchoredPosition == Vector2.zero && background.gameObject.activeSelf
+                && handle.anchoredPosition == Vector2.zero;
+        }
+
+        private static bool VerifyActionVisual(MobileActionButton action)
+        {
+            if (action == null) return false;
+            Image hitArea = action.GetComponent<Image>();
+            Button button = action.GetComponent<Button>();
+            RectTransform visual = action.transform.Find("Visual") as RectTransform;
+            Image visualImage = visual != null ? visual.GetComponent<Image>() : null;
+            Text label = visual != null ? visual.Find("Label")?.GetComponent<Text>() : null;
+            RectTransform hitRect = action.GetComponent<RectTransform>();
+            return hitArea != null && hitArea.raycastTarget && hitArea.color.a == 0f
+                && button != null && button.targetGraphic == visualImage
+                && visualImage != null && visualImage.sprite != null && visualImage.preserveAspect
+                && !visualImage.raycastTarget && label != null && !label.raycastTarget
+                && hitRect.rect.width >= visual.rect.width && hitRect.rect.height >= visual.rect.height;
+        }
+
+        private static bool RectTransformsOverlap(MobileActionButton first, MobileActionButton second)
+        {
+            if (first == null || second == null) return true;
+            RectTransform firstRect = first.GetComponent<RectTransform>();
+            RectTransform secondRect = second.GetComponent<RectTransform>();
+            Rect firstBounds = OffsetRect(firstRect.rect, firstRect.anchoredPosition);
+            Rect secondBounds = OffsetRect(secondRect.rect, secondRect.anchoredPosition);
+            return firstBounds.Overlaps(secondBounds);
+        }
+
+        private static Rect OffsetRect(Rect rect, Vector2 offset)
+        {
+            return new Rect(rect.position + offset, rect.size);
+        }
+
         private static bool VerifyIndependentPointers(VirtualJoystick joystick, MobileActionButton action)
         {
             if (joystick == null || action == null || EventSystem.current == null) return false;
+            RectTransform background = joystick.transform.Find("JoystickBackground") as RectTransform;
+            RectTransform handle = joystick.transform.Find("JoystickBackground/JoystickHandle") as RectTransform;
+            if (background == null || handle == null) return false;
+            Vector2 fixedOrigin = background.anchoredPosition;
             PointerEventData joystickPointer = new(EventSystem.current)
             {
                 pointerId = 11,
@@ -229,7 +362,8 @@ namespace IceClash.Hockey
             };
             action.OnPointerDown(actionPointer);
             bool simultaneous = joystick.ActivePointerId == 11 && action.ActivePointerId == 22
-                && joystick.Direction.magnitude <= 1f && joystick.Direction.sqrMagnitude > 0f;
+                && joystick.Direction.magnitude <= 1f && joystick.Direction.sqrMagnitude > 0f
+                && background.anchoredPosition == fixedOrigin && background.gameObject.activeSelf;
 
             PointerEventData unrelatedPointer = new(EventSystem.current)
             {
@@ -240,7 +374,10 @@ namespace IceClash.Hockey
             bool retained = joystick.ActivePointerId == 11;
             action.OnPointerUp(actionPointer);
             joystick.OnPointerUp(joystickPointer);
-            return simultaneous && retained && joystick.Direction == Vector2.zero;
+            bool resetAtFixedOrigin = joystick.Direction == Vector2.zero
+                && handle.anchoredPosition == Vector2.zero
+                && background.anchoredPosition == fixedOrigin && background.gameObject.activeSelf;
+            return simultaneous && retained && resetAtFixedOrigin;
         }
 
         private static PlayerController FindPlayer(PlayerController[] players, string playerId)

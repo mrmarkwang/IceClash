@@ -1,7 +1,8 @@
 /*
  * IceClash Phase 1 believable goalie AI.
  * Holds a crease anchor, tracks the puck laterally, and applies bounded save
- * rebounds to incoming free pucks before returning to its reset position.
+ * rebounds to incoming free pucks before returning to its reset position. Recent
+ * change: reduced movement speed and save reach to make scoring more forgiving.
  */
 
 using IceClash.Core;
@@ -13,8 +14,8 @@ namespace IceClash.AI
     public sealed class HockeyGoalieAI : MonoBehaviour, IResettableActor
     {
         [SerializeField] private float lateralRange = 2.25f;
-        [SerializeField] private float movementSpeed = 5.5f;
-        [SerializeField] private float saveRadius = 1.35f;
+        [SerializeField] private float movementSpeed = 4.25f;
+        [SerializeField] private float saveRadius = 0.9f;
         [SerializeField] private float reboundSpeed = 8f;
         [SerializeField] private float reactionDelay = 0.12f;
 

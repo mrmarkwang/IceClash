@@ -1,7 +1,8 @@
 /*
- * IceClash floating virtual joystick.
- * Captures one EventSystem pointer inside a dedicated lower-left area, floats
- * the visible base to that pointer, and exposes dead-zone-remapped skating intent.
+ * IceClash fixed virtual joystick.
+ * Captures one EventSystem pointer inside a bounded lower-left area, keeps the
+ * visible base stationary, and exposes dead-zone-remapped skating intent.
+ * Recent change: the base remains visible and only the handle moves or resets.
  */
 
 using UnityEngine;
@@ -34,6 +35,7 @@ namespace IceClash.UI
             handle = joystickHandle;
             radius = Mathf.Max(1f, joystickRadius);
             deadZone = Mathf.Clamp(configuredDeadZone, 0f, 0.95f);
+            origin = background != null ? background.anchoredPosition : Vector2.zero;
             ResetJoystick();
         }
 
@@ -43,19 +45,13 @@ namespace IceClash.UI
             if (!TryGetLocalPoint(eventData, out Vector2 localPoint)) return;
 
             activePointerId = eventData.pointerId;
-            origin = localPoint;
-            background.anchoredPosition = origin;
-            handle.anchoredPosition = Vector2.zero;
-            Direction = Vector2.zero;
-            background.gameObject.SetActive(true);
+            UpdateDirection(localPoint);
         }
 
         public void OnDrag(PointerEventData eventData)
         {
             if (eventData.pointerId != activePointerId || !TryGetLocalPoint(eventData, out Vector2 localPoint)) return;
-            Vector2 offset = Vector2.ClampMagnitude(localPoint - origin, radius);
-            handle.anchoredPosition = offset;
-            Direction = ApplyDeadZone(offset / radius, deadZone);
+            UpdateDirection(localPoint);
         }
 
         public void OnPointerUp(PointerEventData eventData)
@@ -81,12 +77,23 @@ namespace IceClash.UI
                 joystickArea, eventData.position, eventData.pressEventCamera, out localPoint);
         }
 
+        private void UpdateDirection(Vector2 localPoint)
+        {
+            Vector2 offset = Vector2.ClampMagnitude(localPoint - origin, radius);
+            if (handle != null) handle.anchoredPosition = offset;
+            Direction = ApplyDeadZone(offset / radius, deadZone);
+        }
+
         private void ResetJoystick()
         {
             activePointerId = NoPointer;
             Direction = Vector2.zero;
             if (handle != null) handle.anchoredPosition = Vector2.zero;
-            if (background != null) background.gameObject.SetActive(false);
+            if (background != null)
+            {
+                background.anchoredPosition = origin;
+                background.gameObject.SetActive(true);
+            }
         }
     }
 }

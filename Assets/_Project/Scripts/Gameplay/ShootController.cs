@@ -1,7 +1,8 @@
 /*
  * IceClash Phase 1 one-button shooting.
  * Tracks held charge and releases forceful bounded facing/goal-assisted shots
- * with configurable inaccuracy, never reading movement input directly.
+ * with configurable inaccuracy, never reading movement input directly. Recent
+ * change: further increased shot power and goal assistance for easier scoring.
  */
 
 using IceClash.Player;
@@ -12,12 +13,12 @@ namespace IceClash.Gameplay
 {
     public sealed class ShootController : MonoBehaviour
     {
-        [SerializeField] private float minimumPower = 11f;
-        [SerializeField] private float maximumPower = 26f;
+        [SerializeField] private float minimumPower = 20f;
+        [SerializeField] private float maximumPower = 44f;
         [SerializeField] private float fullChargeSeconds = 0.95f;
         [SerializeField] private float cooldown = 0.4f;
-        [SerializeField, Range(0f, 16f)] private float accuracyDegrees = 5f;
-        [SerializeField, Range(0f, 1f)] private float goalTargetAssist = 0.72f;
+        [SerializeField, Range(0f, 16f)] private float accuracyDegrees = 2.5f;
+        [SerializeField, Range(0f, 1f)] private float goalTargetAssist = 0.9f;
 
         private PlayerController player;
         private PuckController puck;

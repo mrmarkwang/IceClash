@@ -2,6 +2,7 @@
  * IceClash Phase 1 local PvE arena bootstrap.
  * Generates the placeholder marked rink, one-way goals/triggers, a compact
  * box-collider puck, 3v3-plus-goalies roster, match flow, HUD, and hockey camera.
+ * Recent change: widened the visible goal mouth and scoring volume to six metres.
  */
 
 using System.Collections.Generic;
@@ -27,6 +28,8 @@ namespace IceClash.Hockey
         private const float IceThickness = 0.45f;
         private const float PuckDiameter = 0.42f;
         private const float PuckHeight = 0.12f;
+        private const float GoalHalfWidth = 3f;
+        private const float GoalTriggerWidth = 5.8f;
         private bool hasBuilt;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
@@ -114,16 +117,16 @@ namespace IceClash.Hockey
             GameObject trigger = new(triggerName);
             trigger.transform.position = position;
             BoxCollider volume = trigger.AddComponent<BoxCollider>();
-            volume.size = new Vector3(3.7f, 1.5f, 1.15f);
+            volume.size = new Vector3(GoalTriggerWidth, 1.5f, 1.15f);
             GoalTrigger goal = trigger.AddComponent<GoalTrigger>();
             goal.Configure(match, scoringTeam, scoringDirection);
         }
 
         private static void CreateGoal(string goalName, Vector3 center, Material material, Material netMaterial)
         {
-            CreateCube(goalName + " Post A", center + new Vector3(-2f, 0f, 0f), new Vector3(0.2f, 1.9f, 0.2f), material, false);
-            CreateCube(goalName + " Post B", center + new Vector3(2f, 0f, 0f), new Vector3(0.2f, 1.9f, 0.2f), material, false);
-            CreateCube(goalName + " Crossbar", center + new Vector3(0f, 0.95f, 0f), new Vector3(4.2f, 0.2f, 0.2f), material, false);
+            CreateCube(goalName + " Post A", center + new Vector3(-GoalHalfWidth, 0f, 0f), new Vector3(0.2f, 1.9f, 0.2f), material, false);
+            CreateCube(goalName + " Post B", center + new Vector3(GoalHalfWidth, 0f, 0f), new Vector3(0.2f, 1.9f, 0.2f), material, false);
+            CreateCube(goalName + " Crossbar", center + new Vector3(0f, 0.95f, 0f), new Vector3(GoalHalfWidth * 2f + 0.2f, 0.2f, 0.2f), material, false);
             CreateGoalNet(goalName, center, netMaterial);
         }
 
@@ -133,16 +136,16 @@ namespace IceClash.Hockey
             float backZ = center.z + backOffset;
             for (int index = -2; index <= 2; index++)
             {
-                CreateCube($"{goalName} Net Vertical {index + 2}", new Vector3(index, 0.95f, backZ), new Vector3(0.045f, 1.85f, 0.045f), material, false);
+                CreateCube($"{goalName} Net Vertical {index + 2}", new Vector3(index * GoalHalfWidth / 2f, 0.95f, backZ), new Vector3(0.045f, 1.85f, 0.045f), material, false);
             }
 
             for (int index = 0; index < 5; index++)
             {
-                CreateCube($"{goalName} Net Horizontal {index}", new Vector3(0f, 0.12f + index * 0.44f, backZ), new Vector3(4.05f, 0.045f, 0.045f), material, false);
+                CreateCube($"{goalName} Net Horizontal {index}", new Vector3(0f, 0.12f + index * 0.44f, backZ), new Vector3(GoalHalfWidth * 2f + 0.05f, 0.045f, 0.045f), material, false);
             }
 
-            CreateCube($"{goalName} Net Side A", new Vector3(-2f, 0.12f, center.z + backOffset / 2f), new Vector3(0.05f, 0.05f, Mathf.Abs(backOffset)), material, false);
-            CreateCube($"{goalName} Net Side B", new Vector3(2f, 0.12f, center.z + backOffset / 2f), new Vector3(0.05f, 0.05f, Mathf.Abs(backOffset)), material, false);
+            CreateCube($"{goalName} Net Side A", new Vector3(-GoalHalfWidth, 0.12f, center.z + backOffset / 2f), new Vector3(0.05f, 0.05f, Mathf.Abs(backOffset)), material, false);
+            CreateCube($"{goalName} Net Side B", new Vector3(GoalHalfWidth, 0.12f, center.z + backOffset / 2f), new Vector3(0.05f, 0.05f, Mathf.Abs(backOffset)), material, false);
         }
 
         private static List<Vector3> CreateRinkOutline()

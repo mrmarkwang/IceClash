@@ -1,7 +1,8 @@
 /*
  * IceClash runtime mobile-control view builder.
- * Creates the safe-area-aware Unity UI hierarchy and placeholder visuals while
- * returning focused joystick/button bindings to the shared input controller.
+ * Creates a safe-area-aware fixed joystick and circular action visuals with
+ * generous independent hit regions, then returns shared input bindings.
+ * Recent changes: anchored the stick lower-left and unified action-button sizing.
  */
 
 using UnityEngine;
@@ -32,8 +33,18 @@ namespace IceClash.UI
 
     public static class MobileControlsBuilder
     {
-        private static readonly Color PanelColor = new(0.05f, 0.12f, 0.2f, 0.72f);
-        private static readonly Color PressedColor = new(0.2f, 0.68f, 1f, 0.96f);
+        private const int CircleTextureSize = 128;
+        private static readonly Vector2 ActionButtonSize = new(160f, 160f);
+        private const float ActionVisualDiameter = 140f;
+        private static readonly Vector2 JoystickZoneSize = new(360f, 360f);
+        private static readonly Vector2 JoystickZoneCenter = new(390f, 430f);
+        private static readonly Color JoystickRingColor = new(0.04f, 0.12f, 0.2f, 0.82f);
+        private static readonly Color JoystickHandleColor = new(0.76f, 0.91f, 1f, 0.96f);
+        private static readonly Color ActionColor = new(0.04f, 0.11f, 0.19f, 0.84f);
+        private static readonly Color HighlightedColor = new(0.12f, 0.35f, 0.54f, 0.92f);
+        private static readonly Color PressedColor = new(0.18f, 0.68f, 1f, 0.98f);
+        private static Sprite ringSprite;
+        private static Sprite filledCircleSprite;
 
         public static MobileControlBindings Build(Transform parent)
         {
@@ -55,23 +66,26 @@ namespace IceClash.UI
             mobileControls.gameObject.AddComponent<SafeAreaFitter>();
 
             RectTransform joystickArea = CreateRect("JoystickArea", mobileControls,
-                Vector2.zero, new Vector2(0.48f, 0.62f), Vector2.zero, Vector2.zero);
-            joystickArea.offsetMin = new Vector2(130f, 130f);
-            joystickArea.offsetMax = new Vector2(-130f, -130f);
+                Vector2.zero, Vector2.zero, JoystickZoneSize, JoystickZoneCenter);
+            joystickArea.pivot = new Vector2(0.5f, 0.5f);
             Image joystickHitArea = joystickArea.gameObject.AddComponent<Image>();
             joystickHitArea.color = Color.clear;
 
             RectTransform joystickBackground = CreateRect("JoystickBackground", joystickArea,
-                Vector2.zero, Vector2.zero, new Vector2(260f, 260f), Vector2.zero);
+                new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(260f, 260f), Vector2.zero);
             joystickBackground.pivot = new Vector2(0.5f, 0.5f);
             Image backgroundImage = joystickBackground.gameObject.AddComponent<Image>();
-            backgroundImage.color = new Color(0.06f, 0.14f, 0.24f, 0.7f);
+            backgroundImage.sprite = GetRingSprite();
+            backgroundImage.color = JoystickRingColor;
+            backgroundImage.preserveAspect = true;
             backgroundImage.raycastTarget = false;
 
             RectTransform joystickHandle = CreateRect("JoystickHandle", joystickBackground,
                 new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(110f, 110f), Vector2.zero);
             Image handleImage = joystickHandle.gameObject.AddComponent<Image>();
-            handleImage.color = new Color(0.75f, 0.9f, 1f, 0.92f);
+            handleImage.sprite = GetFilledCircleSprite();
+            handleImage.color = JoystickHandleColor;
+            handleImage.preserveAspect = true;
             handleImage.raycastTarget = false;
 
             VirtualJoystick joystick = joystickArea.gameObject.AddComponent<VirtualJoystick>();
@@ -80,43 +94,56 @@ namespace IceClash.UI
             RectTransform actionButtons = CreateRect("ActionButtons", mobileControls,
                 new Vector2(0.58f, 0f), new Vector2(1f, 0.62f), Vector2.zero, Vector2.zero);
             MobileActionButton pass = CreateButton("PassButton", "PASS", actionButtons,
-                new Vector2(180f, 130f), new Vector2(-365f, 250f));
+                new Vector2(-365f, 250f));
             MobileActionButton deke = CreateButton("DekeButton", "DEKE", actionButtons,
-                new Vector2(190f, 140f), new Vector2(-390f, 90f));
+                new Vector2(-390f, 90f));
             MobileActionButton shoot = CreateButton("ShootButton", "SHOOT", actionButtons,
-                new Vector2(260f, 230f), new Vector2(-135f, 120f));
+                new Vector2(-135f, 120f));
 
             return new MobileControlBindings(canvasObject, joystick, pass, deke, shoot);
         }
 
         private static MobileActionButton CreateButton(string objectName, string label, Transform parent,
-            Vector2 size, Vector2 anchoredPosition)
+            Vector2 anchoredPosition)
         {
             RectTransform rect = CreateRect(objectName, parent,
-                Vector2.right, Vector2.right, size, anchoredPosition);
+                Vector2.right, Vector2.right, ActionButtonSize, anchoredPosition);
             rect.pivot = new Vector2(0.5f, 0.5f);
-            Image image = rect.gameObject.AddComponent<Image>();
-            image.color = PanelColor;
+            Image hitArea = rect.gameObject.AddComponent<Image>();
+            hitArea.color = Color.clear;
+            hitArea.raycastTarget = true;
+
+            RectTransform visualRect = CreateRect("Visual", rect,
+                new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                new Vector2(ActionVisualDiameter, ActionVisualDiameter), Vector2.zero);
+            Image visual = visualRect.gameObject.AddComponent<Image>();
+            visual.sprite = GetRingSprite();
+            visual.color = ActionColor;
+            visual.preserveAspect = true;
+            visual.raycastTarget = false;
+
             Button button = rect.gameObject.AddComponent<Button>();
-            button.targetGraphic = image;
+            button.targetGraphic = visual;
             button.transition = Selectable.Transition.ColorTint;
             ColorBlock colors = button.colors;
-            colors.normalColor = PanelColor;
-            colors.highlightedColor = new Color(0.12f, 0.32f, 0.5f, 0.9f);
+            colors.normalColor = ActionColor;
+            colors.highlightedColor = HighlightedColor;
             colors.pressedColor = PressedColor;
-            colors.selectedColor = PanelColor;
+            colors.selectedColor = ActionColor;
+            colors.disabledColor = new Color(ActionColor.r, ActionColor.g, ActionColor.b, 0.35f);
+            colors.colorMultiplier = 1f;
             colors.fadeDuration = 0.06f;
             button.colors = colors;
             Navigation navigation = button.navigation;
             navigation.mode = Navigation.Mode.None;
             button.navigation = navigation;
 
-            RectTransform textRect = CreateRect("Label", rect, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+            RectTransform textRect = CreateRect("Label", visualRect, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
             Text text = textRect.gameObject.AddComponent<Text>();
             text.text = label;
             text.alignment = TextAnchor.MiddleCenter;
             text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-            text.fontSize = label == "SHOOT" ? 44 : 36;
+            text.fontSize = 34;
             text.fontStyle = FontStyle.Bold;
             text.color = Color.white;
             text.raycastTarget = false;
@@ -124,6 +151,63 @@ namespace IceClash.UI
             MobileActionButton input = rect.gameObject.AddComponent<MobileActionButton>();
             input.Configure(label, text);
             return input;
+        }
+
+        private static Sprite GetRingSprite()
+        {
+            if (ringSprite == null) ringSprite = CreateCircleSprite("Mobile Control Ring", 54, 0.7f, 0.86f);
+            return ringSprite;
+        }
+
+        private static Sprite GetFilledCircleSprite()
+        {
+            if (filledCircleSprite == null) filledCircleSprite = CreateCircleSprite("Mobile Control Fill", 255, 0.78f, 0.9f);
+            return filledCircleSprite;
+        }
+
+        private static Sprite CreateCircleSprite(string spriteName, byte innerAlpha, float borderStart, float edgeStart)
+        {
+            Texture2D texture = new(CircleTextureSize, CircleTextureSize, TextureFormat.RGBA32, false, true)
+            {
+                name = spriteName + " Texture",
+                filterMode = FilterMode.Bilinear,
+                wrapMode = TextureWrapMode.Clamp,
+                hideFlags = HideFlags.HideAndDontSave
+            };
+            Color32[] pixels = new Color32[CircleTextureSize * CircleTextureSize];
+            float center = (CircleTextureSize - 1f) * 0.5f;
+            float radius = CircleTextureSize * 0.5f;
+            for (int y = 0; y < CircleTextureSize; y++)
+            {
+                for (int x = 0; x < CircleTextureSize; x++)
+                {
+                    float distance = new Vector2(x - center, y - center).magnitude / radius;
+                    byte alpha = EvaluateCircleAlpha(distance, innerAlpha, borderStart, edgeStart);
+                    pixels[y * CircleTextureSize + x] = new Color32(255, 255, 255, alpha);
+                }
+            }
+
+            texture.SetPixels32(pixels);
+            texture.Apply(false, true);
+            Sprite sprite = Sprite.Create(texture, new Rect(0f, 0f, CircleTextureSize, CircleTextureSize),
+                new Vector2(0.5f, 0.5f), 100f);
+            sprite.name = spriteName;
+            sprite.hideFlags = HideFlags.HideAndDontSave;
+            return sprite;
+        }
+
+        private static byte EvaluateCircleAlpha(float distance, byte innerAlpha, float borderStart, float edgeStart)
+        {
+            if (distance >= 1f) return 0;
+            if (distance <= borderStart) return innerAlpha;
+            if (distance <= edgeStart)
+            {
+                float borderBlend = Mathf.InverseLerp(borderStart, edgeStart, distance);
+                return (byte)Mathf.RoundToInt(Mathf.Lerp(innerAlpha, 255f, borderBlend));
+            }
+
+            float edgeBlend = Mathf.InverseLerp(edgeStart, 1f, distance);
+            return (byte)Mathf.RoundToInt(Mathf.Lerp(255f, 0f, edgeBlend));
         }
 
         private static RectTransform CreateRect(string objectName, Transform parent, Vector2 anchorMin,
