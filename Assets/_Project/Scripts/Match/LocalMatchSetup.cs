@@ -1,6 +1,6 @@
 /*
  * IceClash Phase 1 local PvE roster and systems composition.
- * Builds count-driven three-skater teams, two goalies, one shared hardware/mobile
+ * Builds count-driven five-skater teams, two goalies, one shared hardware/mobile
  * input controller with Unity UI controls, per-skater AI, possession-based control,
  * adaptive offense/defense touch actions, contextual human and opponent forechecks,
  * match flow, HUD, and live snapshots. Skater and goalie silhouettes retain
@@ -23,7 +23,7 @@ namespace IceClash.Match
 {
     public sealed class LocalMatchSetup : MonoBehaviour
     {
-        private const int SkatersPerTeam = 3;
+        private const int SkatersPerTeam = 5;
         private const float SkaterScale = 0.68f;
         private static readonly Vector3 GoalieScale = new(0.9f, 0.72f, 0.78f);
         [SerializeField] private AIDifficulty opponentDifficulty = AIDifficulty.Normal;

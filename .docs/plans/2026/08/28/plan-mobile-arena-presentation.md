@@ -15,7 +15,7 @@ Bring the runtime arena’s proportions and landscape composition close to the s
 ## Decisions
 
 - Keep runtime procedural geometry and refine it in place; reject a new scene, imported rink package, copied screenshot assets, or a parallel mobile arena.
-- Use a `24 x 48` rink with larger rounded corners. This preserves a hockey-like 2:1 length-to-width relationship while retaining enough width for the current three-skater formations.
+- Use a `24 x 48` rink with larger rounded corners. This preserves a hockey-like 2:1 length-to-width relationship while retaining enough width for the current five-skater formations.
 - Construct boundaries as a collider-backed low white board, a thin yellow kickplate, a blue top rail, and a translucent non-colliding glass layer. Preserve one physical containment boundary rather than stacking colliders.
 - Keep the already-requested six-unit goal mouth and scoring width. Add rear posts, roof rails, base rails, and strand grids on back/roof/sides so the net reads correctly from the oblique camera.
 - Use a closer, narrower-FOV follow camera centered on the selected player with existing puck bias and smoothing. Do not add cinematic camera states or device-specific branches.

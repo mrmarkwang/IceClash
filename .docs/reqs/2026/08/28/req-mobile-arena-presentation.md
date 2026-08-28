@@ -6,7 +6,7 @@ The runtime-built prototype rink currently reads as a short cyan tabletop with t
 
 ## Requirement
 
-Redesign the generated arena presentation for landscape mobile play so the rink has believable hockey proportions and markings, the boards and glass read as rink construction, goals have visible three-dimensional frames and netting, and the follow camera composes a closer action view. Scale skaters down relative to the rink and make goalies similarly tall but visibly broader than skaters, while preserving the existing 3v3 gameplay, controls, scoring, AI, and runtime scene composition.
+Redesign the generated arena presentation for landscape mobile play so the rink has believable hockey proportions and markings, the boards and glass read as rink construction, goals have visible three-dimensional frames and netting, and the follow camera composes a closer action view. Scale skaters down relative to the rink and make goalies similarly tall but visibly broader than skaters, while preserving the existing 5v5 gameplay, controls, scoring, AI, and runtime scene composition.
 
 ## Acceptance Criteria
 
@@ -16,7 +16,7 @@ Redesign the generated arena presentation for landscape mobile play so the rink 
 - [x] The landscape follow camera keeps the controlled action large enough to read on a phone and normally shows a cropped zone/half-rink composition instead of the entire rink.
 - [x] Skaters are smaller relative to the new rink, and goalies remain similar in height while using a broader visual footprint than skaters.
 - [x] Goal triggers, goalie anchors, defensive formation anchors, and rink geometry remain aligned after the proportion changes, and front-side scoring still works in both directions.
-- [x] Existing 3v3-plus-goalies composition, one-human control route, mobile controls, match flow, and gameplay smoke validation remain functional.
+- [x] Existing 5v5-plus-goalies composition, one-human control route, mobile controls, match flow, and gameplay smoke validation remain functional.
 
 ## Constraints
 
@@ -29,5 +29,5 @@ Redesign the generated arena presentation for landscape mobile play so the rink 
 ## Non-Goals
 
 - Production character models, animation, crowds, benches, arena branding, advertisements, audio, or licensed artwork.
-- New hockey rules, team counts, controls, puck mechanics, scoring behavior, AI states, multiplayer, backend, or progression systems.
+- New hockey rules, further team-count changes, controls, puck mechanics, scoring behavior, AI states, multiplayer, backend, or progression systems.
 - Photorealistic mesh assets or a full lighting/post-processing pipeline.

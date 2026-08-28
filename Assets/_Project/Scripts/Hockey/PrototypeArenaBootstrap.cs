@@ -1,7 +1,7 @@
 /*
  * IceClash Phase 1 local PvE arena bootstrap.
  * Generates the mobile-first marked rink, layered boards/glass, dimensional nets,
- * one-way goals/triggers, puck, 3v3-plus-goalies roster, match flow, HUD, and camera.
+ * one-way goals/triggers, puck, 5v5-plus-goalies roster, match flow, HUD, and camera.
  * Recent changes: regulation-inspired rink/camera proportions and a compact hockey
  * goal mouth with matching depth and scoring volume.
  */
@@ -113,7 +113,7 @@ namespace IceClash.Hockey
 
             GameObject skaterPrefab = Resources.Load<GameObject>("Skater");
             if (skaterPrefab == null) throw new System.InvalidOperationException("Missing Phase 3 skater prefab at Assets/_Project/Prefabs/Resources/Skater.prefab.");
-            LocalMatchSetup matchSetup = new GameObject("Local PvE 3v3 Match").AddComponent<LocalMatchSetup>();
+            LocalMatchSetup matchSetup = new GameObject("Local PvE 5v5 Match").AddComponent<LocalMatchSetup>();
             PlayerController player = matchSetup.BuildRoster(skaterPrefab, puck.GetComponent<PuckController>(), blue, red);
             CreateGoalTrigger("Blue Goal Trigger", new Vector3(0f, GoalHeight / 2f, -GoalLineDistance - GoalDepth * 0.5f), TeamId.Red, Vector3.back, matchSetup.MatchController);
             CreateGoalTrigger("Red Goal Trigger", new Vector3(0f, GoalHeight / 2f, GoalLineDistance + GoalDepth * 0.5f), TeamId.Blue, Vector3.forward, matchSetup.MatchController);

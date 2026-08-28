@@ -1,6 +1,6 @@
 # IceClash — Phase 1 Local PvE Hockey
 
-IceClash is a mobile-first Unity hockey prototype focused on simple controls and meaningful team decisions. Phase 1 is a completely local match: three human-team skaters and one goalie versus three AI-team skaters and one goalie. The user controls one human-team skater at a time; AI controls everyone else.
+IceClash is a mobile-first Unity hockey prototype focused on simple controls and meaningful team decisions. Phase 1 is a completely local match: five human-team skaters and one goalie versus five AI-team skaters and one goalie. The user controls one human-team skater at a time; AI controls everyone else.
 
 Multiplayer, networking, Photon Fusion, matchmaking, accounts, Firebase, backend services, monetization, and store integration are intentionally excluded until the local hockey loop is fun.
 
@@ -17,7 +17,7 @@ Multiplayer, networking, Photon Fusion, matchmaking, accounts, Firebase, backend
 2. Open `Assets/_Project/Scenes/PrototypeArena.unity`.
 3. Enter Play Mode.
 
-The scene builds the marked rink, six skaters, two AI goalies, physics puck, two goal triggers, faceoff/match state, hockey camera, controlled-player marker, scoreboard, timer, joystick, and possession-adaptive action buttons at runtime.
+The scene builds the marked rink, ten skaters, two AI goalies, physics puck, two goal triggers, faceoff/match state, hockey camera, controlled-player marker, scoreboard, timer, joystick, and possession-adaptive action buttons at runtime.
 
 ## Controls
 
@@ -50,7 +50,7 @@ Gameplay feel values are serialized fields on these focused components so they c
 
 ## Verification
 
-With the Editor out of Play Mode, choose **IceClash > Run Phase 1 PvE Smoke Check**. The check enters Play Mode, builds the real arena, verifies the 3v3-plus-goalies roster and one-human invariant, checks modular gameplay/camera/HUD wiring, validates possession-adaptive actions, touch/hardware mappings, body/pull checks and their bounds, short/medium/long and moving-target pass reception plus obstruction interception, scores and resets a goal, expires the timer, and exits. A passing run logs:
+With the Editor out of Play Mode, choose **IceClash > Run Phase 1 PvE Smoke Check**. The check enters Play Mode, builds the real arena, verifies the 5v5-plus-goalies roster and one-human invariant, checks modular gameplay/camera/HUD wiring, validates possession-adaptive actions, touch/hardware mappings, body/pull checks and their bounds, short/medium/long and moving-target pass reception plus obstruction interception, scores and resets a goal, expires the timer, and exits. A passing run logs:
 
 `PHASE1_PVE_SMOKE_PASS`
 

@@ -8,7 +8,7 @@ Given `PrototypeArena` is opened in Unity `6000.5.9f1`
 
 When Play Mode starts
 
-Then the marked small rink contains three Blue skaters, one Blue goalie, three Red skaters, one Red goalie, two goals, and one independent physics puck
+Then the marked small rink contains five Blue skaters, one Blue goalie, five Red skaters, one Red goalie, two goals, and one independent physics puck
 
 And exactly one Blue skater has human input while every other skater has AI input
 
