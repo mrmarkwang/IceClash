@@ -1,7 +1,7 @@
 /*
  * IceClash Phase 1 local gameplay contracts.
- * Defines independent movement, tap PASS, charged-shot, and switch signals
- * shared by hardware, touch, and AI without networking or service concerns.
+ * Defines independent movement, tap PASS, charged-shot, switch, and contextual
+ * defensive-check signals shared by hardware, touch, and AI.
  */
 
 using System;
@@ -22,6 +22,7 @@ namespace IceClash.Core
         bool ShootHeld { get; }
         bool ShootReleased { get; }
         bool SwitchPressed { get; }
+        bool CheckPressed { get; }
     }
 
     public interface IPlayerController

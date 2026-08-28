@@ -1,7 +1,7 @@
 /*
  * IceClash Phase 1 skating motor.
- * Provides camera-relative analog skating with acceleration, glide, braking,
- * momentum, and speed-aware turning independently of puck and AI decisions.
+ * Provides camera-relative skating plus bounded, decaying body-check separation.
+ * External motion is cleared whenever gameplay disables or an actor resets.
  */
 
 using UnityEngine;
@@ -21,17 +21,36 @@ namespace IceClash.Player
         private CharacterController characterController;
         private Vector2 moveInput;
         private Vector3 planarVelocity;
+        private Vector3 externalVelocity;
+        private float externalVelocityDecay = 14f;
         private float speedScale = 1f;
         private bool movementEnabled = true;
 
         public Vector3 Velocity => planarVelocity;
+        public Vector3 ExternalVelocity => externalVelocity;
         public float NormalizedSpeed => maximumSpeed <= 0f ? 0f : planarVelocity.magnitude / maximumSpeed;
         public bool IsMoving => planarVelocity.sqrMagnitude > 0.04f;
 
         private void Awake() => characterController = GetComponent<CharacterController>();
         public void SetInput(Vector2 input) => moveInput = Vector2.ClampMagnitude(input, 1f);
         public void SetSpeedScale(float value) => speedScale = Mathf.Clamp(value, 0.4f, 1.25f);
-        public void SetMovementEnabled(bool value) { movementEnabled = value; if (!value) moveInput = Vector2.zero; }
+        public void SetMovementEnabled(bool value)
+        {
+            movementEnabled = value;
+            if (!value)
+            {
+                moveInput = Vector2.zero;
+                externalVelocity = Vector3.zero;
+            }
+        }
+
+        public void ApplyExternalImpulse(Vector3 impulse, float maximumExternalSpeed, float decay)
+        {
+            Vector3 planarImpulse = Vector3.ProjectOnPlane(impulse, Vector3.up);
+            externalVelocity = Vector3.ClampMagnitude(externalVelocity + planarImpulse,
+                Mathf.Clamp(maximumExternalSpeed, 0f, 6f));
+            externalVelocityDecay = Mathf.Clamp(decay, 4f, 30f);
+        }
 
         private void Update()
         {
@@ -50,7 +69,9 @@ namespace IceClash.Player
             }
 
             float vertical = characterController.isGrounded ? -1f : Physics.gravity.y;
-            characterController.Move((planarVelocity + Vector3.up * vertical) * Time.deltaTime);
+            characterController.Move((planarVelocity + externalVelocity + Vector3.up * vertical) * Time.deltaTime);
+            externalVelocity = Vector3.MoveTowards(externalVelocity, Vector3.zero,
+                externalVelocityDecay * Time.deltaTime);
         }
 
         public void ResetMotion(Vector3 position, Quaternion rotation)
@@ -60,6 +81,7 @@ namespace IceClash.Player
             transform.SetPositionAndRotation(position, rotation);
             characterController.enabled = wasEnabled;
             planarVelocity = Vector3.zero;
+            externalVelocity = Vector3.zero;
             moveInput = Vector2.zero;
         }
 

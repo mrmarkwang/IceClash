@@ -1,7 +1,7 @@
 /*
  * IceClash mobile action button input.
- * Captures one EventSystem pointer, buffers frame-stable press/hold/release phases
- * across update order, raises events, and emits temporary action debug messages.
+ * Captures one EventSystem pointer, buffers frame-stable press/hold/release phases,
+ * and safely resets and relabels reusable possession-dependent action slots.
  */
 
 using System;
@@ -39,9 +39,25 @@ namespace IceClash.UI
 
         public void Configure(string buttonLabel, Text text)
         {
-            label = buttonLabel;
             labelText = text;
+            SetLabel(buttonLabel);
+        }
+
+        public void SetLabel(string buttonLabel)
+        {
+            label = buttonLabel;
             if (labelText != null) labelText.text = label;
+        }
+
+        public void ResetInput()
+        {
+            activePointerId = NoPointer;
+            pressedFrame = -1;
+            releasedFrame = -1;
+            deliveredPressSequence = pressSequence;
+            deliveredReleaseSequence = releaseSequence;
+            pressDeliveryFrame = -1;
+            releaseDeliveryFrame = -1;
         }
 
         public void OnPointerDown(PointerEventData eventData)
@@ -80,13 +96,7 @@ namespace IceClash.UI
 
         private void OnDisable()
         {
-            activePointerId = NoPointer;
-            pressedFrame = -1;
-            releasedFrame = -1;
-            deliveredPressSequence = pressSequence;
-            deliveredReleaseSequence = releaseSequence;
-            pressDeliveryFrame = -1;
-            releaseDeliveryFrame = -1;
+            ResetInput();
         }
     }
 }

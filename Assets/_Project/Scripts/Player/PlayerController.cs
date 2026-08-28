@@ -2,6 +2,8 @@
  * IceClash modular skater composition and action routing.
  * Sends Move only to skating, one tap to recommended-target passing, and charged
  * SHOOT signals to assisted shooting while retaining identity and reset state.
+ * Recent changes: composes a pass-reception zone and exposes gameplay enablement
+ * so team-level defensive checks cannot run during pauses or resets.
  */
 
 using IceClash.AI;
@@ -13,7 +15,7 @@ using UnityEngine;
 namespace IceClash.Player
 {
     [RequireComponent(typeof(CharacterController), typeof(PlayerMovementController), typeof(StickPuckInteraction))]
-    [RequireComponent(typeof(PassController), typeof(ShootController))]
+    [RequireComponent(typeof(PassReceivingZone), typeof(PassController), typeof(ShootController))]
     public sealed class PlayerController : MonoBehaviour, IPlayerController, IResettableActor
     {
         [SerializeField] private string playerId = "skater";
@@ -29,9 +31,11 @@ namespace IceClash.Player
         public TeamId Team => team;
         public PlayerMovementState State { get; private set; }
         public float Stamina => 100f;
+        public bool GameplayEnabled => gameplayEnabled;
         public IPlayerInput InputSource => inputSource;
         public PlayerMovementController Movement { get; private set; }
         public StickPuckInteraction Stick { get; private set; }
+        public PassReceivingZone PassReception { get; private set; }
         public PassController Pass { get; private set; }
         public ShootController Shoot { get; private set; }
         public PuckController Puck { get; private set; }
@@ -48,6 +52,7 @@ namespace IceClash.Player
         {
             Movement = GetComponent<PlayerMovementController>() ?? gameObject.AddComponent<PlayerMovementController>();
             Stick = GetComponent<StickPuckInteraction>() ?? gameObject.AddComponent<StickPuckInteraction>();
+            PassReception = GetComponent<PassReceivingZone>() ?? gameObject.AddComponent<PassReceivingZone>();
             Pass = GetComponent<PassController>() ?? gameObject.AddComponent<PassController>();
             Shoot = GetComponent<ShootController>() ?? gameObject.AddComponent<ShootController>();
         }
@@ -62,6 +67,7 @@ namespace IceClash.Player
             resetPosition = spawnPosition;
             resetRotation = playerTeam == TeamId.Blue ? Quaternion.identity : Quaternion.Euler(0f, 180f, 0f);
             Stick.Configure(this, controlledPuck);
+            PassReception.Configure(this, Stick);
             Pass.Configure(this, controlledPuck);
             Shoot.Configure(this, controlledPuck);
         }

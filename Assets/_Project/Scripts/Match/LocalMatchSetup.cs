@@ -2,8 +2,9 @@
  * IceClash Phase 1 local PvE roster and systems composition.
  * Builds count-driven three-skater teams, two goalies, one shared hardware/mobile
  * input controller with Unity UI controls, per-skater AI, possession-based control,
- * keyboard switching, match flow, HUD, and live snapshots. Recent changes: smaller
- * rink-relative skaters and similarly tall, broader padded goalie silhouettes.
+ * adaptive offense/defense touch actions, contextual human and opponent forechecks,
+ * match flow, HUD, and live snapshots. Skater and goalie silhouettes retain
+ * rink-relative scaling.
  */
 
 using System;
@@ -29,6 +30,7 @@ namespace IceClash.Match
         [SerializeField] private MatchData matchData = new();
         private readonly List<PlayerController> players = new();
         private readonly List<PlayerController> bluePlayers = new();
+        private readonly List<PlayerController> redPlayers = new();
         private readonly List<HockeyGoalieAI> goalies = new();
         private PuckController puck;
 
@@ -37,6 +39,7 @@ namespace IceClash.Match
         public IReadOnlyList<HockeyGoalieAI> Goalies => goalies;
         public PlayerSwitchController SwitchController { get; private set; }
         public PlayerControlManager ControlManager { get; private set; }
+        public DefensiveCheckController DefenseController { get; private set; }
         public MatchController MatchController { get; private set; }
         public PlayerInputController HumanInput { get; private set; }
 
@@ -44,14 +47,15 @@ namespace IceClash.Match
         {
             if (skaterPrefab == null) throw new ArgumentNullException(nameof(skaterPrefab));
             puck = controlledPuck;
-            players.Clear(); bluePlayers.Clear(); goalies.Clear();
+            players.Clear(); bluePlayers.Clear(); redPlayers.Clear(); goalies.Clear();
             HumanInput = BuildInputAndHud();
 
             for (int slot = 0; slot < SkatersPerTeam; slot++)
             {
                 PlayerController blue = SpawnSkater(skaterPrefab, $"blue-{slot + 1}", TeamId.Blue, slot, blueMaterial, AIDifficulty.Normal);
                 bluePlayers.Add(blue);
-                SpawnSkater(skaterPrefab, $"red-{slot + 1}", TeamId.Red, slot, redMaterial, opponentDifficulty);
+                PlayerController red = SpawnSkater(skaterPrefab, $"red-{slot + 1}", TeamId.Red, slot, redMaterial, opponentDifficulty);
+                redPlayers.Add(red);
             }
 
             goalies.Add(SpawnGoalie(skaterPrefab, "Blue Goalie", TeamId.Blue, new Vector3(0f, 1f, -PrototypeRinkGeometry.GoalieAnchor), blueMaterial));
@@ -62,6 +66,13 @@ namespace IceClash.Match
             SwitchController.Configure(bluePlayers, HumanInput, puck, marker);
             ControlManager = gameObject.AddComponent<PlayerControlManager>();
             ControlManager.Configure(bluePlayers, puck, SwitchController);
+            DefensiveCheckTuning defenseTuning = Resources.Load<DefensiveCheckTuning>("DefensiveCheckTuning");
+            if (defenseTuning == null) throw new InvalidOperationException(
+                "Missing Assets/_Project/Resources/DefensiveCheckTuning.asset.");
+            DefenseController = gameObject.AddComponent<DefensiveCheckController>();
+            DefenseController.Configure(HumanInput, SwitchController, puck, defenseTuning);
+            for (int i = 0; i < redPlayers.Count; i++)
+                redPlayers[i].GetComponent<HockeyPlayerAI>().ConfigureDefense(DefenseController, redPlayers);
             MatchController = gameObject.AddComponent<MatchController>();
             MatchController.Configure(players, goalies, puck, new Vector3(0f, 0.55f, 0f));
             CaptureData();
@@ -103,7 +114,7 @@ namespace IceClash.Match
             MobileControlBindings controls = MobileControlsBuilder.Build(transform);
             LocalPlayerInput hardware = controls.CanvasRoot.AddComponent<LocalPlayerInput>();
             PlayerInputController input = controls.CanvasRoot.AddComponent<PlayerInputController>();
-            input.Configure(hardware, controls.Joystick, controls.Pass, controls.Deke, controls.Shoot);
+            input.Configure(hardware, controls.Joystick, controls.Pass, controls.Deke, controls.Shoot, puck);
             controls.CanvasRoot.AddComponent<MatchHUD>();
             return input;
         }

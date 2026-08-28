@@ -17,7 +17,7 @@ Multiplayer, networking, Photon Fusion, matchmaking, accounts, Firebase, backend
 2. Open `Assets/_Project/Scenes/PrototypeArena.unity`.
 3. Enter Play Mode.
 
-The scene builds the marked rink, six skaters, two AI goalies, physics puck, two goal triggers, faceoff/match state, hockey camera, controlled-player marker, scoreboard, timer, joystick, and three action buttons at runtime.
+The scene builds the marked rink, six skaters, two AI goalies, physics puck, two goal triggers, faceoff/match state, hockey camera, controlled-player marker, scoreboard, timer, joystick, and possession-adaptive action buttons at runtime.
 
 ## Controls
 
@@ -27,17 +27,21 @@ The scene builds the marked rink, six skaters, two AI goalies, physics puck, two
 | Recommended pass | Tap E | Tap west button | Tap PASS |
 | Deke input (debug only) | — | — | Tap DEKE |
 | Charge / release shot | Hold/release Space | Hold/release right trigger | Hold/release SHOOT |
-| Switch skater | Q | North button | — |
+| Switch skater | Q | North button | Tap SWITCH while defending |
+| Contextual defensive check | F | East button | Tap CHECK while defending |
 
-WASD and the fixed, always-visible lower-left joystick never aim passes or shots. While the human player possesses the puck, a subtle dotted path shows the currently recommended teammate. Tap PASS to release an imperfect, interceptable physics pass along that recommendation; no drag is required and successful reception is not guaranteed. DEKE currently emits an input/debug signal only. There is no sprint, deke gameplay, poke check, stick lift, separate shot-type button, or special ability in Phase 1.
+WASD and the fixed, always-visible lower-left joystick never aim passes or shots. During human possession or loose-puck play, the touch actions are PASS, DEKE, and SHOOT. When a Red skater establishes possession, they become exactly SWITCH and CHECK; the joystick remains unchanged. SWITCH uses the same useful-defender selection as Q/gamepad switching. CHECK chooses a close body check or a longer forward pull check from the controlled Blue skater. A successful check dislodges the puck into normal free physics and never grants possession directly.
+
+While the human player possesses the puck, a subtle dotted path shows the currently recommended teammate. Tap PASS to release an imperfect, interceptable physics pass along that recommendation; no drag is required. Launch speed scales through configurable short, medium, and long distance bands. An unobstructed pass is captured only after physically entering the intended teammate's configurable local reception zone, while collisions and opponent claims can still defeat it. DEKE currently emits an input/debug signal only. There is no sprint, deke gameplay, stick lift, separate shot-type button, or special ability in Phase 1.
 
 ## Architecture and tuning
 
 - `PlayerMovementController` owns acceleration, deceleration, momentum, analog speed, and speed-aware turning.
-- `StickPuckInteraction` and `PuckController` keep possession force-based on an independent Rigidbody.
-- `PassTargetSelector` continuously scores a recommended teammate using facing and tactical context; `PassController` owns pooled dotted-path feedback and the imperfect non-homing physics release triggered by one PASS tap.
+- `StickPuckInteraction` and `PuckController` keep possession force-based on an independent Rigidbody; `PassReceivingZone` provides local, intended-receiver capture into the existing stick controller.
+- `PassTargetSelector` continuously scores a recommended teammate using facing and tactical context; `PassController` owns pooled dotted-path feedback, configurable distance-to-speed tuning, and the imperfect non-homing physics release triggered by one PASS tap.
 - `ShootController` converts one held/released input into bounded charge, facing/goal-assisted direction, power, and spread without consuming movement input.
 - `PlayerControlManager` automatically selects the established human-team puck carrier or the human-team skater closest to the puck after opponent possession; it never switches from puck trajectory. `PlayerSwitchController` remains the manual SWITCH override and performs the input/AI/marker/camera transfer.
+- `PlayerInputController` reacts to established carrier changes and safely reuses the offensive action slots as SWITCH/CHECK during opponent possession. `DefensiveCheckController` owns the human-team cooldown and contextual body/pull result; `DefensiveCheckTuning` is the persisted Inspector tuning asset for ranges, cone, cooldown, puck pace, and bounded separation.
 - `HockeyPlayerAI` uses the required eight-state local state machine; `AIFormationController` supplies count-independent formation slots; `HockeyGoalieAI` handles crease tracking and saves.
 - `MatchController`, `FaceoffController`, and `GoalTrigger` own clock, score, resets, and results.
 - `HockeyCameraController`, `VirtualJoystick`, `MobileActionButton`, `PlayerInputController`, `MobileControlsBuilder`, `SafeAreaFitter`, and `MatchHUD` provide the stable landscape presentation and shared input route.
@@ -46,7 +50,7 @@ Gameplay feel values are serialized fields on these focused components so they c
 
 ## Verification
 
-With the Editor out of Play Mode, choose **IceClash > Run Phase 1 PvE Smoke Check**. The check enters Play Mode, builds the real arena, verifies the 3v3-plus-goalies roster and one-human invariant, checks modular gameplay/camera/HUD wiring, scores and resets a goal, expires the timer, and exits. A passing run logs:
+With the Editor out of Play Mode, choose **IceClash > Run Phase 1 PvE Smoke Check**. The check enters Play Mode, builds the real arena, verifies the 3v3-plus-goalies roster and one-human invariant, checks modular gameplay/camera/HUD wiring, validates possession-adaptive actions, touch/hardware mappings, body/pull checks and their bounds, short/medium/long and moving-target pass reception plus obstruction interception, scores and resets a goal, expires the timer, and exits. A passing run logs:
 
 `PHASE1_PVE_SMOKE_PASS`
 
@@ -63,4 +67,5 @@ The expected result is no matches. Manual feel and mobile multi-touch scenarios 
 - Placeholder primitives, no final character/stick animation, limited audio/feedback, and no production art.
 - Direct steering and lightweight formation logic rather than NavMesh or a behavior tree.
 - Simplified possession contests, goalie reach, faceoffs, and hockey rules; no penalties, icing, offsides, or overtime.
+- Defensive checks use placeholder motion and puck response without final hit/stick animation, penalties, stamina, audio, or effects.
 - Device-specific safe-area, performance, thermal, and multi-touch feel still require testing on the intended phones/emulators.

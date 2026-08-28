@@ -2,9 +2,8 @@
  * IceClash recommended tap PASS controller.
  * Continuously previews one tactical teammate with pooled dotted-path feedback
  * during human possession, then releases an imperfect non-homing physics pass.
- * Recent changes: raised pass pace near the claimable-speed ceiling and tightened
- * release spread so recommended passes connect more often without becoming
- * guaranteed; deterministic validation uses the live release calculation.
+ * Recent change: launch pace now scales through configurable short, medium, and
+ * long distance bands before local intended-receiver capture.
  */
 
 using IceClash.Player;
@@ -18,9 +17,18 @@ namespace IceClash.Gameplay
     {
         private const int PathDotCount = 9;
 
-        [SerializeField] private float passSpeed = 14.5f;
+        [Header("Distance-scaled pass pace")]
+        [SerializeField, Min(0f)] private float shortPassDistance = 4f;
+        [SerializeField, Min(0f)] private float shortPassSpeed = 12f;
+        [SerializeField, Min(0f)] private float mediumPassDistance = 10f;
+        [SerializeField, Min(0f)] private float mediumPassSpeed = 17f;
+        [SerializeField, Min(0f)] private float longPassDistance = 17f;
+        [SerializeField, Min(0f)] private float longPassSpeed = 24f;
+
+        [Header("Pass behavior")]
         [SerializeField] private float cooldown = 0.28f;
         [SerializeField] private float leadSeconds = 0.45f;
+        [SerializeField, Min(0f)] private float receptionGraceSeconds = 0.55f;
         [SerializeField, Range(0f, 12f)] private float errorDegrees = 1f;
         [SerializeField, Range(0.03f, 0.3f)] private float recommendationRefreshInterval = 0.1f;
         [SerializeField] private float pathDotSize = 0.11f;
@@ -39,9 +47,24 @@ namespace IceClash.Gameplay
         public PlayerController RecommendedTarget => recommendation.SelectedTeammate;
         public bool FeedbackVisible => feedbackRoot != null && feedbackRoot.activeSelf;
         public int VisiblePathDotCount => FeedbackVisible ? pathDots.Length : 0;
-        internal float PassSpeed => passSpeed;
+        internal float ShortPassDistance => shortPassDistance;
+        internal float MediumPassDistance => mediumPassDistance;
+        internal float LongPassDistance => longPassDistance;
+        internal float ShortPassSpeed => shortPassSpeed;
+        internal float MediumPassSpeed => mediumPassSpeed;
+        internal float LongPassSpeed => longPassSpeed;
         internal float LeadSeconds => leadSeconds;
         internal float MaximumErrorDegrees => errorDegrees;
+
+        private void OnValidate()
+        {
+            shortPassDistance = Mathf.Max(0f, shortPassDistance);
+            mediumPassDistance = Mathf.Max(shortPassDistance + 0.01f, mediumPassDistance);
+            longPassDistance = Mathf.Max(mediumPassDistance + 0.01f, longPassDistance);
+            shortPassSpeed = Mathf.Max(0f, shortPassSpeed);
+            mediumPassSpeed = Mathf.Max(shortPassSpeed, mediumPassSpeed);
+            longPassSpeed = Mathf.Max(mediumPassSpeed, longPassSpeed);
+        }
 
         public void Configure(PlayerController owner, PuckController controlledPuck)
         {
@@ -95,13 +118,35 @@ namespace IceClash.Gameplay
 
         private bool ReleaseToward(PlayerController target, Vector3 targetVelocity, float quality, float spread)
         {
-            if (target == null || target.Stick == null) return false;
+            if (target == null || target.Stick == null || target.PassReception == null) return false;
             Vector3 lead = targetVelocity * leadSeconds;
-            Vector3 direction = Vector3.ProjectOnPlane(target.Stick.ControlPoint + lead - puck.transform.position, Vector3.up).normalized;
+            Vector3 targetPoint = target.Stick.ControlPoint + lead;
+            Vector3 passDelta = Vector3.ProjectOnPlane(targetPoint - puck.Body.position, Vector3.up);
+            float passDistance = passDelta.magnitude;
+            if (passDistance < 0.01f) return false;
+            Vector3 direction = passDelta / passDistance;
             direction = Quaternion.Euler(0f, spread, 0f) * direction;
-            if (!puck.Release(player, direction, passSpeed * Mathf.Lerp(0.88f, 1f, quality))) return false;
+            float launchSpeed = CalculatePassSpeed(passDistance) * Mathf.Lerp(0.88f, 1f, Mathf.Clamp01(quality));
+            float receptionEligibilitySeconds = passDistance / Mathf.Max(launchSpeed, 0.01f) + receptionGraceSeconds;
+            if (!puck.ReleasePass(player, target, direction, launchSpeed, receptionEligibilitySeconds)) return false;
             nextPassTime = Time.time + cooldown;
             return true;
+        }
+
+        internal float CalculatePassSpeed(float distance)
+        {
+            float safeShortDistance = Mathf.Max(0f, shortPassDistance);
+            float safeMediumDistance = Mathf.Max(safeShortDistance + 0.01f, mediumPassDistance);
+            float safeLongDistance = Mathf.Max(safeMediumDistance + 0.01f, longPassDistance);
+            float safeShortSpeed = Mathf.Max(0f, shortPassSpeed);
+            float safeMediumSpeed = Mathf.Max(safeShortSpeed, mediumPassSpeed);
+            float safeLongSpeed = Mathf.Max(safeMediumSpeed, longPassSpeed);
+            if (distance <= safeShortDistance) return safeShortSpeed;
+            if (distance <= safeMediumDistance)
+                return Mathf.Lerp(safeShortSpeed, safeMediumSpeed,
+                    Mathf.InverseLerp(safeShortDistance, safeMediumDistance, distance));
+            return Mathf.Lerp(safeMediumSpeed, safeLongSpeed,
+                Mathf.InverseLerp(safeMediumDistance, safeLongDistance, distance));
         }
 
         private void ShowRecommendation(PlayerController target)

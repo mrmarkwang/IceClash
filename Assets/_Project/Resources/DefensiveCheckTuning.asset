@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a1111111111111111111111111111111, type: 3}
+  m_Name: DefensiveCheckTuning
+  m_EditorClassIdentifier: IceClash.Gameplay.DefensiveCheckTuning
+  bodyRange: 1.35
+  pullRange: 2.7
+  pullForwardDot: 0.25
+  cooldownSeconds: 0.65
+  bodyPuckSpeed: 8
+  pullPuckSpeed: 6
+  bodyImpulse: 4.5
+  impulseDecay: 14
