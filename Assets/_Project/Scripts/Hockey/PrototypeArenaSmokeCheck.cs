@@ -1,7 +1,8 @@
 /*
  * IceClash Phase 1 local PvE smoke assertions.
  * Verifies the generated 3v3-plus-goalies slice, one-human routing, possession-only
- * automatic control, recommended tap passing with dotted feedback, manual switching,
+ * automatic nearest-defender control, recommended tap passing with dotted feedback,
+ * manual switching,
  * smooth camera retargeting, modular systems, safe multi-touch Unity UI controls,
  * circular visual/hit separation, responsive puck possession, forceful charged
  * shots, snapshots, and one-way goals. Recent changes: validates the elongated rink,
@@ -177,10 +178,16 @@ namespace IceClash.Hockey
                 && setup.SwitchController.ControlledPlayer == receiver
                 && setup.ControlManager.AutomaticSelectionCount == 1;
 
-            opponentCarrier.Movement.ResetMotion(expectedDefender.transform.position + Vector3.forward * 1.6f, Quaternion.Euler(0f, 180f, 0f));
+            opponentCarrier.Movement.ResetMotion(new Vector3(0f, 1f, 0f), Quaternion.Euler(0f, 90f, 0f));
+            expectedDefender.Movement.ResetMotion(new Vector3(1.45f, 1f, 0f), Quaternion.identity);
+            receiver.Movement.ResetMotion(new Vector3(0f, 1f, -1.25f), Quaternion.identity);
             StagePuckAtStick(puck, opponentCarrier);
             bool opponentClaimed = puck.TryClaim(opponentCarrier, opponentCarrier.Stick);
+            float expectedDefenderDistance = Vector3.Distance(expectedDefender.transform.position, puck.Body.position);
+            bool expectedDefenderClosest = expectedDefenderDistance < Vector3.Distance(passer.transform.position, puck.Body.position)
+                && expectedDefenderDistance < Vector3.Distance(receiver.transform.position, puck.Body.position);
             bool opponentPossessionAutoDefense = opponentClaimed
+                && expectedDefenderClosest
                 && setup.SwitchController.ControlledPlayer == expectedDefender
                 && setup.ControlManager.LastAutomaticReason == AutomaticControlReason.OpponentPossession
                 && setup.ControlManager.AutomaticSelectionCount == 2

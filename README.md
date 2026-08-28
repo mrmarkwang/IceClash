@@ -37,7 +37,7 @@ WASD and the fixed, always-visible lower-left joystick never aim passes or shots
 - `StickPuckInteraction` and `PuckController` keep possession force-based on an independent Rigidbody.
 - `PassTargetSelector` continuously scores a recommended teammate using facing and tactical context; `PassController` owns pooled dotted-path feedback and the imperfect non-homing physics release triggered by one PASS tap.
 - `ShootController` converts one held/released input into bounded charge, facing/goal-assisted direction, power, and spread without consuming movement input.
-- `PlayerControlManager` automatically selects the established human-team puck carrier or a useful defender after opponent possession; it never switches from puck trajectory. `PlayerSwitchController` remains the manual SWITCH override and performs the input/AI/marker/camera transfer.
+- `PlayerControlManager` automatically selects the established human-team puck carrier or the human-team skater closest to the puck after opponent possession; it never switches from puck trajectory. `PlayerSwitchController` remains the manual SWITCH override and performs the input/AI/marker/camera transfer.
 - `HockeyPlayerAI` uses the required eight-state local state machine; `AIFormationController` supplies count-independent formation slots; `HockeyGoalieAI` handles crease tracking and saves.
 - `MatchController`, `FaceoffController`, and `GoalTrigger` own clock, score, resets, and results.
 - `HockeyCameraController`, `VirtualJoystick`, `MobileActionButton`, `PlayerInputController`, `MobileControlsBuilder`, `SafeAreaFitter`, and `MatchHUD` provide the stable landscape presentation and shared input route.
