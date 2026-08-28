@@ -1,7 +1,7 @@
 /*
  * IceClash Phase 1 local match snapshots.
- * Captures count-independent skater identity and role, score, clock, state,
- * possession, and current human selection without coupling data to UI or AI.
+ * Captures count-independent skater identity, role, attributes, stamina, score,
+ * clock, possession, and current human selection without coupling data to UI or AI.
  */
 
 using System;
@@ -22,11 +22,14 @@ namespace IceClash.Core
         public Quaternion Rotation = Quaternion.identity;
         public PlayerMovementState State;
         public bool HasPuck;
+        public PlayerAttributeBuild Attributes = new();
+        public float Stamina;
 
         public void Capture(PlayerController player, PuckController puck)
         {
             PlayerId = player.PlayerId; Team = player.Team; Role = player.Role; Position = player.transform.position;
             Rotation = player.transform.rotation; State = player.State; HasPuck = puck != null && puck.IsCarriedBy(player);
+            Attributes.CopyFrom(player.Attributes); Stamina = player.Stamina;
         }
     }
 

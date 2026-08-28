@@ -2,8 +2,8 @@
  * IceClash Phase 1 local PvE arena bootstrap.
  * Generates the mobile-first marked rink, layered boards/glass, dimensional nets,
  * one-way goals/triggers, puck, 5v5-plus-goalies roster, match flow, HUD, and camera.
- * Shared rink geometry now includes the center-circle radius used by role-aware
- * faceoff formation and validation.
+ * Shared rink geometry includes the center-circle radius used by role-aware
+ * faceoffs. Visual primitive colliders are disabled before deferred cleanup.
  */
 
 using System.Collections.Generic;
@@ -284,7 +284,7 @@ namespace IceClash.Hockey
             layer.transform.SetPositionAndRotation(position, rotation);
             layer.transform.localScale = scale;
             layer.GetComponent<Renderer>().material = material;
-            if (!collider) Destroy(layer.GetComponent<Collider>());
+            if (!collider) DisableAndDestroyCollider(layer);
         }
 
         private static void CreateHockeyMarkings(Material red, Material blue, Material redLine, Material blueLine)
@@ -332,7 +332,7 @@ namespace IceClash.Hockey
             dot.transform.SetPositionAndRotation(position, Quaternion.identity);
             dot.transform.localScale = new Vector3(0.17f, 0.025f, 0.17f);
             dot.GetComponent<Renderer>().material = material;
-            Destroy(dot.GetComponent<Collider>());
+            DisableAndDestroyCollider(dot);
         }
 
         private static void CreateCircleMark(string circleName, Vector3 center, float radius, Material material, int segments)
@@ -373,8 +373,16 @@ namespace IceClash.Hockey
             cube.transform.SetPositionAndRotation(position, Quaternion.identity);
             cube.transform.localScale = scale;
             cube.GetComponent<Renderer>().material = material;
-            if (!collider) Destroy(cube.GetComponent<Collider>());
+            if (!collider) DisableAndDestroyCollider(cube);
             return cube;
+        }
+
+        private static void DisableAndDestroyCollider(GameObject target)
+        {
+            Collider targetCollider = target != null ? target.GetComponent<Collider>() : null;
+            if (targetCollider == null) return;
+            targetCollider.enabled = false;
+            Destroy(targetCollider);
         }
 
         private static Material MakeMaterial(Color color)

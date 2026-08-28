@@ -1,8 +1,8 @@
 /*
  * IceClash team-aware contextual defensive check controller.
  * Resolves human and configured opponent-AI checks as close body or forward pull
- * challenges. Each team has its own shared cooldown, and successful checks dislodge
- * only the expected opposing carrier without assigning possession.
+ * challenges. STR/DEF/SPD/AGI, approach geometry, and carrier puck protection
+ * resolve contests; input timing remains mandatory and success never grants possession.
  */
 
 using IceClash.Core;
@@ -79,6 +79,8 @@ namespace IceClash.Gameplay
 
             if (distance <= values.BodyRange)
             {
+                ContestScores contest = EvaluateLiveContest(false, checker, carrier, direction, values.PullForwardDot);
+                if (!contest.Succeeds) return LastResult;
                 if (!puck.Dislodge(carrier, checker, direction, values.BodyPuckSpeed)) return LastResult;
                 carrier.Movement.ApplyExternalImpulse(direction * values.BodyImpulse,
                     DefensiveCheckTuning.MaximumBodyImpulse, values.ImpulseDecay);
@@ -90,6 +92,8 @@ namespace IceClash.Gameplay
             {
                 Vector3 checkerForward = Vector3.ProjectOnPlane(checker.transform.forward, Vector3.up).normalized;
                 if (distance > values.PullRange || Vector3.Dot(checkerForward, direction) < values.PullForwardDot) return LastResult;
+                ContestScores contest = EvaluateLiveContest(true, checker, carrier, direction, values.PullForwardDot);
+                if (!contest.Succeeds) return LastResult;
                 if (!puck.Dislodge(carrier, checker, -direction, values.PullPuckSpeed)) return LastResult;
                 LastResult = DefensiveCheckResult.PullCheck;
             }
@@ -99,6 +103,75 @@ namespace IceClash.Gameplay
             if (checker.Team == humanTeam) nextHumanTeamCheckTime = cooldownUntil;
             else nextOpponentTeamCheckTime = cooldownUntil;
             return LastResult;
+        }
+
+        internal static float NormalizeApproachSpeed(Vector3 checkerVelocity, Vector3 carrierVelocity,
+            Vector3 checkerToCarrierDirection) => Mathf.InverseLerp(0f, 8f, Mathf.Max(0f,
+            Vector3.Dot(checkerVelocity - carrierVelocity, checkerToCarrierDirection.normalized)));
+
+        internal static float NormalizeBodyAlignment(Vector3 checkerForward, Vector3 checkerToCarrierDirection) =>
+            Mathf.InverseLerp(-1f, 1f, Vector3.Dot(checkerForward.normalized, checkerToCarrierDirection.normalized));
+
+        internal static float NormalizePullAlignment(Vector3 checkerForward, Vector3 checkerToCarrierDirection,
+            float gateDot) => Mathf.InverseLerp(Mathf.Clamp01(gateDot), 1f,
+            Vector3.Dot(checkerForward.normalized, checkerToCarrierDirection.normalized));
+
+        internal static float NormalizeContactPosition(Vector3 carrierForward, Vector3 carrierToCheckerDirection) =>
+            Mathf.InverseLerp(-1f, 1f, Vector3.Dot(carrierForward.normalized, carrierToCheckerDirection.normalized));
+
+        internal static ContestScores EvaluateContest(bool pull, float checkerStrength, float checkerDefense,
+            float checkerSpeed, float checkerAgility, float carrierControl, float carrierStrength,
+            float carrierAgility, float carrierSpeed, float approachSpeed, float alignment,
+            float carrierFatigue, float contactPosition, float dekeBonus)
+        {
+            float attack = pull
+                ? 0.4f * Clamp(checkerDefense) + 0.2f * Clamp(checkerAgility)
+                    + 0.1f * Clamp(checkerStrength) + 0.15f * Clamp(approachSpeed) + 0.15f * Clamp(alignment)
+                : 0.35f * Clamp(checkerStrength) + 0.15f * Clamp(checkerDefense)
+                    + 0.2f * Clamp(checkerSpeed) + 0.1f * Clamp(checkerAgility)
+                    + 0.15f * Clamp(approachSpeed) + 0.05f * Clamp(alignment);
+            float protection = pull
+                ? 0.45f * Clamp(carrierControl) + 0.25f * Clamp(carrierAgility)
+                    + 0.15f * Clamp(carrierStrength) + 0.1f * Clamp(carrierFatigue)
+                    + 0.05f * Clamp(contactPosition)
+                : 0.3f * Clamp(carrierControl) + 0.3f * Clamp(carrierStrength)
+                    + 0.15f * Clamp(carrierAgility) + 0.1f * Clamp(carrierSpeed)
+                    + 0.1f * Clamp(carrierFatigue) + 0.05f * Clamp(contactPosition);
+            protection += Mathf.Clamp(dekeBonus, 0f, 0.15f);
+            return new ContestScores(attack, protection);
+        }
+
+        private static float Clamp(float value) => Mathf.Clamp01(value);
+
+        private static ContestScores EvaluateLiveContest(bool pull, PlayerController checker,
+            PlayerController carrier, Vector3 checkerToCarrierDirection, float pullGateDot)
+        {
+            Vector3 checkerVelocity = checker.Movement != null ? checker.Movement.Velocity : Vector3.zero;
+            Vector3 carrierVelocity = carrier.Movement != null ? carrier.Movement.Velocity : Vector3.zero;
+            Vector3 checkerForward = Vector3.ProjectOnPlane(checker.transform.forward, Vector3.up).normalized;
+            Vector3 carrierForward = Vector3.ProjectOnPlane(carrier.transform.forward, Vector3.up).normalized;
+            float approach = NormalizeApproachSpeed(checkerVelocity, carrierVelocity, checkerToCarrierDirection);
+            float alignment = pull
+                ? NormalizePullAlignment(checkerForward, checkerToCarrierDirection, pullGateDot)
+                : NormalizeBodyAlignment(checkerForward, checkerToCarrierDirection);
+            float contact = NormalizeContactPosition(carrierForward, -checkerToCarrierDirection);
+            PlayerAttributeBuild checkerBuild = checker.Attributes;
+            PlayerAttributeBuild carrierBuild = carrier.Attributes;
+            return EvaluateContest(pull,
+                checkerBuild.Normalized(PlayerAttribute.Strength), checkerBuild.Normalized(PlayerAttribute.Defense),
+                checkerBuild.Normalized(PlayerAttribute.Speed), checkerBuild.Normalized(PlayerAttribute.Agility),
+                carrierBuild.Normalized(PlayerAttribute.Control), carrierBuild.Normalized(PlayerAttribute.Strength),
+                carrierBuild.Normalized(PlayerAttribute.Agility), carrierBuild.Normalized(PlayerAttribute.Speed),
+                approach, alignment, carrier.Stamina / 100f, contact,
+                carrier.Deke != null ? carrier.Deke.ProtectionBonus : 0f);
+        }
+
+        internal readonly struct ContestScores
+        {
+            public ContestScores(float attack, float protection) { Attack = attack; Protection = protection; }
+            public float Attack { get; }
+            public float Protection { get; }
+            public bool Succeeds => Attack >= Protection;
         }
 
         internal void SetGameplayEnabledForValidation(bool value)

@@ -1,7 +1,8 @@
 /*
  * IceClash shared local player input controller.
  * Selects movement input and remaps reusable touch action slots between offense
- * and SWITCH/CHECK defense when authoritative puck possession changes.
+ * and SWITCH/CHECK defense when authoritative puck possession changes. DEKE is
+ * routed only from an explicit hardware or offensive touch press.
  */
 
 using IceClash.Core;
@@ -36,7 +37,8 @@ namespace IceClash.Input
         public Vector2 Move => MoveInput;
         public bool PassPressed => (hardware != null && hardware.PassPressed)
             || (Mode == MobileActionMode.Offense && pass != null && pass.Pressed);
-        public bool DekePressed => Mode == MobileActionMode.Offense && deke != null && deke.Pressed;
+        public bool DekePressed => (hardware != null && hardware.DekePressed)
+            || (Mode == MobileActionMode.Offense && deke != null && deke.Pressed);
         public bool ShootPressed => Mode == MobileActionMode.Offense && shoot != null && shoot.Pressed;
         public bool ShootHeld => (hardware != null && hardware.ShootHeld)
             || (Mode == MobileActionMode.Offense && shoot != null && shoot.Held);

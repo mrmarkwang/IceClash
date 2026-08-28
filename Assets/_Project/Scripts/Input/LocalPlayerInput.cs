@@ -1,6 +1,6 @@
 /*
  * IceClash Phase 1 hardware input adapter.
- * Maps keyboard and gamepad to movement-independent PASS, charged SHOOT,
+ * Maps keyboard and gamepad to movement-independent PASS, DEKE, charged SHOOT,
  * SWITCH, and contextual CHECK signals shared with touch controls.
  */
 
@@ -14,10 +14,12 @@ namespace IceClash.Input
     public sealed class LocalPlayerInput : MonoBehaviour, IPlayerInput
     {
         internal const Key PassKeyboardKey = Key.E;
+        internal const Key DekeKeyboardKey = Key.LeftShift;
         internal const Key ShootKeyboardKey = Key.Space;
         internal const Key SwitchKeyboardKey = Key.Q;
         internal const Key CheckKeyboardKey = Key.F;
         internal const GamepadButton PassGamepadButton = GamepadButton.West;
+        internal const GamepadButton DekeGamepadButton = GamepadButton.South;
         internal const GamepadButton SwitchGamepadButton = GamepadButton.North;
         internal const GamepadButton CheckGamepadButton = GamepadButton.East;
 
@@ -33,6 +35,7 @@ namespace IceClash.Input
         }
 
         public bool PassPressed => WasPressed(PassKeyboardKey) || WasPressed(PassGamepadButton);
+        public bool DekePressed => WasPressed(DekeKeyboardKey) || WasPressed(DekeGamepadButton);
         public bool ShootHeld => IsPressed(ShootKeyboardKey) || (Gamepad.current != null && Gamepad.current.rightTrigger.isPressed);
         public bool ShootReleased => WasReleased(ShootKeyboardKey) || (Gamepad.current != null && Gamepad.current.rightTrigger.wasReleasedThisFrame);
         public bool SwitchPressed => WasPressed(SwitchKeyboardKey) || WasPressed(SwitchGamepadButton);

@@ -1,8 +1,7 @@
 /*
  * IceClash intended-pass reception zone.
- * Defines configurable local capture around the target player and delegates the
- * velocity-matched stick transition to PuckController once the intended pass
- * physically enters that receiver's local zone.
+ * Combines receiver CTR with passer PAS to define bounded local capture and entry
+ * speed, then delegates the velocity-matched transition to PuckController.
  */
 
 using IceClash.Player;
@@ -18,8 +17,11 @@ namespace IceClash.Puck
         private PlayerController player;
         private StickPuckInteraction stick;
 
-        public float Radius => receptionRadius;
-        public float EntrySpeed => receptionEntrySpeed;
+        public float ReceptionQuality => EvaluateReceptionQuality(
+            player != null ? player.Attributes.Normalized(PlayerAttribute.Control) : 0f,
+            player != null && player.Puck != null ? player.Puck.IntendedPassQuality : 0f);
+        public float Radius => player != null ? EvaluateRadius(ReceptionQuality) : receptionRadius;
+        public float EntrySpeed => player != null ? EvaluateEntrySpeed(ReceptionQuality) : receptionEntrySpeed;
 
         public void Configure(PlayerController owner, StickPuckInteraction receivingStick)
         {
@@ -32,9 +34,15 @@ namespace IceClash.Puck
             if (puck == null || player == null || stick == null || puck.Body == null) return false;
 
             Vector3 toReceiver = Vector3.ProjectOnPlane(player.transform.position - puck.Body.position, Vector3.up);
-            if (toReceiver.sqrMagnitude > receptionRadius * receptionRadius) return false;
+            float radius = Radius;
+            if (toReceiver.sqrMagnitude > radius * radius) return false;
 
-            return puck.TryCompletePassReception(player, stick, receptionEntrySpeed);
+            return puck.TryCompletePassReception(player, stick, EntrySpeed);
         }
+
+        internal static float EvaluateReceptionQuality(float receiverControl, float passerPassing) =>
+            Mathf.Clamp01(receiverControl) * 0.6f + Mathf.Clamp01(passerPassing) * 0.4f;
+        internal static float EvaluateRadius(float quality) => Mathf.Lerp(1.4f, 2.1f, Mathf.Clamp01(quality));
+        internal static float EvaluateEntrySpeed(float quality) => Mathf.Lerp(4.5f, 7.5f, Mathf.Clamp01(quality));
     }
 }

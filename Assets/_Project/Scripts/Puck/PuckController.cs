@@ -2,8 +2,8 @@
  * IceClash Phase 1 independent physics puck.
  * Owns velocity-matched possession, high-speed collision-safe physical releases,
  * intended-pass reception, save impulses, reclaim locks, carrier events, and
- * deterministic resets and validated defensive dislodges. Passes and checks set one
- * initial velocity, then retain normal free-flight physics without homing.
+ * deterministic resets and validated defensive dislodges. CTR scales carry control;
+ * intended passes retain PAS quality for deterministic CTR/PAS reception.
  */
 
 using System;
@@ -29,6 +29,7 @@ namespace IceClash.Puck
         private PlayerController intendedPassReceiver;
         private PassReceivingZone intendedReceptionZone;
         private float intendedPassExpiresAt;
+        private float intendedPassQuality;
         private string reclaimLockedPlayerId = string.Empty;
         private float reclaimLockedUntil;
 
@@ -41,6 +42,7 @@ namespace IceClash.Puck
         public int ImpulseReleaseSequence { get; private set; }
         public string LastImpulseReleasePlayerId { get; private set; } = string.Empty;
         internal PlayerController IntendedPassReceiver => intendedPassReceiver;
+        internal float IntendedPassQuality => intendedPassQuality;
 
         private void Awake()
         {
@@ -54,6 +56,7 @@ namespace IceClash.Puck
         public bool TryClaim(PlayerController player, StickPuckInteraction stick)
         {
             if (player == null || stick == null || carrier != null
+                || (intendedPassReceiver != null && player.Team == intendedPassReceiver.Team)
                 || (player.PlayerId == reclaimLockedPlayerId && Time.time < reclaimLockedUntil)
                 || Vector3.Distance(stick.ControlPoint, body.position) > stick.ClaimRadius
                 || body.linearVelocity.magnitude > stick.MaximumClaimSpeed) return false;
@@ -74,7 +77,7 @@ namespace IceClash.Puck
         }
 
         internal bool ReleasePass(PlayerController player, PlayerController receiver, Vector3 direction, float speed,
-            float receptionEligibilitySeconds)
+            float receptionEligibilitySeconds, float passerPassingQuality)
         {
             if (!IsCarriedBy(player) || receiver == null || receiver.PassReception == null
                 || direction.sqrMagnitude < 0.01f || speed <= 0f) return false;
@@ -83,6 +86,7 @@ namespace IceClash.Puck
             intendedPassReceiver = receiver;
             intendedReceptionZone = receiver.PassReception;
             intendedPassExpiresAt = Time.time + Mathf.Max(0.1f, receptionEligibilitySeconds);
+            intendedPassQuality = Mathf.Clamp01(passerPassingQuality);
             body.linearVelocity = Vector3.ProjectOnPlane(direction, Vector3.up).normalized * speed;
             return true;
         }
@@ -170,6 +174,7 @@ namespace IceClash.Puck
             intendedPassReceiver = null;
             intendedReceptionZone = null;
             intendedPassExpiresAt = 0f;
+            intendedPassQuality = 0f;
         }
 
         internal bool TryCompletePassReception(PlayerController player, StickPuckInteraction stick, float entrySpeed)
@@ -227,7 +232,9 @@ namespace IceClash.Puck
         {
             Vector3 positionError = target - body.position;
             Vector3 velocityError = targetVelocity - body.linearVelocity;
-            return positionError * controlStrength + velocityError * controlVelocityDamping;
+            float controlMultiplier = carrierStick != null ? carrierStick.CarryControlMultiplier : 1f;
+            return positionError * controlStrength * controlMultiplier
+                + velocityError * controlVelocityDamping * controlMultiplier;
         }
 
     }

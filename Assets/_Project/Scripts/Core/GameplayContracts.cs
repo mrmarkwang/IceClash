@@ -1,8 +1,8 @@
 /*
  * IceClash Phase 1 local gameplay contracts.
- * Defines team and skater-role identity plus independent movement, tap PASS,
+ * Defines team and skater-role identity plus independent movement, PASS, DEKE,
  * charged-shot, switch, and contextual defensive-check signals shared by hardware,
- * touch, snapshots, and AI.
+ * touch, snapshots, and AI. Recent changes make DEKE an explicit shared action.
  */
 
 using System;
@@ -21,6 +21,7 @@ namespace IceClash.Core
     {
         Vector2 Move { get; }
         bool PassPressed { get; }
+        bool DekePressed { get; }
         bool ShootHeld { get; }
         bool ShootReleased { get; }
         bool SwitchPressed { get; }

@@ -1,9 +1,9 @@
 /*
  * IceClash recommended tap PASS controller.
  * Continuously previews one tactical teammate with pooled dotted-path feedback
- * during human possession, then releases an imperfect non-homing physics pass.
- * Recent change: launch pace now scales through configurable short, medium, and
- * long distance bands before local intended-receiver capture.
+ * during human possession, then releases a deterministic non-homing physics pass.
+ * PAS, geometry, motion, and fatigue scale pace/lead/deviation without random
+ * failure; defenders can still physically intercept every pass.
  */
 
 using IceClash.Player;
@@ -27,9 +27,7 @@ namespace IceClash.Gameplay
 
         [Header("Pass behavior")]
         [SerializeField] private float cooldown = 0.28f;
-        [SerializeField] private float leadSeconds = 0.45f;
         [SerializeField, Min(0f)] private float receptionGraceSeconds = 0.55f;
-        [SerializeField, Range(0f, 12f)] private float errorDegrees = 1f;
         [SerializeField, Range(0.03f, 0.3f)] private float recommendationRefreshInterval = 0.1f;
         [SerializeField] private float pathDotSize = 0.11f;
 
@@ -53,8 +51,6 @@ namespace IceClash.Gameplay
         internal float ShortPassSpeed => shortPassSpeed;
         internal float MediumPassSpeed => mediumPassSpeed;
         internal float LongPassSpeed => longPassSpeed;
-        internal float LeadSeconds => leadSeconds;
-        internal float MaximumErrorDegrees => errorDegrees;
 
         private void OnValidate()
         {
@@ -73,7 +69,7 @@ namespace IceClash.Gameplay
             selector = GetComponent<PassTargetSelector>();
         }
 
-        public bool Tick(bool passPressed, bool showRecommendation, float quality = 1f)
+        public bool Tick(bool passPressed, bool showRecommendation)
         {
             if (player == null || puck == null || !puck.IsCarriedBy(player))
             {
@@ -91,44 +87,44 @@ namespace IceClash.Gameplay
             else HideFeedback();
 
             if (!passPressed || Time.time < nextPassTime || !recommendation.IsValid) return false;
-            bool released = Execute(recommendation, quality);
+            bool released = Execute(recommendation);
             if (released) ClearRecommendation();
             return released;
         }
 
         public void Cancel() => ClearRecommendation();
 
-        private bool Execute(PassTargetSelection selection, float quality)
+        private bool Execute(PassTargetSelection selection)
         {
             PlayerController target = selection.SelectedTeammate;
             if (target == null) return false;
             Vector3 targetVelocity = target.Movement != null ? target.Movement.Velocity : Vector3.zero;
-            float spreadScale = Mathf.Lerp(1.5f, 0.75f, Mathf.Clamp01(quality));
-            float spread = Random.Range(-errorDegrees, errorDegrees) * spreadScale;
-            return ReleaseToward(target, targetVelocity, quality, spread);
+            return ReleaseToward(target, targetVelocity, float.NaN);
         }
 
-        internal bool ReleaseForValidation(PlayerController target, Vector3 targetVelocity, float quality,
-            float normalizedError)
+        internal bool ReleaseForValidation(PlayerController target, Vector3 targetVelocity, float normalizedError)
         {
-            float spreadScale = Mathf.Lerp(1.5f, 0.75f, Mathf.Clamp01(quality));
-            float spread = Mathf.Clamp(normalizedError, -1f, 1f) * errorDegrees * spreadScale;
-            return ReleaseToward(target, targetVelocity, quality, spread);
+            float passing = player != null ? player.Attributes.Normalized(PlayerAttribute.Passing) : 0f;
+            float spread = EvaluateDeviationDegrees(passing, Mathf.Abs(normalizedError), Mathf.Sign(normalizedError));
+            return ReleaseToward(target, targetVelocity, spread);
         }
 
-        private bool ReleaseToward(PlayerController target, Vector3 targetVelocity, float quality, float spread)
+        private bool ReleaseToward(PlayerController target, Vector3 targetVelocity, float spread)
         {
             if (target == null || target.Stick == null || target.PassReception == null) return false;
-            Vector3 lead = targetVelocity * leadSeconds;
+            float passing = player.Attributes.Normalized(PlayerAttribute.Passing);
+            Vector3 lead = targetVelocity * EvaluateLeadSeconds(passing);
             Vector3 targetPoint = target.Stick.ControlPoint + lead;
             Vector3 passDelta = Vector3.ProjectOnPlane(targetPoint - puck.Body.position, Vector3.up);
             float passDistance = passDelta.magnitude;
             if (passDistance < 0.01f) return false;
             Vector3 direction = passDelta / passDistance;
+            if (float.IsNaN(spread)) spread = RuntimeDeviation(direction, passDistance, passing);
             direction = Quaternion.Euler(0f, spread, 0f) * direction;
-            float launchSpeed = CalculatePassSpeed(passDistance) * Mathf.Lerp(0.88f, 1f, Mathf.Clamp01(quality));
+            float launchSpeed = CalculatePassSpeed(passDistance) * EvaluatePaceMultiplier(passing)
+                * player.PerformanceFactor;
             float receptionEligibilitySeconds = passDistance / Mathf.Max(launchSpeed, 0.01f) + receptionGraceSeconds;
-            if (!puck.ReleasePass(player, target, direction, launchSpeed, receptionEligibilitySeconds)) return false;
+            if (!puck.ReleasePass(player, target, direction, launchSpeed, receptionEligibilitySeconds, passing)) return false;
             nextPassTime = Time.time + cooldown;
             return true;
         }
@@ -149,12 +145,50 @@ namespace IceClash.Gameplay
                 Mathf.InverseLerp(safeMediumDistance, safeLongDistance, distance));
         }
 
+        internal static float EvaluatePaceMultiplier(float normalizedPassing) => Mathf.Lerp(0.88f, 1.08f, Mathf.Clamp01(normalizedPassing));
+        internal static float EvaluateMaximumDeviation(float normalizedPassing) => Mathf.Lerp(5f, 0.5f, Mathf.Clamp01(normalizedPassing));
+        internal static float EvaluateLeadSeconds(float normalizedPassing) => Mathf.Lerp(0.32f, 0.55f, Mathf.Clamp01(normalizedPassing));
+        internal static float EvaluatePassChallenge(float distanceChallenge, float facingChallenge,
+            float lateralMotion, float fatigueLoss) => Mathf.Clamp01(0.35f * Mathf.Clamp01(distanceChallenge)
+            + 0.3f * Mathf.Clamp01(facingChallenge) + 0.2f * Mathf.Clamp01(lateralMotion)
+            + 0.15f * Mathf.Clamp01(fatigueLoss));
+        internal static float EvaluateDeviationDegrees(float normalizedPassing, float challenge, float sign) =>
+            challenge <= 0f ? 0f : EvaluateMaximumDeviation(normalizedPassing) * Mathf.Clamp01(challenge)
+                * Mathf.Sign(sign == 0f ? 1f : sign);
+        internal float EvaluateRuntimeDeviationForValidation(Vector3 targetDirection, float distance) =>
+            RuntimeDeviation(targetDirection, distance, player.Attributes.Normalized(PlayerAttribute.Passing));
+        internal float EvaluateLaunchSpeedForValidation(float distance) => CalculatePassSpeed(distance)
+            * EvaluatePaceMultiplier(player.Attributes.Normalized(PlayerAttribute.Passing)) * player.PerformanceFactor;
+
+        private float RuntimeDeviation(Vector3 targetDirection, float distance, float passing)
+        {
+            Vector3 facing = Vector3.ProjectOnPlane(transform.forward, Vector3.up).normalized;
+            float facingChallenge = Vector3.Angle(facing, targetDirection) / 180f;
+            float distanceChallenge = Mathf.InverseLerp(shortPassDistance, longPassDistance, distance);
+            Vector3 velocity = player.Movement != null ? player.Movement.Velocity : Vector3.zero;
+            float lateralMotion = Mathf.Abs(Vector3.Dot(velocity, transform.right))
+                / Mathf.Max(player.Movement.EffectiveMaximumSpeed, 0.01f);
+            float challenge = EvaluatePassChallenge(distanceChallenge, facingChallenge, lateralMotion,
+                1f - player.Stamina / 100f);
+            float sign = Vector3.Cross(facing, targetDirection).y;
+            if (Mathf.Abs(sign) < 0.0001f) sign = StableSign(player.PlayerId);
+            return EvaluateDeviationDegrees(passing, challenge, sign);
+        }
+
+        private static float StableSign(string value)
+        {
+            int sum = 0;
+            if (value != null) for (int i = 0; i < value.Length; i++) sum += value[i];
+            return (sum & 1) == 0 ? 1f : -1f;
+        }
+
         private void ShowRecommendation(PlayerController target)
         {
             EnsureFeedback();
             feedbackRoot.SetActive(true);
             Vector3 start = puck.transform.position + Vector3.up * 0.08f;
-            Vector3 lead = target.Movement != null ? target.Movement.Velocity * leadSeconds : Vector3.zero;
+            float passing = player != null ? player.Attributes.Normalized(PlayerAttribute.Passing) : 0f;
+            Vector3 lead = target.Movement != null ? target.Movement.Velocity * EvaluateLeadSeconds(passing) : Vector3.zero;
             Vector3 end = target.Stick.ControlPoint + lead + Vector3.up * 0.08f;
             for (int i = 0; i < pathDots.Length; i++)
             {

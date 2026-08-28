@@ -2,7 +2,8 @@
  * IceClash Phase 1 imperfect skater AI.
  * Runs the required eight-state hockey decision loop and emits independent movement,
  * tactical tap-pass, charged-shot, and active forechecking signals with Easy/Normal
- * profiles. The closest defender pressures and checks an opposing puck carrier,
+ * profiles. Difficulty changes decisions and reaction, never physical attributes.
+ * The closest defender pressures and checks an opposing puck carrier,
  * loose-puck pursuit outranks formation recovery, and each AI returns to its
  * configured conventional role's faceoff/home position.
  */
@@ -49,6 +50,7 @@ namespace IceClash.AI
 
         public Vector2 Move => move;
         public bool PassPressed => passPressed;
+        public bool DekePressed => false;
         public bool ShootHeld => shootHeld;
         public bool ShootReleased => shootReleased;
         public bool SwitchPressed => false;
@@ -56,7 +58,12 @@ namespace IceClash.AI
         public HockeyAIState CurrentState => stateMachine.Current;
         internal bool IsForechecking => forechecking;
         public AIDifficulty Difficulty => difficulty;
-        public float ActionQuality => difficulty == AIDifficulty.Easy ? 0.58f : 0.86f;
+        internal float DecisionInterval => difficulty == AIDifficulty.Easy
+            ? easyDecisionInterval : normalDecisionInterval;
+        internal float TargetErrorRadius => difficulty == AIDifficulty.Easy ? 0.8f : 0.3f;
+        internal float MaximumShotChargeSeconds => difficulty == AIDifficulty.Easy ? 0.55f : 0.8f;
+        internal float PassProgressThreshold => passProgressAdvantage
+            * (difficulty == AIDifficulty.Easy ? 1.35f : 1f);
 
         public void Configure(PlayerController owner, PuckController controlledPuck, int slot, int count, AIDifficulty level)
         {
@@ -66,7 +73,6 @@ namespace IceClash.AI
             formationCount = count;
             difficulty = level;
             homePosition = AIFormationController.Home(owner.Team, owner.Role);
-            player.Movement.SetSpeedScale(level == AIDifficulty.Easy ? 0.82f : 0.94f);
         }
 
         public void SetHumanControlled(bool value)
@@ -117,7 +123,7 @@ namespace IceClash.AI
                     stateMachine.Transition(HockeyAIState.Shoot, Time.time);
                     target = goal;
                     shootHeld = true;
-                    releaseShotAt = Time.time + Random.Range(0.2f, difficulty == AIDifficulty.Easy ? 0.55f : 0.8f);
+                    releaseShotAt = Time.time + Random.Range(0.2f, MaximumShotChargeSeconds);
                 }
                 else
                 {
@@ -161,7 +167,7 @@ namespace IceClash.AI
                 target = Vector3.Lerp(homePosition, puck.transform.position, 0.2f);
             }
 
-            Vector3 error = Random.insideUnitSphere * (difficulty == AIDifficulty.Easy ? 0.8f : 0.3f);
+            Vector3 error = Random.insideUnitSphere * TargetErrorRadius;
             error.y = 0f;
             move = ToCameraInput(target + error - transform.position);
         }
@@ -187,7 +193,7 @@ namespace IceClash.AI
 
             float attackSign = player.Team == TeamId.Blue ? 1f : -1f;
             float teammateProgress = (teammate.transform.position.z - transform.position.z) * attackSign;
-            return teammateProgress >= passProgressAdvantage;
+            return teammateProgress >= PassProgressThreshold;
         }
 
         internal void DecideForValidation() => Decide();
@@ -238,7 +244,7 @@ namespace IceClash.AI
         {
             RefreshForecheckAssignment();
             if (Time.time < nextDecisionTime) return;
-            nextDecisionTime = Time.time + (difficulty == AIDifficulty.Easy ? easyDecisionInterval : normalDecisionInterval)
+            nextDecisionTime = Time.time + DecisionInterval
                 + Random.Range(0f, difficulty == AIDifficulty.Easy ? 0.16f : 0.07f);
             Decide();
             ExecuteDefensiveCheck();

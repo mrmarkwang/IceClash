@@ -2,7 +2,8 @@
  * IceClash Phase 1 local PvE roster and systems composition.
  * Builds count-driven five-skater teams with three forwards and two defensemen,
  * mirrored center-faceoff reset positions, two goalies, shared input/HUD systems,
- * per-skater AI, possession control, defensive checks, match flow, and snapshots.
+ * per-skater role presets, AI, possession control, defensive checks, match flow,
+ * and attribute-aware snapshots.
  */
 
 using System;
@@ -89,7 +90,8 @@ namespace IceClash.Match
             if (renderer != null) renderer.sharedMaterial = material;
             HockeyPlayerAI ai = skater.AddComponent<HockeyPlayerAI>();
             PlayerController controller = skater.AddComponent<PlayerController>();
-            controller.Configure(id, team, role, ai, puck, position);
+            PlayerAttributeBuild build = PlayerAttributeBuild.CreatePreset(PlayerAttributeBuild.PresetForRole(role));
+            controller.Configure(id, team, role, ai, puck, position, build);
             ai.Configure(controller, puck, slot, SkatersPerTeam, difficulty);
             players.Add(controller);
             return controller;
