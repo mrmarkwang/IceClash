@@ -2,6 +2,8 @@
  * IceClash Phase 1 independent physics puck.
  * Owns velocity-matched possession, high-speed collision-safe physical releases,
  * save impulses, reclaim locks, carrier events, and deterministic match resets.
+ * Recent change: pickup checks use the authoritative Rigidbody position so
+ * interpolation lag cannot cause receivers to miss fast passes.
  */
 
 using System;
@@ -49,7 +51,7 @@ namespace IceClash.Puck
         {
             if (player == null || stick == null || carrier != null
                 || (player.PlayerId == reclaimLockedPlayerId && Time.time < reclaimLockedUntil)
-                || Vector3.Distance(stick.ControlPoint, transform.position) > stick.ClaimRadius
+                || Vector3.Distance(stick.ControlPoint, body.position) > stick.ClaimRadius
                 || body.linearVelocity.magnitude > stick.MaximumClaimSpeed) return false;
 
             carrier = player;

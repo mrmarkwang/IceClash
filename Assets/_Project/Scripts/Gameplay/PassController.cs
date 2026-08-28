@@ -2,6 +2,9 @@
  * IceClash recommended tap PASS controller.
  * Continuously previews one tactical teammate with pooled dotted-path feedback
  * during human possession, then releases an imperfect non-homing physics pass.
+ * Recent changes: raised pass pace near the claimable-speed ceiling and tightened
+ * release spread so recommended passes connect more often without becoming
+ * guaranteed; deterministic validation uses the live release calculation.
  */
 
 using IceClash.Player;
@@ -15,10 +18,10 @@ namespace IceClash.Gameplay
     {
         private const int PathDotCount = 9;
 
-        [SerializeField] private float passSpeed = 12.5f;
+        [SerializeField] private float passSpeed = 14.5f;
         [SerializeField] private float cooldown = 0.28f;
-        [SerializeField] private float leadSeconds = 0.22f;
-        [SerializeField, Range(0f, 12f)] private float errorDegrees = 3.5f;
+        [SerializeField] private float leadSeconds = 0.45f;
+        [SerializeField, Range(0f, 12f)] private float errorDegrees = 1f;
         [SerializeField, Range(0.03f, 0.3f)] private float recommendationRefreshInterval = 0.1f;
         [SerializeField] private float pathDotSize = 0.11f;
 
@@ -36,6 +39,9 @@ namespace IceClash.Gameplay
         public PlayerController RecommendedTarget => recommendation.SelectedTeammate;
         public bool FeedbackVisible => feedbackRoot != null && feedbackRoot.activeSelf;
         public int VisiblePathDotCount => FeedbackVisible ? pathDots.Length : 0;
+        internal float PassSpeed => passSpeed;
+        internal float LeadSeconds => leadSeconds;
+        internal float MaximumErrorDegrees => errorDegrees;
 
         public void Configure(PlayerController owner, PuckController controlledPuck)
         {
@@ -73,9 +79,25 @@ namespace IceClash.Gameplay
         {
             PlayerController target = selection.SelectedTeammate;
             if (target == null) return false;
-            Vector3 lead = target.Movement != null ? target.Movement.Velocity * leadSeconds : Vector3.zero;
+            Vector3 targetVelocity = target.Movement != null ? target.Movement.Velocity : Vector3.zero;
+            float spreadScale = Mathf.Lerp(1.5f, 0.75f, Mathf.Clamp01(quality));
+            float spread = Random.Range(-errorDegrees, errorDegrees) * spreadScale;
+            return ReleaseToward(target, targetVelocity, quality, spread);
+        }
+
+        internal bool ReleaseForValidation(PlayerController target, Vector3 targetVelocity, float quality,
+            float normalizedError)
+        {
+            float spreadScale = Mathf.Lerp(1.5f, 0.75f, Mathf.Clamp01(quality));
+            float spread = Mathf.Clamp(normalizedError, -1f, 1f) * errorDegrees * spreadScale;
+            return ReleaseToward(target, targetVelocity, quality, spread);
+        }
+
+        private bool ReleaseToward(PlayerController target, Vector3 targetVelocity, float quality, float spread)
+        {
+            if (target == null || target.Stick == null) return false;
+            Vector3 lead = targetVelocity * leadSeconds;
             Vector3 direction = Vector3.ProjectOnPlane(target.Stick.ControlPoint + lead - puck.transform.position, Vector3.up).normalized;
-            float spread = Random.Range(-errorDegrees, errorDegrees) * Mathf.Lerp(1.5f, 0.75f, Mathf.Clamp01(quality));
             direction = Quaternion.Euler(0f, spread, 0f) * direction;
             if (!puck.Release(player, direction, passSpeed * Mathf.Lerp(0.88f, 1f, quality))) return false;
             nextPassTime = Time.time + cooldown;

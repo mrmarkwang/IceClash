@@ -2,8 +2,8 @@
  * IceClash runtime mobile-control view builder.
  * Creates a safe-area-aware fixed joystick and circular action visuals with
  * generous independent hit regions, then returns shared input bindings.
- * Recent changes: anchored the stick lower-left and enlarged the unified action
- * hit/visual sizes with safe non-overlapping right-thumb spacing.
+ * Recent changes: enlarged the joystick and unified action hit/visual sizes by
+ * roughly 20%, with safe non-overlapping right-thumb spacing.
  */
 
 using UnityEngine;
@@ -35,9 +35,9 @@ namespace IceClash.UI
     public static class MobileControlsBuilder
     {
         private const int CircleTextureSize = 128;
-        private static readonly Vector2 ActionButtonSize = new(220f, 220f);
-        private const float ActionVisualDiameter = 200f;
-        private static readonly Vector2 JoystickZoneSize = new(360f, 360f);
+        private static readonly Vector2 ActionButtonSize = new(264f, 264f);
+        private const float ActionVisualDiameter = 240f;
+        private static readonly Vector2 JoystickZoneSize = new(432f, 432f);
         private static readonly Vector2 JoystickZoneCenter = new(390f, 430f);
         private static readonly Color JoystickRingColor = new(0.04f, 0.12f, 0.2f, 0.82f);
         private static readonly Color JoystickHandleColor = new(0.76f, 0.91f, 1f, 0.96f);
@@ -73,7 +73,7 @@ namespace IceClash.UI
             joystickHitArea.color = Color.clear;
 
             RectTransform joystickBackground = CreateRect("JoystickBackground", joystickArea,
-                new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(260f, 260f), Vector2.zero);
+                new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(312f, 312f), Vector2.zero);
             joystickBackground.pivot = new Vector2(0.5f, 0.5f);
             Image backgroundImage = joystickBackground.gameObject.AddComponent<Image>();
             backgroundImage.sprite = GetRingSprite();
@@ -82,7 +82,7 @@ namespace IceClash.UI
             backgroundImage.raycastTarget = false;
 
             RectTransform joystickHandle = CreateRect("JoystickHandle", joystickBackground,
-                new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(110f, 110f), Vector2.zero);
+                new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(132f, 132f), Vector2.zero);
             Image handleImage = joystickHandle.gameObject.AddComponent<Image>();
             handleImage.sprite = GetFilledCircleSprite();
             handleImage.color = JoystickHandleColor;
@@ -90,14 +90,14 @@ namespace IceClash.UI
             handleImage.raycastTarget = false;
 
             VirtualJoystick joystick = joystickArea.gameObject.AddComponent<VirtualJoystick>();
-            joystick.Configure(joystickArea, joystickBackground, joystickHandle, 130f, 0.12f);
+            joystick.Configure(joystickArea, joystickBackground, joystickHandle, 156f, 0.12f);
 
             RectTransform actionButtons = CreateRect("ActionButtons", mobileControls,
                 new Vector2(0.58f, 0f), new Vector2(1f, 0.62f), Vector2.zero, Vector2.zero);
             MobileActionButton pass = CreateButton("PassButton", "PASS", actionButtons,
-                new Vector2(-400f, 360f));
+                new Vector2(-430f, 420f));
             MobileActionButton deke = CreateButton("DekeButton", "DEKE", actionButtons,
-                new Vector2(-410f, 120f));
+                new Vector2(-440f, 140f));
             MobileActionButton shoot = CreateButton("ShootButton", "SHOOT", actionButtons,
                 new Vector2(-150f, 150f));
 
@@ -144,7 +144,7 @@ namespace IceClash.UI
             text.text = label;
             text.alignment = TextAnchor.MiddleCenter;
             text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-            text.fontSize = 40;
+            text.fontSize = 48;
             text.fontStyle = FontStyle.Bold;
             text.color = Color.white;
             text.raycastTarget = false;

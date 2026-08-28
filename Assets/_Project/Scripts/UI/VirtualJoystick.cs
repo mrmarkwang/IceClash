@@ -2,7 +2,8 @@
  * IceClash fixed virtual joystick.
  * Captures one EventSystem pointer inside a bounded lower-left area, keeps the
  * visible base stationary, and exposes dead-zone-remapped skating intent.
- * Recent change: the base remains visible and only the handle moves or resets.
+ * Recent changes: the base remains visible, only the handle moves or resets, and
+ * the configured travel radius is exposed for layout verification.
  */
 
 using UnityEngine;
@@ -26,6 +27,7 @@ namespace IceClash.UI
         public Vector2 Direction { get; private set; }
         public int ActivePointerId => activePointerId;
         public float DeadZone => deadZone;
+        public float Radius => radius;
 
         public void Configure(RectTransform area, RectTransform joystickBackground, RectTransform joystickHandle,
             float joystickRadius, float configuredDeadZone)
