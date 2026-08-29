@@ -3,7 +3,8 @@
  * Reports a dynamic puck entering the goal volume to MatchController. Goals are
  * one-way: the puck center must be inside the bounded goal volume while travelling
  * into the net. A swept goal-line fallback catches fast shots that cross the entire
- * trigger step between callbacks. Match state and one-count ownership stay central.
+ * trigger step even when the physical net reverses their velocity on that step.
+ * Match state and one-count ownership stay central.
  */
 
 using IceClash.Core;
@@ -100,7 +101,7 @@ namespace IceClash.Match
             if (trackedPuck == null || trackedPuck.Body == null) return;
             Vector3 currentPosition = trackedPuck.Body.position;
             if (hasPreviousPuckPosition && match != null && match.State == MatchStateSnapshot.Playing
-                && CrossedGoalLine(previousPuckPosition, currentPosition, trackedPuck.Body.linearVelocity))
+                && CrossedGoalLine(previousPuckPosition, currentPosition))
             {
                 match.RegisterGoal(scoringTeam);
                 return;
@@ -109,9 +110,8 @@ namespace IceClash.Match
             hasPreviousPuckPosition = true;
         }
 
-        private bool CrossedGoalLine(Vector3 previousPosition, Vector3 currentPosition, Vector3 velocity)
+        private bool CrossedGoalLine(Vector3 previousPosition, Vector3 currentPosition)
         {
-            if (Vector3.Dot(velocity, scoringDirection) <= MinimumInwardSpeed) return false;
             BoxCollider volume = GetComponent<BoxCollider>();
             Vector3 goalLine = transform.position - scoringDirection * (volume.size.z * 0.5f);
             float previousSide = Vector3.Dot(previousPosition - goalLine, scoringDirection);

@@ -10,7 +10,7 @@ Make opponent possession immediately playable on touch by presenting SWITCH and 
 - `PlayerInputController` maps those fixed buttons to offensive signals and exposes SWITCH only from `LocalPlayerInput`, so touch cannot currently switch.
 - `IPlayerInput` is the shared hardware, touch, and AI action contract. `LocalPlayerInput` and `HockeyPlayerAI` are its concrete sources.
 - `PlayerSwitchController` already owns useful-skater scoring, cooldown, input/AI transfer, marker movement, selection events, and camera retargeting.
-- `PuckController.CarrierChanged` is the authoritative established-possession event. Loose-puck motion intentionally does not trigger automatic player selection.
+- `PuckController.CarrierChanged` is the authoritative possession event. Entering a loose-puck state can select a player once; later puck motion emits no selection event.
 - `LocalMatchSetup` composes team-level gameplay systems, while `PlayerController` composes per-skater pass and shoot actions. A defensive check must retain cooldown across controlled-skater changes, so it belongs at the human-team composition level rather than on each skater.
 - `PlayerMovementController` owns planar skater velocity but has no bounded external impulse path.
 - Gameplay components are added to instantiated skaters at runtime, so serialized fields on those components are not a durable prefab/scene tuning surface.
@@ -18,7 +18,7 @@ Make opponent possession immediately playable on touch by presenting SWITCH and 
 
 ## Decisions
 
-- Treat only an established non-Blue carrier as defensive mode. Human possession and no carrier use the existing offensive mode so loose-puck play does not flicker between action sets.
+- Use three action modes: Blue possession shows offense, no carrier shows only SWITCH, and Red possession shows SWITCH/CHECK. On entry to loose-puck play, select the closest Blue skater once; later puck motion must not overwrite a manual SWITCH choice.
 - Reuse the existing left and right action slots for SWITCH and CHECK and deactivate the middle DEKE slot during defensive mode. This yields exactly two defensive buttons without adding layout geometry.
 - Let `PlayerInputController` own semantic mapping of the reusable touch slots and subscribe to `PuckController.CarrierChanged`; reset a button before changing its role so a held offensive action cannot become a defensive press.
 - Extend `IPlayerInput` with one `CheckPressed` signal. Keep `PlayerSwitchController` as the only switch implementation and route the defensive left touch slot into its existing `SwitchPressed` input.
@@ -33,14 +33,14 @@ Make opponent possession immediately playable on touch by presenting SWITCH and 
 ### Phase 1 - Lock possession and reusable-control behavior
 
 - [x] Update `MobileActionButton` with safe runtime relabelling and input reset behavior suitable for changing an existing button's semantic role.
-- [x] Update `PlayerInputController` configuration to receive `PuckController`, subscribe to established carrier changes, and expose an observable offensive/defensive control mode.
+- [x] Update `PlayerInputController` configuration to receive `PuckController`, subscribe to carrier changes, and expose observable offense/loose/defense modes.
 - [x] Preserve joystick geometry, action hit regions, safe-area fitting, and independent pointer ownership while toggling only action labels and the middle slot's active state.
 
 ### Phase 2 - Extend the shared action contract
 
 - [x] Add `CheckPressed` to `IPlayerInput` and implement it in `LocalPlayerInput`, `PlayerInputController`, and `HockeyPlayerAI` without changing existing PASS, SHOOT, or SWITCH semantics.
-- [x] Route the reusable left touch action to `SwitchPressed` only in defensive mode and the reusable right action to `CheckPressed` only in defensive mode.
-- [x] Confirm offensive mode retains PASS, DEKE, and SHOOT routing and defensive mode cannot leak those same touch presses into offensive actions.
+- [x] Route the reusable left touch action to `SwitchPressed` in loose and defensive modes, and the reusable right action to `CheckPressed` only in defensive mode.
+- [x] Confirm offense retains PASS, DEKE, and SHOOT; loose shows only SWITCH; and defense cannot leak touch presses into offensive actions.
 - [x] Add deterministic mapping-contract checks for keyboard CHECK, gamepad CHECK, and the existing hardware PASS, SHOOT, and SWITCH mappings used by `PlayerInputController`; focused-device input remains a manual scenario because batch-mode device events are focus-suppressed.
 
 ### Phase 3 - Implement contextual defensive checks
@@ -53,9 +53,9 @@ Make opponent possession immediately playable on touch by presenting SWITCH and 
 
 ### Phase 4 - Verify adaptive controls and action outcomes
 
-- [x] Extend `PrototypeArenaSmokeCheck` without discarding the current reliable-pass assertions to verify default offensive labels, defensive SWITCH/CHECK visibility, and restoration after opponent possession ends.
+- [x] Extend `PrototypeArenaSmokeCheck` without discarding the current reliable-pass assertions to verify Blue offense, loose-only SWITCH, and Red SWITCH/CHECK visibility.
 - [x] Hold a touch action through a possession-mode change, repeat Red/loose/Blue/Red transitions, and verify pointer phases reset without a synthetic SWITCH, CHECK, PASS, or SHOOT action.
-- [x] Exercise the defensive touch SWITCH route and verify it uses `PlayerSwitchController` control transfer rather than a duplicate selection path.
+- [x] Verify a newly loose puck selects the closest Blue skater exactly once, then exercise the real cooldown-gated touch SWITCH route and prove that manual control and camera targeting persist while the puck moves.
 - [x] Add deterministic body-check, pull-check, switch-during-cooldown, cooldown/out-of-range rejection, loose-puck, gameplay-disable/reset impulse cleanup, and no-direct-possession checks using the configured runtime components.
 - [x] Prove body impulse never exceeds the validated `6 m/s` cap and prove a pull-check puck receives only its initial release vector across repeated puck reception ticks with no continuing steering or direct possession assignment.
 - [x] Update the smoke pass/failure evidence fields so the log reports each adaptive-control and defensive-action outcome independently of unrelated legacy assertions.
@@ -77,9 +77,9 @@ Make opponent possession immediately playable on touch by presenting SWITCH and 
 
 Evidence recorded on 2026-08-28:
 
-- Unity `6000.5.9f1` compiled the temporary current-source copy with exit code `0` and no C# errors.
-- The Play Mode smoke report recorded `hardwareActionContract=True`, `defensiveControlMode=True`, `heldTransitionCleared=True`, `repeatedControlTransitions=True`, `tuningBounds=True`, `bodyCheck=True`, `pullCheck=True`, `sharedCooldown=True`, `rejectedCheck=True`, `impulseReset=True`, and `looseAfterCheck=True`.
-- The aggregate Phase 1 smoke remained nonzero on concurrent/pre-existing assertions: `arenaPresentation=False`, `puckSizeAndPosition=False`, and the in-progress reliable-pass path's `longPassReceived=False` / `passReceptionAutoControl=False`. No adaptive-defense field failed.
+- Unity `6000.5.9f1` compiled the current workspace with no C# errors.
+- The Play Mode smoke report recorded `defensiveControlMode=True`, `heldTransitionCleared=True`, `repeatedControlTransitions=True`, `humanPossessionAutoControl=True`, `loosePuckAutoControl=True`, `opponentPossessionAutoDefense=True`, and `manualOverride=True`, together with all contextual-check fields as `True`.
+- The aggregate Phase 1 smoke remained nonzero only on the unrelated existing `faceoffFormation=False` assertion. No possession-control, loose-switch, or defensive-action field failed.
 - The static external-service boundary command returned no matches.
 
 ## Rollback / Risk

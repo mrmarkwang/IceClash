@@ -2,7 +2,8 @@
  * IceClash manual player-switch override and controlled-skater router.
  * Scores useful teammates only when SWITCH is tapped, then atomically transfers
  * human input, teammate AI, the marker, camera target, and selection events.
- * Possession-driven policy lives separately in PlayerControlManager.
+ * Possession-driven policy lives separately in PlayerControlManager; validation
+ * exercises the same cooldown-gated input tick used by Update.
  */
 
 using System;
@@ -45,12 +46,17 @@ namespace IceClash.Gameplay
             if (ControlledPlayer != null) cameraController.SetTarget(ControlledPlayer.transform);
         }
 
-        private void Update()
+        private void Update() => TickSwitchInput();
+
+        private void TickSwitchInput()
         {
             if (ControlledPlayer == null || humanInput == null) return;
             if (marker != null) marker.position = ControlledPlayer.transform.position + Vector3.up * 1.45f;
             if (humanInput.SwitchPressed && Time.time >= nextSwitchTime) SwitchToBest();
         }
+
+        internal void TickForValidation() => TickSwitchInput();
+        internal void ResetCooldownForValidation() => nextSwitchTime = 0f;
 
         public void SwitchToBest()
         {

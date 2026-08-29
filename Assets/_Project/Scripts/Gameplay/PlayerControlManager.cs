@@ -1,10 +1,9 @@
 /*
  * IceClash possession-based automatic player control policy.
- * Reacts only to established PuckController carrier changes: human possession
- * selects that carrier, opponent possession selects the closest defender to the
- * puck, and free
- * puck movement never changes control. PlayerSwitchController remains the manual
- * override and performs the actual input/AI/marker/camera transfer.
+ * Reacts to PuckController carrier changes: human possession selects that carrier,
+ * opponent possession selects the closest defender, and a newly loose puck selects
+ * the closest human-team skater once. PlayerSwitchController remains the persistent
+ * manual override and performs the input/AI/marker/camera transfer.
  */
 
 using System.Collections.Generic;
@@ -15,7 +14,7 @@ using UnityEngine;
 
 namespace IceClash.Gameplay
 {
-    public enum AutomaticControlReason { None, HumanPossession, OpponentPossession }
+    public enum AutomaticControlReason { None, HumanPossession, LoosePuck, OpponentPossession }
 
     public sealed class PlayerControlManager : MonoBehaviour
     {
@@ -45,9 +44,14 @@ namespace IceClash.Gameplay
 
         private void OnCarrierChanged(PlayerController carrier)
         {
-            // A null carrier is a pass, shot, save, or other free-puck state. Rule 5:
-            // never infer the next controlled player from puck direction or proximity.
-            if (carrier == null || switchController == null || humanTeam.Count == 0) return;
+            if (switchController == null || humanTeam.Count == 0) return;
+
+            if (carrier == null)
+            {
+                PlayerController closest = FindClosestHumanToPuck();
+                if (closest != null) ApplyAutomaticSelection(closest, AutomaticControlReason.LoosePuck);
+                return;
+            }
 
             if (carrier.Team == humanTeamId)
             {
@@ -55,11 +59,11 @@ namespace IceClash.Gameplay
                 return;
             }
 
-            PlayerController defender = FindClosestDefenderToPuck();
+            PlayerController defender = FindClosestHumanToPuck();
             if (defender != null) ApplyAutomaticSelection(defender, AutomaticControlReason.OpponentPossession);
         }
 
-        private PlayerController FindClosestDefenderToPuck()
+        private PlayerController FindClosestHumanToPuck()
         {
             Vector3 puckPosition = puck.Body != null ? puck.Body.position : puck.transform.position;
             PlayerController best = null;

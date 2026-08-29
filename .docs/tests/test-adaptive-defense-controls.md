@@ -3,12 +3,13 @@
 ## Scenario 1 - Possession changes the visible actions
 
 1. Start the arena with no established puck carrier.
-2. Verify the joystick and PASS, DEKE, and SHOOT actions are visible.
+2. Verify the nearest Blue skater is controlled, the joystick and SWITCH are visible, and PASS, DEKE, SHOOT, and CHECK are hidden.
 3. Establish possession with a Red skater.
 4. Verify the joystick remains unchanged and exactly SWITCH and CHECK are visible in the action area.
 5. Hold one visible action pointer while changing Red possession to loose-puck play, then release the old pointer.
-6. Verify PASS, DEKE, and SHOOT return and the old pointer creates no synthetic offensive or defensive action.
-7. Repeat Red → loose → Blue → Red possession and verify every state has the expected labels, visibility, and cleared press/hold/release phases.
+6. Verify only SWITCH remains, the closest Blue skater is selected once, and the old pointer creates no synthetic offensive or defensive action.
+7. Tap loose-puck SWITCH, verify control transfers through `PlayerSwitchController`, move the loose puck without changing possession, and verify the manual choice persists.
+8. Repeat Red → loose → Blue → Red possession and verify every state has the expected labels, visibility, and cleared press/hold/release phases.
 
 ## Scenario 2 - Touch SWITCH uses the existing control transfer
 

@@ -1,7 +1,8 @@
 /*
  * IceClash Phase 1 local PvE arena bootstrap.
  * Generates the mobile-first marked rink, layered boards/glass, dimensional nets,
- * one-way goals/triggers, puck, 5v5-plus-goalies roster, match flow, HUD, and camera.
+ * physical goal-net barriers, one-way goals/triggers, puck, 5v5-plus-goalies
+ * roster, match flow, HUD, and camera.
  * Shared rink geometry includes blue lines and faceoff dots used by gameplay.
  * Red collider-free zone grids support delayed-offside warnings, while goal
  * triggers track the puck for swept high-speed scoring. The puck receives the
@@ -176,6 +177,26 @@ namespace IceClash.Hockey
             CreateCube(goalName + " Base Rail A", new Vector3(-GoalHalfWidth, IceSurfaceY + 0.05f, center.z + direction * GoalDepth / 2f), new Vector3(0.14f, 0.1f, GoalDepth), material, false);
             CreateCube(goalName + " Base Rail B", new Vector3(GoalHalfWidth, IceSurfaceY + 0.05f, center.z + direction * GoalDepth / 2f), new Vector3(0.14f, 0.1f, GoalDepth), material, false);
             CreateGoalNet(goalName, center, netMaterial);
+            CreateGoalNetCollision(goalName, center, direction);
+        }
+
+        private static void CreateGoalNetCollision(string goalName, Vector3 center, float direction)
+        {
+            const float backThickness = PuckDiameter;
+            const float perimeterThickness = 0.08f;
+            float middleZ = center.z + direction * GoalDepth * 0.5f;
+            float backZ = center.z + direction * (GoalDepth + backThickness * 0.5f);
+            CreateBoxCollider(goalName + " Net Back Collision", new Vector3(0f, center.y, backZ),
+                new Vector3(GoalHalfWidth * 2f, GoalHeight, backThickness));
+            CreateBoxCollider(goalName + " Net Side A Collision",
+                new Vector3(-GoalHalfWidth - perimeterThickness * 0.5f, center.y, middleZ),
+                new Vector3(perimeterThickness, GoalHeight, GoalDepth));
+            CreateBoxCollider(goalName + " Net Side B Collision",
+                new Vector3(GoalHalfWidth + perimeterThickness * 0.5f, center.y, middleZ),
+                new Vector3(perimeterThickness, GoalHeight, GoalDepth));
+            CreateBoxCollider(goalName + " Net Roof Collision",
+                new Vector3(0f, center.y + GoalHeight / 2f + perimeterThickness * 0.5f, middleZ),
+                new Vector3(GoalHalfWidth * 2f, perimeterThickness, GoalDepth));
         }
 
         private static GameObject CreateOffsideWarningGrid(string gridName, bool northZone, Material material)
@@ -421,6 +442,13 @@ namespace IceClash.Hockey
             cube.GetComponent<Renderer>().material = material;
             if (!collider) DisableAndDestroyCollider(cube);
             return cube;
+        }
+
+        private static void CreateBoxCollider(string objectName, Vector3 position, Vector3 size)
+        {
+            GameObject collisionObject = new(objectName);
+            collisionObject.transform.position = position;
+            collisionObject.AddComponent<BoxCollider>().size = size;
         }
 
         private static void DisableAndDestroyCollider(GameObject target)

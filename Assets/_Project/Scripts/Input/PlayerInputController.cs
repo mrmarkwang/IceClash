@@ -1,8 +1,8 @@
 /*
  * IceClash shared local player input controller.
- * Selects movement input and remaps reusable touch action slots between offense
- * and SWITCH/CHECK defense when authoritative puck possession changes. DEKE is
- * routed only from an explicit hardware or offensive touch press.
+ * Selects movement input and remaps reusable touch action slots between possession
+ * offense, loose-puck SWITCH, and SWITCH/CHECK defense. Every transition resets
+ * held input; DEKE is routed only from hardware or offensive touch.
  */
 
 using IceClash.Core;
@@ -13,7 +13,7 @@ using UnityEngine;
 
 namespace IceClash.Input
 {
-    public enum MobileActionMode { Offense, Defense }
+    public enum MobileActionMode { Offense, Loose, Defense }
 
     public sealed class PlayerInputController : MonoBehaviour, IPlayerInput
     {
@@ -45,7 +45,7 @@ namespace IceClash.Input
         public bool ShootReleased => (hardware != null && hardware.ShootReleased)
             || (Mode == MobileActionMode.Offense && shoot != null && shoot.Released);
         public bool SwitchPressed => (hardware != null && hardware.SwitchPressed)
-            || (Mode == MobileActionMode.Defense && pass != null && pass.Pressed);
+            || (Mode != MobileActionMode.Offense && pass != null && pass.Pressed);
         public bool CheckPressed => (hardware != null && hardware.CheckPressed)
             || (Mode == MobileActionMode.Defense && shoot != null && shoot.Pressed);
         public MobileActionMode Mode { get; private set; } = MobileActionMode.Offense;
@@ -77,8 +77,9 @@ namespace IceClash.Input
 
         private void OnCarrierChanged(PlayerController carrier)
         {
-            SetMode(carrier != null && carrier.Team != TeamId.Blue
-                ? MobileActionMode.Defense : MobileActionMode.Offense);
+            if (carrier == null) SetMode(MobileActionMode.Loose);
+            else SetMode(carrier.Team == TeamId.Blue
+                ? MobileActionMode.Offense : MobileActionMode.Defense);
         }
 
         private void SetMode(MobileActionMode mode)
@@ -87,13 +88,24 @@ namespace IceClash.Input
             deke?.ResetInput();
             shoot?.ResetInput();
             Mode = mode;
-            if (pass != null) pass.SetLabel(mode == MobileActionMode.Defense ? "SWITCH" : "PASS");
+            bool offense = mode == MobileActionMode.Offense;
+            bool defense = mode == MobileActionMode.Defense;
+            bool loose = mode == MobileActionMode.Loose;
+            if (pass != null)
+            {
+                pass.SetLabel(defense || loose ? "SWITCH" : "PASS");
+                pass.gameObject.SetActive(true);
+            }
             if (deke != null)
             {
-                deke.gameObject.SetActive(mode == MobileActionMode.Offense);
-                if (mode == MobileActionMode.Offense) deke.SetLabel("DEKE");
+                deke.gameObject.SetActive(offense);
+                if (offense) deke.SetLabel("DEKE");
             }
-            if (shoot != null) shoot.SetLabel(mode == MobileActionMode.Defense ? "CHECK" : "SHOOT");
+            if (shoot != null)
+            {
+                shoot.SetLabel(defense ? "CHECK" : "SHOOT");
+                shoot.gameObject.SetActive(offense || defense);
+            }
         }
 
         internal static Vector2 SelectMoveInput(Vector2 hardwareMove, Vector2 mobileMove)

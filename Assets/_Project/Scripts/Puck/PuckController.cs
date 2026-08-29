@@ -1,7 +1,7 @@
 /*
  * IceClash Phase 1 independent physics puck.
- * Owns velocity-matched possession, high-speed collision-safe physical releases,
- * intended-pass reception, save impulses, reclaim locks, carrier events, and
+ * Owns velocity-matched possession, high-speed collision-safe planar passes and
+ * airborne shot releases, intended-pass reception, save impulses, reclaim locks, and
  * deterministic resets and validated defensive dislodges. Rounded-rink containment
  * keeps loose and carried pucks clear of board colliders, including when a carrier's
  * stick control point reaches beyond the ice. Reset notifications let swept goal-line
@@ -91,7 +91,7 @@ namespace IceClash.Puck
             if (!IsCarriedBy(player) || direction.sqrMagnitude < 0.01f) return false;
             PrepareRelease(player);
             ClearIntendedPass();
-            body.linearVelocity = Vector3.ProjectOnPlane(direction, Vector3.up).normalized * speed;
+            body.linearVelocity = direction.normalized * speed;
             return true;
         }
 
