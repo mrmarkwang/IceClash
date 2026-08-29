@@ -1,7 +1,7 @@
 /*
  * IceClash Phase 1 local match flow.
  * Owns clock, scores, faceoff/playing/goal-pause/finished transitions, one-count
- * goals, role-aware actor resets, HUD events, and final Human/AI/Draw result text.
+ * goals, center and offside-dot actor resets, HUD events, and final result text.
  */
 
 using System.Collections.Generic;
@@ -29,6 +29,7 @@ namespace IceClash.Match
         public int BlueScore { get; private set; }
         public int RedScore { get; private set; }
         public float RemainingSeconds { get; private set; }
+        public Vector3 LastFaceoffPosition { get; private set; }
         public string ResultText => BlueScore > RedScore ? "HUMAN TEAM WINS" : RedScore > BlueScore ? "AI TEAM WINS" : "DRAW";
 
         public void Configure(IReadOnlyList<PlayerController> skaters, IReadOnlyList<HockeyGoalieAI> goalieActors, PuckController controlledPuck, Vector3 puckReset)
@@ -38,6 +39,7 @@ namespace IceClash.Match
             for (int i = 0; i < goalieActors.Count; i++) goalies.Add(goalieActors[i]);
             puck = controlledPuck;
             puckResetPosition = puckReset;
+            LastFaceoffPosition = puckResetPosition;
             faceoff = gameObject.GetComponent<FaceoffController>() ?? gameObject.AddComponent<FaceoffController>();
             BlueScore = RedScore = 0;
             RemainingSeconds = matchDuration;
@@ -67,6 +69,13 @@ namespace IceClash.Match
             ResetActors();
         }
 
+        public bool RegisterOffside(Vector3 faceoffPosition)
+        {
+            if (State != MatchStateSnapshot.Playing) return false;
+            BeginFaceoff(faceoffPosition);
+            return true;
+        }
+
 #if UNITY_EDITOR
         public void StartPlayImmediatelyForValidation() => SetState(MatchStateSnapshot.Playing);
         public void CompleteGoalPauseForValidation()
@@ -78,11 +87,22 @@ namespace IceClash.Match
             RemainingSeconds = 0f;
             SetState(MatchStateSnapshot.Finished);
         }
+        public void CompleteFaceoffForValidation()
+        {
+            if (State != MatchStateSnapshot.Faceoff) return;
+            faceoff.CompleteDelayForValidation();
+            if (faceoff.TickComplete()) SetState(MatchStateSnapshot.Playing);
+        }
 #endif
 
         public void BeginFaceoff()
         {
-            ResetActors();
+            BeginFaceoff(puckResetPosition);
+        }
+
+        private void BeginFaceoff(Vector3 faceoffPosition)
+        {
+            ResetActors(faceoffPosition);
             SetPlayersEnabled(false);
             State = MatchStateSnapshot.Faceoff;
             faceoff.Begin();
@@ -94,6 +114,16 @@ namespace IceClash.Match
             for (int i = 0; i < players.Count; i++) players[i].ResetActor();
             for (int i = 0; i < goalies.Count; i++) goalies[i].ResetActor();
             puck.ResetPuck(puckResetPosition);
+            LastFaceoffPosition = puckResetPosition;
+        }
+
+        private void ResetActors(Vector3 faceoffPosition)
+        {
+            Vector3 puckFaceoffPosition = new(faceoffPosition.x, puckResetPosition.y, faceoffPosition.z);
+            for (int i = 0; i < players.Count; i++) players[i].ResetAtFaceoff(puckFaceoffPosition);
+            for (int i = 0; i < goalies.Count; i++) goalies[i].ResetActor();
+            puck.ResetPuck(puckFaceoffPosition);
+            LastFaceoffPosition = puckFaceoffPosition;
         }
 
         private void SetPlayersEnabled(bool value)

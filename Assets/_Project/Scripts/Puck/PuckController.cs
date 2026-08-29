@@ -2,9 +2,11 @@
  * IceClash Phase 1 independent physics puck.
  * Owns velocity-matched possession, high-speed collision-safe physical releases,
  * intended-pass reception, save impulses, reclaim locks, carrier events, and
- * deterministic resets and validated defensive dislodges. Reset notifications let
- * swept goal-line checks discard teleport history. CTR scales carry control;
- * intended passes retain PAS quality for deterministic CTR/PAS reception.
+ * deterministic resets and validated defensive dislodges. Rounded-rink containment
+ * keeps loose and carried pucks clear of board colliders, including when a carrier's
+ * stick control point reaches beyond the ice. Reset notifications let swept goal-line
+ * checks discard teleport history. CTR scales carry control; intended passes retain
+ * PAS quality for deterministic CTR/PAS reception.
  */
 
 using System;
@@ -33,6 +35,11 @@ namespace IceClash.Puck
         private float intendedPassQuality;
         private string reclaimLockedPlayerId = string.Empty;
         private float reclaimLockedUntil;
+        private float rinkWidth;
+        private float rinkLength;
+        private float rinkCornerRadius;
+        private float rinkClearance;
+        private bool hasRinkBoundary;
 
         public event Action<PlayerController> CarrierChanged;
         internal event Action<Vector3> PositionReset;
@@ -45,6 +52,16 @@ namespace IceClash.Puck
         public string LastImpulseReleasePlayerId { get; private set; } = string.Empty;
         internal PlayerController IntendedPassReceiver => intendedPassReceiver;
         internal float IntendedPassQuality => intendedPassQuality;
+        internal float ConfiguredRinkClearance => rinkClearance;
+
+        internal void ConfigureRinkBoundary(float width, float length, float cornerRadius, float clearance)
+        {
+            rinkWidth = Mathf.Max(0f, width);
+            rinkLength = Mathf.Max(0f, length);
+            rinkCornerRadius = Mathf.Clamp(cornerRadius, 0f, Mathf.Min(rinkWidth, rinkLength) * 0.5f);
+            rinkClearance = Mathf.Clamp(clearance, 0f, rinkCornerRadius);
+            hasRinkBoundary = rinkWidth > 0f && rinkLength > 0f;
+        }
 
         private void Awake()
         {
@@ -199,6 +216,7 @@ namespace IceClash.Puck
 
         private void FixedUpdate()
         {
+            ContainInRink();
             if (carrier == null)
             {
                 TickPassReception();
@@ -208,9 +226,67 @@ namespace IceClash.Puck
             Vector3 target = carrierStick.ControlPoint;
             target.y = body.position.y;
             Vector3 carrierVelocity = carrier.Movement != null ? carrier.Movement.Velocity : Vector3.zero;
+            target = ConstrainCarryMotion(target, ref carrierVelocity);
             body.AddForce(CalculateCarryAcceleration(target, carrierVelocity), ForceMode.Acceleration);
             body.linearVelocity = Vector3.ClampMagnitude(body.linearVelocity, maximumCarrySpeed);
         }
+
+        private Vector3 ConstrainCarryMotion(Vector3 target, ref Vector3 targetVelocity)
+        {
+            if (!hasRinkBoundary) return target;
+
+            Vector3 containedTarget = ClampToRoundedRink(
+                target, rinkWidth, rinkLength, rinkCornerRadius, rinkClearance);
+            targetVelocity = RemoveOutwardVelocity(targetVelocity, containedTarget - target);
+            return containedTarget;
+        }
+
+        private void ContainInRink()
+        {
+            if (!hasRinkBoundary || body == null) return;
+
+            Vector3 contained = ClampToRoundedRink(
+                body.position, rinkWidth, rinkLength, rinkCornerRadius, rinkClearance);
+            Vector3 correction = contained - body.position;
+            if (correction.sqrMagnitude <= 0.000001f) return;
+
+            body.position = contained;
+            body.linearVelocity = RemoveOutwardVelocity(body.linearVelocity, correction);
+        }
+
+        internal static Vector3 RemoveOutwardVelocity(Vector3 velocity, Vector3 inwardCorrection)
+        {
+            if (inwardCorrection.sqrMagnitude <= 0.000001f) return velocity;
+            Vector3 inward = inwardCorrection.normalized;
+            float inwardSpeed = Vector3.Dot(velocity, inward);
+            return inwardSpeed < 0f ? velocity - inward * inwardSpeed : velocity;
+        }
+
+        internal static Vector3 ClampToRoundedRink(Vector3 position, float width, float length,
+            float cornerRadius, float clearance)
+        {
+            float halfWidth = Mathf.Max(0f, width * 0.5f);
+            float halfLength = Mathf.Max(0f, length * 0.5f);
+            float boundedRadius = Mathf.Clamp(cornerRadius, 0f, Mathf.Min(halfWidth, halfLength));
+            float innerRadius = Mathf.Max(0f, boundedRadius - Mathf.Max(0f, clearance));
+            float coreHalfWidth = halfWidth - boundedRadius;
+            float coreHalfLength = halfLength - boundedRadius;
+            Vector2 point = new(position.x, position.z);
+            Vector2 core = new(
+                Mathf.Clamp(point.x, -coreHalfWidth, coreHalfWidth),
+                Mathf.Clamp(point.y, -coreHalfLength, coreHalfLength));
+            Vector2 offset = point - core;
+
+            if (offset.sqrMagnitude > innerRadius * innerRadius)
+                point = innerRadius > 0f ? core + offset.normalized * innerRadius : core;
+
+            return new Vector3(point.x, position.y, point.y);
+        }
+
+        internal void TickRinkContainmentForValidation() => ContainInRink();
+
+        internal Vector3 ConstrainCarryMotionForValidation(Vector3 target, ref Vector3 targetVelocity) =>
+            ConstrainCarryMotion(target, ref targetVelocity);
 
         internal void TickPassReception()
         {

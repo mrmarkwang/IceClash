@@ -17,7 +17,7 @@ Multiplayer, networking, Photon Fusion, matchmaking, accounts, Firebase, backend
 2. Open `Assets/_Project/Scenes/PrototypeArena.unity`.
 3. Enter Play Mode.
 
-The scene builds the marked rink, ten skaters, two AI goalies, physics puck, two goal triggers, faceoff/match state, hockey camera, controlled-player marker, scoreboard, timer, joystick, and possession-adaptive action buttons at runtime. Each lineup has a Center, Left Wing, Right Wing, Left Defense, and Right Defense. Opening and post-goal faceoffs place centers at the center dot, wings outside the circle, defensemen goal-side, and goalies at their crease anchors.
+The scene builds the marked rink, ten skaters, two AI goalies, physics puck, two goal triggers, faceoff/match state, hockey camera, controlled-player marker, scoreboard, timer, joystick, and possession-adaptive action buttons at runtime. Each lineup has a Center, Left Wing, Right Wing, Left Defense, and Right Defense. Opening and post-goal faceoffs place centers at the center dot, wings outside the circle, defensemen goal-side, and goalies at their crease anchors. Offside faceoffs use the nearest marked neutral-zone dot while preserving that mirrored formation around the new puck location.
 
 ## Controls
 
@@ -33,6 +33,8 @@ The scene builds the marked rink, ten skaters, two AI goalies, physics puck, two
 WASD and the fixed, always-visible lower-left joystick never aim passes or shots. During human possession or loose-puck play, the touch actions are PASS, DEKE, and SHOOT. When a Red skater establishes possession, they become exactly SWITCH and CHECK; the joystick remains unchanged. SWITCH uses the same useful-defender selection as Q/gamepad switching. CHECK chooses a close body check or a longer forward pull check from the controlled Blue skater. A successful check dislodges the puck into normal free physics and never grants possession directly.
 
 While the human player possesses the puck, a subtle dotted path shows the currently recommended teammate. Tap PASS to release a deterministic, interceptable physics pass along that recommendation; no drag is required. PAS, distance, facing, motion, and fatigue shape pace, lead, and deviation, but a clean lane never fails from a hidden random roll. An unobstructed pass is captured only after physically entering the intended teammate's CTR/PAS-weighted reception zone, while collisions and opponent claims can still defeat it. DEKE starts a short CTR/AGI-based puck-control and protection window; joystick direction, skating speed, and timing still determine the maneuver. There is no sprint, stick lift, separate shot-type button, or special ability in Phase 1.
+
+Offside is enforced in both attacking directions. If a teammate crosses the attacking blue line while the puck carrier and puck remain outside, a translucent red grid marks that offensive zone. The warning clears when the attackers tag up or the defending team gains possession. If the puck enters first, play stops without changing the score and restarts at the nearest neutral-zone offside dot after the normal faceoff delay.
 
 ## Player attributes and builds
 
@@ -60,7 +62,7 @@ Attributes never choose an action or direction. The human still moves, positions
 - `PlayerControlManager` automatically selects the established human-team puck carrier or the human-team skater closest to the puck after opponent possession; it never switches from puck trajectory. `PlayerSwitchController` remains the manual SWITCH override and performs the input/AI/marker/camera transfer.
 - `PlayerInputController` reacts to established carrier changes and safely reuses the offensive action slots as SWITCH/CHECK during opponent possession. `DefensiveCheckController` owns the human-team cooldown and contextual body/pull result; `DefensiveCheckTuning` is the persisted Inspector tuning asset for ranges, cone, cooldown, puck pace, and bounded separation.
 - `HockeyPlayerAI` uses the required eight-state local state machine; `AIFormationController` maps C/LW/RW/LD/RD roles to mirrored faceoff/home positions; `HockeyGoalieAI` handles crease tracking and saves.
-- `MatchController`, `FaceoffController`, and `GoalTrigger` own clock, score, role-aware center-faceoff resets, and results.
+- `MatchController`, `FaceoffController`, `GoalTrigger`, and `OffsideController` own clock, score, center/offside-dot resets, goals, mirrored delayed-offside warnings, and results.
 - `HockeyCameraController`, `VirtualJoystick`, `MobileActionButton`, `PlayerInputController`, `MobileControlsBuilder`, `SafeAreaFitter`, and `MatchHUD` provide the stable landscape presentation and shared input route.
 
 Gameplay feel values are serialized fields on these focused components so they can be tuned in the Inspector without changing team or match architecture.
@@ -83,6 +85,6 @@ The expected result is no matches. Manual feel and mobile multi-touch scenarios 
 
 - Placeholder primitives, no final character/stick animation, limited audio/feedback, and no production art.
 - Direct steering and lightweight formation logic rather than NavMesh or a behavior tree.
-- Simplified possession contests, goalie reach, faceoffs, and hockey rules; no penalties, icing, offsides, or overtime.
+- Simplified possession contests, goalie reach, faceoffs, and hockey rules; no penalties, icing, intentional-offside variants, or overtime.
 - Defensive checks use placeholder motion and puck response without final hit/stick animation, penalties, audio, or effects; attribute balance remains prototype tuning.
 - Device-specific safe-area, performance, thermal, and multi-touch feel still require testing on the intended phones/emulators.

@@ -1,7 +1,7 @@
 /*
  * IceClash Phase 1 faceoff timer.
- * Provides the lightweight reset countdown used at match start and after goals,
- * without attempting advanced faceoff mechanics.
+ * Provides the lightweight reset countdown used at match start, after goals, and
+ * after offside stoppages, without attempting advanced faceoff mechanics.
  */
 
 using UnityEngine;
@@ -20,5 +20,9 @@ namespace IceClash.Match
             IsRunning = false;
             return true;
         }
+
+#if UNITY_EDITOR
+        internal void CompleteDelayForValidation() => completesAt = Time.time;
+#endif
     }
 }

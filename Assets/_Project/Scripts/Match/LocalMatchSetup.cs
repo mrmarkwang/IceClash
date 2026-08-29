@@ -2,8 +2,8 @@
  * IceClash Phase 1 local PvE roster and systems composition.
  * Builds count-driven five-skater teams with three forwards and two defensemen,
  * mirrored center-faceoff reset positions, two goalies, shared input/HUD systems,
- * per-skater role presets, AI, possession control, defensive checks, match flow,
- * and attribute-aware snapshots.
+ * per-skater role presets, AI, possession control, defensive checks, delayed
+ * offside warnings/stoppages, match flow, and attribute-aware snapshots.
  */
 
 using System;
@@ -40,9 +40,11 @@ namespace IceClash.Match
         public PlayerControlManager ControlManager { get; private set; }
         public DefensiveCheckController DefenseController { get; private set; }
         public MatchController MatchController { get; private set; }
+        public OffsideController OffsideController { get; private set; }
         public PlayerInputController HumanInput { get; private set; }
 
-        public PlayerController BuildRoster(GameObject skaterPrefab, PuckController controlledPuck, Material blueMaterial, Material redMaterial)
+        public PlayerController BuildRoster(GameObject skaterPrefab, PuckController controlledPuck, Material blueMaterial,
+            Material redMaterial, GameObject blueOffensiveZoneWarning, GameObject redOffensiveZoneWarning)
         {
             if (skaterPrefab == null) throw new ArgumentNullException(nameof(skaterPrefab));
             puck = controlledPuck;
@@ -73,7 +75,10 @@ namespace IceClash.Match
             for (int i = 0; i < redPlayers.Count; i++)
                 redPlayers[i].GetComponent<HockeyPlayerAI>().ConfigureDefense(DefenseController, redPlayers);
             MatchController = gameObject.AddComponent<MatchController>();
-            MatchController.Configure(players, goalies, puck, new Vector3(0f, 0.55f, 0f));
+            MatchController.Configure(players, goalies, puck, new Vector3(0f, PrototypeRinkGeometry.PuckY, 0f));
+            OffsideController = gameObject.AddComponent<OffsideController>();
+            OffsideController.Configure(players, puck, MatchController,
+                blueOffensiveZoneWarning, redOffensiveZoneWarning);
             CaptureData();
             return SwitchController.ControlledPlayer;
         }

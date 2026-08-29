@@ -2,8 +2,10 @@
  * IceClash Phase 1 local PvE arena bootstrap.
  * Generates the mobile-first marked rink, layered boards/glass, dimensional nets,
  * one-way goals/triggers, puck, 5v5-plus-goalies roster, match flow, HUD, and camera.
- * Shared rink geometry includes the corner and center-circle radii used by
- * gameplay systems. Goal triggers track the puck for swept high-speed scoring.
+ * Shared rink geometry includes blue lines and faceoff dots used by gameplay.
+ * Red collider-free zone grids support delayed-offside warnings, while goal
+ * triggers track the puck for swept high-speed scoring. The puck receives the
+ * rounded playable boundary with collider-aware board clearance at creation.
  * Visual primitive colliders are disabled before deferred cleanup.
  */
 
@@ -27,6 +29,10 @@ namespace IceClash.Hockey
         internal const float GoalLineDistance = Length / 2f - 3.2f;
         internal const float GoalieAnchor = GoalLineDistance - 0.65f;
         internal const float CenterFaceoffCircleRadius = 2.4f;
+        internal const float AttackingBlueLineDistance = Length * 0.18f;
+        internal const float NeutralFaceoffDotX = Width * 0.21f;
+        internal const float NeutralFaceoffDotZ = Length * 0.075f;
+        internal const float PuckY = 0.55f;
     }
 
     public sealed class PrototypeArenaBootstrap : MonoBehaviour
@@ -84,6 +90,7 @@ namespace IceClash.Hockey
             Material blue = MakeMaterial(new Color(0.08f, 0.37f, 0.9f));
             Material black = MakeMaterial(new Color(0.03f, 0.04f, 0.06f));
             Material net = MakeTransparentMaterial(new Color(0.94f, 0.98f, 1f, 0.72f));
+            Material offsideWarning = MakeTransparentMaterial(new Color(1f, 0.03f, 0.03f, 0.42f));
             Material redLine = MakeLineMaterial(red.color);
             Material blueLine = MakeLineMaterial(blue.color);
 
@@ -92,16 +99,18 @@ namespace IceClash.Hockey
             CreateRoundedIce(rinkOutline, ice);
             CreateRoundedBoards(rinkOutline, board, kickplate, rail, glass);
             CreateCube("Center Line", new Vector3(0f, 0.22f, 0f), new Vector3(RinkWidth - 1f, 0.03f, 0.25f), red, false);
-            CreateCube("Blue Line A", new Vector3(0f, 0.22f, -RinkLength * 0.18f), new Vector3(RinkWidth - 1f, 0.03f, 0.16f), blue, false);
-            CreateCube("Blue Line B", new Vector3(0f, 0.22f, RinkLength * 0.18f), new Vector3(RinkWidth - 1f, 0.03f, 0.16f), blue, false);
+            CreateCube("Blue Line A", new Vector3(0f, 0.22f, -PrototypeRinkGeometry.AttackingBlueLineDistance), new Vector3(RinkWidth - 1f, 0.03f, 0.16f), blue, false);
+            CreateCube("Blue Line B", new Vector3(0f, 0.22f, PrototypeRinkGeometry.AttackingBlueLineDistance), new Vector3(RinkWidth - 1f, 0.03f, 0.16f), blue, false);
             CreateHockeyMarkings(red, blue, redLine, blueLine);
+            GameObject blueOffensiveZoneWarning = CreateOffsideWarningGrid("Blue Offensive Zone Offside Warning", true, offsideWarning);
+            GameObject redOffensiveZoneWarning = CreateOffsideWarningGrid("Red Offensive Zone Offside Warning", false, offsideWarning);
 
             CreateGoal("Blue Goal", new Vector3(0f, GoalHeight / 2f, -GoalLineDistance), red, net);
             CreateGoal("Red Goal", new Vector3(0f, GoalHeight / 2f, GoalLineDistance), red, net);
 
             GameObject puck = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
             puck.name = "Puck (Physics)";
-            puck.transform.SetPositionAndRotation(new Vector3(0f, 0.55f, 0f), Quaternion.identity);
+            puck.transform.SetPositionAndRotation(new Vector3(0f, PrototypeRinkGeometry.PuckY, 0f), Quaternion.identity);
             // Unity's cylinder is one unit wide and two units tall.
             puck.transform.localScale = new Vector3(PuckDiameter, PuckHeight * 0.5f, PuckDiameter);
             puck.GetComponent<Renderer>().material = black;
@@ -112,14 +121,18 @@ namespace IceClash.Hockey
             Rigidbody body = puck.AddComponent<Rigidbody>();
             body.mass = 0.17f;
             body.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
-            puck.AddComponent<PuckController>();
+            PuckController puckController = puck.AddComponent<PuckController>();
+            puckController.ConfigureRinkBoundary(
+                RinkWidth, RinkLength, CornerRadius,
+                BoardThickness * 0.5f + PuckDiameter * 0.5f + 0.04f);
 
             GameObject skaterPrefab = Resources.Load<GameObject>("Skater");
             if (skaterPrefab == null) throw new System.InvalidOperationException("Missing Phase 3 skater prefab at Assets/_Project/Prefabs/Resources/Skater.prefab.");
             LocalMatchSetup matchSetup = new GameObject("Local PvE 5v5 Match").AddComponent<LocalMatchSetup>();
-            PlayerController player = matchSetup.BuildRoster(skaterPrefab, puck.GetComponent<PuckController>(), blue, red);
-            CreateGoalTrigger("Blue Goal Trigger", new Vector3(0f, GoalHeight / 2f, -GoalLineDistance - GoalDepth * 0.5f), TeamId.Red, Vector3.back, matchSetup.MatchController, puck.GetComponent<PuckController>());
-            CreateGoalTrigger("Red Goal Trigger", new Vector3(0f, GoalHeight / 2f, GoalLineDistance + GoalDepth * 0.5f), TeamId.Blue, Vector3.forward, matchSetup.MatchController, puck.GetComponent<PuckController>());
+            PlayerController player = matchSetup.BuildRoster(skaterPrefab, puckController, blue, red,
+                blueOffensiveZoneWarning, redOffensiveZoneWarning);
+            CreateGoalTrigger("Blue Goal Trigger", new Vector3(0f, GoalHeight / 2f, -GoalLineDistance - GoalDepth * 0.5f), TeamId.Red, Vector3.back, matchSetup.MatchController, puckController);
+            CreateGoalTrigger("Red Goal Trigger", new Vector3(0f, GoalHeight / 2f, GoalLineDistance + GoalDepth * 0.5f), TeamId.Blue, Vector3.forward, matchSetup.MatchController, puckController);
 
             if (Camera.main != null) Destroy(Camera.main.gameObject);
             GameObject cameraObject = new GameObject("Hockey Camera");
@@ -163,6 +176,36 @@ namespace IceClash.Hockey
             CreateCube(goalName + " Base Rail A", new Vector3(-GoalHalfWidth, IceSurfaceY + 0.05f, center.z + direction * GoalDepth / 2f), new Vector3(0.14f, 0.1f, GoalDepth), material, false);
             CreateCube(goalName + " Base Rail B", new Vector3(GoalHalfWidth, IceSurfaceY + 0.05f, center.z + direction * GoalDepth / 2f), new Vector3(0.14f, 0.1f, GoalDepth), material, false);
             CreateGoalNet(goalName, center, netMaterial);
+        }
+
+        private static GameObject CreateOffsideWarningGrid(string gridName, bool northZone, Material material)
+        {
+            GameObject root = new(gridName);
+            float attack = northZone ? 1f : -1f;
+            float nearZ = PrototypeRinkGeometry.AttackingBlueLineDistance + 0.45f;
+            float farZ = RinkLength * 0.5f - 1f;
+            float centerZ = (nearZ + farZ) * 0.5f * attack;
+            float depth = farZ - nearZ;
+            float width = RinkWidth - 2f;
+
+            for (int index = -5; index <= 5; index++)
+            {
+                float x = index * width / 10f;
+                GameObject line = CreateCube($"{gridName} Longitudinal {index + 5}",
+                    new Vector3(x, IceSurfaceY + 0.045f, centerZ), new Vector3(0.045f, 0.018f, depth), material, false);
+                line.transform.SetParent(root.transform, true);
+            }
+
+            for (int index = 0; index <= 7; index++)
+            {
+                float z = Mathf.Lerp(nearZ, farZ, index / 7f) * attack;
+                GameObject line = CreateCube($"{gridName} Transverse {index}",
+                    new Vector3(0f, IceSurfaceY + 0.045f, z), new Vector3(width, 0.018f, 0.045f), material, false);
+                line.transform.SetParent(root.transform, true);
+            }
+
+            root.SetActive(false);
+            return root;
         }
 
         private static void CreateGoalNet(string goalName, Vector3 center, Material material)
@@ -312,8 +355,8 @@ namespace IceClash.Hockey
             CreateFaceoffCircle("Faceoff Circle North West", new Vector3(-zoneCircleX, 0.23f, zoneCircleZ), red, redLine);
             CreateFaceoffCircle("Faceoff Circle North East", new Vector3(zoneCircleX, 0.23f, zoneCircleZ), red, redLine);
 
-            float neutralDotX = RinkWidth * 0.21f;
-            float neutralDotZ = RinkLength * 0.075f;
+            float neutralDotX = PrototypeRinkGeometry.NeutralFaceoffDotX;
+            float neutralDotZ = PrototypeRinkGeometry.NeutralFaceoffDotZ;
             CreateFaceoffDot("Neutral Dot South West", new Vector3(-neutralDotX, 0.25f, -neutralDotZ), red);
             CreateFaceoffDot("Neutral Dot South East", new Vector3(neutralDotX, 0.25f, -neutralDotZ), red);
             CreateFaceoffDot("Neutral Dot North West", new Vector3(-neutralDotX, 0.25f, neutralDotZ), red);

@@ -1,7 +1,8 @@
 /*
  * IceClash modular skater composition and action routing.
  * Routes direct movement and action input while owning a validated player build,
- * deterministic stamina/fatigue, explicit dekes, and role-aware reset state.
+ * deterministic stamina/fatigue, explicit dekes, and role-aware center/offside
+ * faceoff reset state.
  */
 
 using IceClash.AI;
@@ -143,10 +144,21 @@ namespace IceClash.Player
 
         public void ResetActor()
         {
+            ResetAtPosition(resetPosition);
+        }
+
+        public void ResetAtFaceoff(Vector3 faceoffPosition)
+        {
+            Vector3 translatedPosition = resetPosition + new Vector3(faceoffPosition.x, 0f, faceoffPosition.z);
+            ResetAtPosition(translatedPosition);
+        }
+
+        private void ResetAtPosition(Vector3 position)
+        {
             Pass.Cancel();
             Shoot.ResetCharge();
             Deke.ResetAction();
-            Movement.ResetMotion(resetPosition, resetRotation);
+            Movement.ResetMotion(position, resetRotation);
             MoveInput = Vector2.zero;
             stamina = 100f;
             Movement.SetPerformanceScale(1f);
