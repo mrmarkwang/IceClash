@@ -2,8 +2,8 @@
  * IceClash Phase 1 local PvE arena bootstrap.
  * Generates the mobile-first marked rink, layered boards/glass, dimensional nets,
  * one-way goals/triggers, puck, 5v5-plus-goalies roster, match flow, HUD, and camera.
- * Shared rink geometry includes the center-circle radius used by role-aware
- * faceoffs. Visual primitive colliders are disabled before deferred cleanup.
+ * Shared rink geometry includes the corner and center-circle radii used by
+ * gameplay systems. Visual primitive colliders are disabled before deferred cleanup.
  */
 
 using System.Collections.Generic;
@@ -21,6 +21,7 @@ namespace IceClash.Hockey
     {
         internal const float Width = 24f;
         internal const float Length = 48f;
+        internal const float CornerRadius = 5f;
         internal const float GoalDepth = 0.9f;
         internal const float GoalLineDistance = Length / 2f - 3.2f;
         internal const float GoalieAnchor = GoalLineDistance - 0.65f;
@@ -32,7 +33,7 @@ namespace IceClash.Hockey
         // World X maps across the Game view; world Z maps up the Game view.
         private const float RinkWidth = PrototypeRinkGeometry.Width;
         private const float RinkLength = PrototypeRinkGeometry.Length;
-        private const float CornerRadius = 5f;
+        private const float CornerRadius = PrototypeRinkGeometry.CornerRadius;
         private const int CornerSegments = 8;
         private const float BoardHeight = 1.05f;
         private const float BoardThickness = 0.36f;

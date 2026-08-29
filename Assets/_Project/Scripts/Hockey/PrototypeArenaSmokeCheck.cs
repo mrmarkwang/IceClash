@@ -7,7 +7,8 @@
  * checks, smooth camera retargeting, modular systems, safe multi-touch Unity UI controls,
  * circular visual/hit separation, responsive puck possession, forceful charged
  * shots, snapshots, and one-way goals. Recent changes: validates the elongated rink,
- * compact hockey nets, physics-driven line crossing, distinct actor scales, and
+ * compact hockey nets, stationary-carrier and board-pressure turnovers,
+ * physics-driven line crossing, distinct actor scales, and
  * larger non-overlapping action UI, enlarged fixed joystick geometry, and full
  * visible-control containment inside the safe-area layout. Passing checks enforce
  * distance-scaled launch tuning, local intended-receiver capture, short/medium/long
@@ -674,6 +675,14 @@ namespace IceClash.Hockey
                 1f, 1f, 1f, 1f, 0f, 0f, 0f, 0f, 1f, 1f, 0f, 0f, 0f);
             DefensiveCheckController.ContestScores weakPull = DefensiveCheckController.EvaluateContest(true,
                 0f, 0f, 0f, 0f, 1f, 1f, 1f, 1f, 0f, 0f, 1f, 1f, 0.15f);
+            DefensiveCheckController.ContestScores boardContest = DefensiveCheckController.EvaluateContest(false,
+                0.55f, 0.25f, 0.3f, 0.3f, 0.65f, 0.55f, 0.55f, 0.3f,
+                0f, 1f, 0.55f, 0f, 0f);
+            float centerPressure = DefensiveCheckController.EvaluateBoardPressure(Vector3.zero);
+            float straightBoardPressure = DefensiveCheckController.EvaluateBoardPressure(
+                new Vector3(PrototypeRinkGeometry.Width * 0.5f - 0.8f, 1f, 0f));
+            float cornerBoardPressure = DefensiveCheckController.EvaluateBoardPressure(
+                RoundedBoardPoint(0.8f));
             PlayerController liveChecker = FindPlayer(players, "blue-4");
             PlayerController liveCarrier = FindPlayer(players, "red-4");
             PlayerAttributeBuild originalCheckerBuild = liveChecker.Attributes.Clone();
@@ -755,6 +764,14 @@ namespace IceClash.Hockey
             puck.ResetPuck(new Vector3(0f, 0.55f, 0f));
             checks = geometry && strongBody.Succeeds && !weakBody.Succeeds
                 && strongPull.Succeeds && !weakPull.Succeeds
+                && Nearly(centerPressure, 0f) && straightBoardPressure > 0.99f
+                && cornerBoardPressure > 0.99f && !boardContest.Succeeds
+                && DefensiveCheckController.ContestSucceeds(boardContest, straightBoardPressure, 8f, false, true)
+                && !DefensiveCheckController.ContestSucceeds(boardContest, straightBoardPressure, 8f, false, false)
+                && DefensiveCheckController.ContestSucceeds(boardContest, centerPressure, 0f, false, true)
+                && !DefensiveCheckController.ContestSucceeds(boardContest, centerPressure, 0f, true, true)
+                && !DefensiveCheckController.ContestSucceeds(boardContest, centerPressure, 8f, false, true)
+                && !DefensiveCheckController.ContestSucceeds(boardContest, centerPressure, 0f, false, false)
                 && strongLiveSucceeded && weakLiveResisted
                 && strongLivePull && weakLivePullResisted
                 && maximumRatingRangeRejected && maximumRatingConeRejected;
@@ -969,12 +986,91 @@ namespace IceClash.Hockey
                 Physics.SyncTransforms();
             }
 
-            bool passed = humanCheckSucceeded && humanCooldownActive && deterministicTie && uniqueHandoff
+            bool openIceRecovery = humanCheckSucceeded && humanCooldownActive && deterministicTie && uniqueHandoff
                 && supportingFormation && puck.Carrier == null
                 && puck.LastPlayerTouchId == challenger.PlayerId
                 && defensiveChecks.LastResult != DefensiveCheckResult.None;
-            if (!passed) Debug.LogWarning($"AI_PRESSURE_FAIL humanCheck={humanCheckSucceeded} cooldown={humanCooldownActive} tie={deterministicTie} handoff={uniqueHandoff} support={supportingFormation} carrier={puck.Carrier?.PlayerId} lastTouch={puck.LastPlayerTouchId} result={defensiveChecks.LastResult}");
+
+            defensiveChecks.ResetCooldownForValidation();
+            puck.ResetPuck(Vector3.zero);
+            PlayerAttributeBuild originalChallengerBuild = challenger.Attributes.Clone();
+            PlayerAttributeBuild originalBoardCarrierBuild = carrier.Attributes.Clone();
+            challenger.ApplyBuild(new PlayerAttributeBuild());
+            carrier.ApplyBuild(BuildWithMaximum(PlayerAttribute.Control, PlayerAttribute.Strength,
+                PlayerAttribute.Agility, PlayerAttribute.Speed));
+            carrier.Movement.ResetMotion(Vector3.zero, Quaternion.identity);
+            challenger.Movement.ResetMotion(new Vector3(0f, 1f, -1.2f), Quaternion.identity);
+            StagePuckAtStick(puck, carrier);
+            bool stationaryCarrierClaimed = puck.TryClaim(carrier, carrier.Stick);
+            ai.DecideAndActForValidation();
+            bool stationaryRecovery = stationaryCarrierClaimed && puck.Carrier == null
+                && puck.LastPlayerTouchId == challenger.PlayerId
+                && defensiveChecks.LastResult == DefensiveCheckResult.BodyCheck;
+
+            defensiveChecks.ResetCooldownForValidation();
+            puck.ResetPuck(Vector3.zero);
+            carrier.Deke.ResetAction();
+            carrier.Movement.ResetMotion(Vector3.zero, Quaternion.identity);
+            challenger.Movement.ResetMotion(new Vector3(0f, 1f, -1.2f), Quaternion.identity);
+            StagePuckAtStick(puck, carrier);
+            bool stationaryDekeCarrierClaimed = puck.TryClaim(carrier, carrier.Stick);
+            bool stationaryDekeStarted = carrier.Deke.Tick(true);
+            ai.DecideAndActForValidation();
+            bool stationaryDekeResisted = stationaryDekeCarrierClaimed && stationaryDekeStarted
+                && puck.Carrier == carrier
+                && defensiveChecks.LastResult == DefensiveCheckResult.None;
+
+            defensiveChecks.ResetCooldownForValidation();
+            puck.ResetPuck(Vector3.zero);
+            Vector3 boardCarrierPosition = new(PrototypeRinkGeometry.Width * 0.5f - 0.8f, 1f, 0f);
+            carrier.Movement.ResetMotion(boardCarrierPosition, Quaternion.identity);
+            carrier.Movement.SetPlanarVelocityForValidation(Vector3.forward * 8f);
+            challenger.Movement.ResetMotion(boardCarrierPosition + Vector3.back * 1.2f, Quaternion.identity);
+            challenger.Movement.SetPlanarVelocityForValidation(Vector3.forward * 8f);
+            StagePuckAtStick(puck, carrier);
+            bool boardCarrierClaimed = puck.TryClaim(carrier, carrier.Stick);
+            ai.DecideAndActForValidation();
+            bool boardRecovery = boardCarrierClaimed && puck.Carrier == null
+                && puck.LastPlayerTouchId == challenger.PlayerId
+                && defensiveChecks.LastResult == DefensiveCheckResult.BodyCheck;
+
+            defensiveChecks.ResetCooldownForValidation();
+            puck.ResetPuck(Vector3.zero);
+            Vector3 cornerCarrierPosition = RoundedBoardPoint(0.8f);
+            Vector3 cornerCenter = new(
+                PrototypeRinkGeometry.Width * 0.5f - PrototypeRinkGeometry.CornerRadius,
+                1f,
+                PrototypeRinkGeometry.Length * 0.5f - PrototypeRinkGeometry.CornerRadius);
+            Vector3 cornerOutward = Vector3.ProjectOnPlane(cornerCarrierPosition - cornerCenter, Vector3.up).normalized;
+            Vector3 cornerTangent = new(-cornerOutward.z, 0f, cornerOutward.x);
+            Quaternion cornerFacing = Quaternion.LookRotation(cornerTangent, Vector3.up);
+            carrier.Movement.ResetMotion(cornerCarrierPosition, cornerFacing);
+            carrier.Movement.SetPlanarVelocityForValidation(cornerTangent * 8f);
+            challenger.Movement.ResetMotion(cornerCarrierPosition - cornerTangent * 1.2f, cornerFacing);
+            challenger.Movement.SetPlanarVelocityForValidation(cornerTangent * 8f);
+            StagePuckAtStick(puck, carrier);
+            bool cornerCarrierClaimed = puck.TryClaim(carrier, carrier.Stick);
+            ai.DecideAndActForValidation();
+            bool cornerRecovery = cornerCarrierClaimed && puck.Carrier == null
+                && puck.LastPlayerTouchId == challenger.PlayerId
+                && defensiveChecks.LastResult == DefensiveCheckResult.BodyCheck;
+            challenger.ApplyBuild(originalChallengerBuild);
+            carrier.ApplyBuild(originalBoardCarrierBuild);
+
+            bool passed = openIceRecovery && stationaryRecovery && stationaryDekeResisted
+                && boardRecovery && cornerRecovery;
+            if (!passed) Debug.LogWarning($"AI_PRESSURE_FAIL humanCheck={humanCheckSucceeded} cooldown={humanCooldownActive} tie={deterministicTie} handoff={uniqueHandoff} support={supportingFormation} openIce={openIceRecovery} stationaryClaim={stationaryCarrierClaimed} stationaryRecovery={stationaryRecovery} stationaryDekeClaim={stationaryDekeCarrierClaimed} stationaryDekeStarted={stationaryDekeStarted} stationaryDekeResisted={stationaryDekeResisted} boardClaim={boardCarrierClaimed} boardRecovery={boardRecovery} cornerClaim={cornerCarrierClaimed} cornerRecovery={cornerRecovery} carrier={puck.Carrier?.PlayerId} lastTouch={puck.LastPlayerTouchId} result={defensiveChecks.LastResult}");
             return passed;
+        }
+
+        private static Vector3 RoundedBoardPoint(float clearance)
+        {
+            Vector3 cornerCenter = new(
+                PrototypeRinkGeometry.Width * 0.5f - PrototypeRinkGeometry.CornerRadius,
+                1f,
+                PrototypeRinkGeometry.Length * 0.5f - PrototypeRinkGeometry.CornerRadius);
+            return cornerCenter + new Vector3(1f, 0f, 1f).normalized
+                * (PrototypeRinkGeometry.CornerRadius - clearance);
         }
 
         private static void TickAll(HockeyPlayerAI[] players)

@@ -1,11 +1,13 @@
 /*
  * IceClash team-aware contextual defensive check controller.
  * Resolves human and configured opponent-AI checks as close body or forward pull
- * challenges. STR/DEF/SPD/AGI, approach geometry, and carrier puck protection
- * resolve contests; input timing remains mandatory and success never grants possession.
+ * challenges. STR/DEF/SPD/AGI, approach geometry, carrier puck protection,
+ * stationary-carrier vulnerability, and bounded board pressure resolve contests;
+ * success never grants possession.
  */
 
 using IceClash.Core;
+using IceClash.Hockey;
 using IceClash.Player;
 using IceClash.Puck;
 using UnityEngine;
@@ -16,6 +18,11 @@ namespace IceClash.Gameplay
 
     public sealed class DefensiveCheckController : MonoBehaviour
     {
+        private const float BoardContactClearance = 0.8f;
+        private const float BoardPressureClearance = 2.25f;
+        private const float GuaranteedBoardTurnoverPressure = 0.7f;
+        private const float StationaryCarrierSpeed = 0.2f;
+
         private IPlayerInput input;
         private PlayerSwitchController switchController;
         private PuckController puck;
@@ -80,7 +87,7 @@ namespace IceClash.Gameplay
             if (distance <= values.BodyRange)
             {
                 ContestScores contest = EvaluateLiveContest(false, checker, carrier, direction, values.PullForwardDot);
-                if (!contest.Succeeds) return LastResult;
+                if (!ContestSucceeds(contest, checker, carrier)) return LastResult;
                 if (!puck.Dislodge(carrier, checker, direction, values.BodyPuckSpeed)) return LastResult;
                 carrier.Movement.ApplyExternalImpulse(direction * values.BodyImpulse,
                     DefensiveCheckTuning.MaximumBodyImpulse, values.ImpulseDecay);
@@ -93,7 +100,7 @@ namespace IceClash.Gameplay
                 Vector3 checkerForward = Vector3.ProjectOnPlane(checker.transform.forward, Vector3.up).normalized;
                 if (distance > values.PullRange || Vector3.Dot(checkerForward, direction) < values.PullForwardDot) return LastResult;
                 ContestScores contest = EvaluateLiveContest(true, checker, carrier, direction, values.PullForwardDot);
-                if (!contest.Succeeds) return LastResult;
+                if (!ContestSucceeds(contest, checker, carrier)) return LastResult;
                 if (!puck.Dislodge(carrier, checker, -direction, values.PullPuckSpeed)) return LastResult;
                 LastResult = DefensiveCheckResult.PullCheck;
             }
@@ -118,6 +125,28 @@ namespace IceClash.Gameplay
 
         internal static float NormalizeContactPosition(Vector3 carrierForward, Vector3 carrierToCheckerDirection) =>
             Mathf.InverseLerp(-1f, 1f, Vector3.Dot(carrierForward.normalized, carrierToCheckerDirection.normalized));
+
+        internal static float EvaluateBoardPressure(Vector3 carrierPosition)
+        {
+            float radius = PrototypeRinkGeometry.CornerRadius;
+            Vector2 roundedBoxCore = new(
+                PrototypeRinkGeometry.Width * 0.5f - radius,
+                PrototypeRinkGeometry.Length * 0.5f - radius);
+            Vector2 fromCore = new(
+                Mathf.Abs(carrierPosition.x) - roundedBoxCore.x,
+                Mathf.Abs(carrierPosition.z) - roundedBoxCore.y);
+            Vector2 outsideCore = Vector2.Max(fromCore, Vector2.zero);
+            float signedDistance = outsideCore.magnitude
+                + Mathf.Min(Mathf.Max(fromCore.x, fromCore.y), 0f) - radius;
+            float clearance = Mathf.Max(0f, -signedDistance);
+            return Mathf.InverseLerp(BoardPressureClearance, BoardContactClearance, clearance);
+        }
+
+        internal static bool ContestSucceeds(ContestScores contest, float boardPressure,
+            float carrierSpeed, bool carrierDeking, bool opponentChallengesHuman) => contest.Succeeds
+            || (opponentChallengesHuman
+                && (Mathf.Clamp01(boardPressure) >= GuaranteedBoardTurnoverPressure
+                    || (!carrierDeking && Mathf.Max(0f, carrierSpeed) <= StationaryCarrierSpeed)));
 
         internal static ContestScores EvaluateContest(bool pull, float checkerStrength, float checkerDefense,
             float checkerSpeed, float checkerAgility, float carrierControl, float carrierStrength,
@@ -172,6 +201,17 @@ namespace IceClash.Gameplay
             public float Attack { get; }
             public float Protection { get; }
             public bool Succeeds => Attack >= Protection;
+        }
+
+        private bool ContestSucceeds(ContestScores contest, PlayerController checker, PlayerController carrier)
+        {
+            bool opponentChallengesHuman = checker.Team != humanTeam && carrier.Team == humanTeam;
+            float boardPressure = opponentChallengesHuman
+                ? EvaluateBoardPressure(carrier.transform.position)
+                : 0f;
+            float carrierSpeed = carrier.Movement != null ? carrier.Movement.Velocity.magnitude : 0f;
+            bool carrierDeking = carrier.Deke != null && carrier.Deke.IsActive;
+            return ContestSucceeds(contest, boardPressure, carrierSpeed, carrierDeking, opponentChallengesHuman);
         }
 
         internal void SetGameplayEnabledForValidation(bool value)
