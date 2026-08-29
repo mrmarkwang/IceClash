@@ -3,7 +3,8 @@
  * Generates the mobile-first marked rink, layered boards/glass, dimensional nets,
  * one-way goals/triggers, puck, 5v5-plus-goalies roster, match flow, HUD, and camera.
  * Shared rink geometry includes the corner and center-circle radii used by
- * gameplay systems. Visual primitive colliders are disabled before deferred cleanup.
+ * gameplay systems. Goal triggers track the puck for swept high-speed scoring.
+ * Visual primitive colliders are disabled before deferred cleanup.
  */
 
 using System.Collections.Generic;
@@ -117,8 +118,8 @@ namespace IceClash.Hockey
             if (skaterPrefab == null) throw new System.InvalidOperationException("Missing Phase 3 skater prefab at Assets/_Project/Prefabs/Resources/Skater.prefab.");
             LocalMatchSetup matchSetup = new GameObject("Local PvE 5v5 Match").AddComponent<LocalMatchSetup>();
             PlayerController player = matchSetup.BuildRoster(skaterPrefab, puck.GetComponent<PuckController>(), blue, red);
-            CreateGoalTrigger("Blue Goal Trigger", new Vector3(0f, GoalHeight / 2f, -GoalLineDistance - GoalDepth * 0.5f), TeamId.Red, Vector3.back, matchSetup.MatchController);
-            CreateGoalTrigger("Red Goal Trigger", new Vector3(0f, GoalHeight / 2f, GoalLineDistance + GoalDepth * 0.5f), TeamId.Blue, Vector3.forward, matchSetup.MatchController);
+            CreateGoalTrigger("Blue Goal Trigger", new Vector3(0f, GoalHeight / 2f, -GoalLineDistance - GoalDepth * 0.5f), TeamId.Red, Vector3.back, matchSetup.MatchController, puck.GetComponent<PuckController>());
+            CreateGoalTrigger("Red Goal Trigger", new Vector3(0f, GoalHeight / 2f, GoalLineDistance + GoalDepth * 0.5f), TeamId.Blue, Vector3.forward, matchSetup.MatchController, puck.GetComponent<PuckController>());
 
             if (Camera.main != null) Destroy(Camera.main.gameObject);
             GameObject cameraObject = new GameObject("Hockey Camera");
@@ -136,14 +137,15 @@ namespace IceClash.Hockey
             RenderSettings.ambientLight = new Color(0.7f, 0.78f, 0.9f);
         }
 
-        private static void CreateGoalTrigger(string triggerName, Vector3 position, TeamId scoringTeam, Vector3 scoringDirection, MatchController match)
+        private static void CreateGoalTrigger(string triggerName, Vector3 position, TeamId scoringTeam,
+            Vector3 scoringDirection, MatchController match, PuckController puck)
         {
             GameObject trigger = new(triggerName);
             trigger.transform.position = position;
             BoxCollider volume = trigger.AddComponent<BoxCollider>();
             volume.size = new Vector3(GoalTriggerWidth, 1.5f, GoalDepth);
             GoalTrigger goal = trigger.AddComponent<GoalTrigger>();
-            goal.Configure(match, scoringTeam, scoringDirection);
+            goal.Configure(match, puck, scoringTeam, scoringDirection);
         }
 
         private static void CreateGoal(string goalName, Vector3 center, Material material, Material netMaterial)

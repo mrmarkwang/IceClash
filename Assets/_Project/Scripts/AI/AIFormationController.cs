@@ -1,7 +1,8 @@
 /*
  * IceClash Phase 1 formation helper.
  * Maps the five conventional skater roles to mirrored center-faceoff/home positions,
- * then supplies the existing support and defensive targets for live play.
+ * then supplies role-aware live-play lanes that move with possession. The lanes
+ * spread support around the play without preventing any role from crossing zones.
  */
 
 using System;
@@ -56,16 +57,66 @@ namespace IceClash.AI
 
         public static Vector3 Support(TeamId team, int slot, int count, Vector3 carrierPosition)
         {
+            if (count != 5) throw new ArgumentOutOfRangeException(nameof(count), count, "Role-aware formation requires exactly five skaters.");
+            return Support(team, RoleForSlot(slot), carrierPosition);
+        }
+
+        public static Vector3 Support(TeamId team, SkaterRole role, Vector3 carrierPosition)
+        {
             float attack = team == TeamId.Blue ? 1f : -1f;
-            float side = count <= 1 ? 0f : Mathf.Lerp(-1f, 1f, slot / (float)(count - 1));
-            return carrierPosition - Vector3.forward * attack * 3.6f + Vector3.right * side * 4.2f;
+            float carrierProgress = carrierPosition.z * attack;
+            float lateralOffset = role switch
+            {
+                SkaterRole.LeftWing => -4.2f,
+                SkaterRole.RightWing => 4.2f,
+                SkaterRole.LeftDefense => -3.2f,
+                SkaterRole.RightDefense => 3.2f,
+                SkaterRole.Center => 0f,
+                _ => throw new ArgumentOutOfRangeException(nameof(role), role, "Unsupported skater role.")
+            };
+            float targetProgress = role switch
+            {
+                SkaterRole.Center => carrierProgress - 1.5f,
+                SkaterRole.LeftWing or SkaterRole.RightWing => carrierProgress + 1.5f,
+                SkaterRole.LeftDefense or SkaterRole.RightDefense => carrierProgress - 6f,
+                _ => throw new ArgumentOutOfRangeException(nameof(role), role, "Unsupported skater role.")
+            };
+            return new Vector3(
+                Mathf.Clamp(carrierPosition.x + lateralOffset * attack, -10.5f, 10.5f),
+                1f,
+                Mathf.Clamp(targetProgress, -17.5f, 17.5f) * attack);
         }
 
         public static Vector3 Defend(TeamId team, int slot, int count, Vector3 threatPosition)
         {
-            float ownGoalZ = team == TeamId.Blue ? -PrototypeRinkGeometry.GoalieAnchor : PrototypeRinkGeometry.GoalieAnchor;
-            Vector3 home = Home(team, slot, count);
-            return Vector3.Lerp(new Vector3(home.x, 1f, ownGoalZ), threatPosition, 0.28f);
+            if (count != 5) throw new ArgumentOutOfRangeException(nameof(count), count, "Role-aware formation requires exactly five skaters.");
+            return Defend(team, RoleForSlot(slot), threatPosition);
+        }
+
+        public static Vector3 Defend(TeamId team, SkaterRole role, Vector3 threatPosition)
+        {
+            float attack = team == TeamId.Blue ? 1f : -1f;
+            float threatProgress = threatPosition.z * attack;
+            float lateralOffset = role switch
+            {
+                SkaterRole.LeftWing => -4.2f,
+                SkaterRole.RightWing => 4.2f,
+                SkaterRole.LeftDefense => -3.2f,
+                SkaterRole.RightDefense => 3.2f,
+                SkaterRole.Center => 0f,
+                _ => throw new ArgumentOutOfRangeException(nameof(role), role, "Unsupported skater role.")
+            };
+            float targetProgress = role switch
+            {
+                SkaterRole.LeftDefense or SkaterRole.RightDefense => threatProgress - 4f,
+                SkaterRole.Center => threatProgress,
+                SkaterRole.LeftWing or SkaterRole.RightWing => threatProgress + 4f,
+                _ => throw new ArgumentOutOfRangeException(nameof(role), role, "Unsupported skater role.")
+            };
+            return new Vector3(
+                Mathf.Clamp(threatPosition.x + lateralOffset * attack, -10.5f, 10.5f),
+                1f,
+                Mathf.Clamp(targetProgress, -17.5f, 17.5f) * attack);
         }
     }
 }

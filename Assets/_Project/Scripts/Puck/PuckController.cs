@@ -2,7 +2,8 @@
  * IceClash Phase 1 independent physics puck.
  * Owns velocity-matched possession, high-speed collision-safe physical releases,
  * intended-pass reception, save impulses, reclaim locks, carrier events, and
- * deterministic resets and validated defensive dislodges. CTR scales carry control;
+ * deterministic resets and validated defensive dislodges. Reset notifications let
+ * swept goal-line checks discard teleport history. CTR scales carry control;
  * intended passes retain PAS quality for deterministic CTR/PAS reception.
  */
 
@@ -34,6 +35,7 @@ namespace IceClash.Puck
         private float reclaimLockedUntil;
 
         public event Action<PlayerController> CarrierChanged;
+        internal event Action<Vector3> PositionReset;
         public TeamId? PossessionTeam { get; private set; }
         public string LastPlayerTouchId { get; private set; } = string.Empty;
         public string CarrierPlayerId => carrier != null ? carrier.PlayerId : string.Empty;
@@ -135,6 +137,7 @@ namespace IceClash.Puck
             body.rotation = Quaternion.identity;
             body.linearVelocity = Vector3.zero;
             body.angularVelocity = Vector3.zero;
+            PositionReset?.Invoke(position);
             CarrierChanged?.Invoke(null);
         }
 

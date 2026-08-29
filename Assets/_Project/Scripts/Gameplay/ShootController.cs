@@ -1,8 +1,8 @@
 /*
  * IceClash Phase 1 one-button shooting.
- * Tracks held charge and releases bounded, deterministic shots. SHT, charge,
- * facing, rink/puck position, lateral speed, and fatigue change execution without
- * choosing when to shoot or reading movement input.
+ * Tracks a quick held charge and releases fast, forceful, bounded deterministic
+ * shots. SHT, charge, facing, rink/puck position, lateral speed, and fatigue
+ * change execution without choosing when to shoot or reading movement input.
  */
 
 using IceClash.Hockey;
@@ -14,10 +14,10 @@ namespace IceClash.Gameplay
 {
     public sealed class ShootController : MonoBehaviour
     {
-        [SerializeField] private float minimumPower = 20f;
-        [SerializeField] private float maximumPower = 44f;
-        [SerializeField] private float fullChargeSeconds = 0.95f;
-        [SerializeField] private float cooldown = 0.4f;
+        [SerializeField] private float minimumPower = 28f;
+        [SerializeField] private float maximumPower = 56f;
+        [SerializeField] private float fullChargeSeconds = 0.65f;
+        [SerializeField] private float cooldown = 0.3f;
         [SerializeField, Range(0f, 1f)] private float goalTargetAssist = 0.9f;
 
         private PlayerController player;
@@ -27,6 +27,8 @@ namespace IceClash.Gameplay
         private bool charging;
 
         public float Charge01 => charging ? Mathf.Clamp01((Time.time - chargeStartedAt) / fullChargeSeconds) : 0f;
+        internal float FullChargeSeconds => fullChargeSeconds;
+        internal float CooldownSeconds => cooldown;
         public void Configure(PlayerController owner, PuckController controlledPuck) { player = owner; puck = controlledPuck; }
 
         public void Tick(bool held, bool released)

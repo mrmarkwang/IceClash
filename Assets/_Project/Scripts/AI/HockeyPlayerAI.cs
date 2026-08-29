@@ -4,8 +4,8 @@
  * tactical tap-pass, charged-shot, and active forechecking signals with Easy/Normal
  * profiles. Difficulty changes decisions and reaction, never physical attributes.
  * The closest defender pressures and checks an opposing puck carrier,
- * loose-puck pursuit outranks formation recovery, and each AI returns to its
- * configured conventional role's faceoff/home position.
+ * loose-puck pursuit outranks formation recovery. Exactly one skater chases or
+ * forechecks while teammates use moving role lanes that may cross either zone.
  */
 
 using IceClash.Core;
@@ -32,8 +32,6 @@ namespace IceClash.AI
         private readonly HockeyAIStateMachine stateMachine = new();
         private PlayerController player;
         private PuckController puck;
-        private int formationSlot;
-        private int formationCount;
         private Vector3 homePosition;
         private float nextDecisionTime;
         private Vector2 move;
@@ -69,8 +67,6 @@ namespace IceClash.AI
         {
             player = owner;
             puck = controlledPuck;
-            formationSlot = slot;
-            formationCount = count;
             difficulty = level;
             homePosition = AIFormationController.Home(owner.Team, owner.Role);
         }
@@ -135,7 +131,7 @@ namespace IceClash.AI
             else if (teamHasPuck)
             {
                 stateMachine.Transition(IsLikelyPassReceiver(carrier) ? HockeyAIState.ReceivePass : HockeyAIState.Support, Time.time);
-                target = AIFormationController.Support(player.Team, formationSlot, formationCount, carrier.transform.position);
+                target = AIFormationController.Support(player.Team, player.Role, carrier.transform.position);
             }
             else if (carrier == null && IsClosestTeammateToPuck())
             {
@@ -151,15 +147,15 @@ namespace IceClash.AI
                 checkPressed = defensiveChecks != null
                     && Vector3.Distance(transform.position, carrier.transform.position) <= defensiveChecks.MaximumRange;
             }
+            else if (carrier != null)
+            {
+                stateMachine.Transition(HockeyAIState.Defend, Time.time);
+                target = AIFormationController.Defend(player.Team, player.Role, carrier.transform.position);
+            }
             else if (Vector3.Distance(transform.position, homePosition) > returnDistance)
             {
                 stateMachine.Transition(HockeyAIState.ReturnToPosition, Time.time);
                 target = homePosition;
-            }
-            else if (carrier != null)
-            {
-                stateMachine.Transition(HockeyAIState.Defend, Time.time);
-                target = AIFormationController.Defend(player.Team, formationSlot, formationCount, carrier.transform.position);
             }
             else
             {
@@ -213,11 +209,28 @@ namespace IceClash.AI
 
         private bool IsClosestTeammateToPuck()
         {
-            float myDistance = Vector3.SqrMagnitude(transform.position - puck.transform.position);
+            PlayerController selected = null;
+            float selectedDistance = float.PositiveInfinity;
             foreach (PlayerController candidate in FindObjectsByType<PlayerController>())
-                if (candidate != player && candidate.Team == player.Team
-                    && Vector3.SqrMagnitude(candidate.transform.position - puck.transform.position) < myDistance) return false;
-            return true;
+            {
+                if (candidate.Team != player.Team) continue;
+                float candidateDistance = Vector3.SqrMagnitude(
+                    candidate.transform.position - puck.transform.position);
+                if (!PreferPuckChaser(candidateDistance, candidate.PlayerId,
+                        selectedDistance, selected != null ? selected.PlayerId : null)) continue;
+                selected = candidate;
+                selectedDistance = candidateDistance;
+            }
+            return selected == player;
+        }
+
+        internal static bool PreferPuckChaser(float candidateDistance, string candidateId,
+            float selectedDistance, string selectedId)
+        {
+            if (selectedId == null) return true;
+            if (Mathf.Approximately(candidateDistance, selectedDistance))
+                return string.CompareOrdinal(candidateId, selectedId) < 0;
+            return candidateDistance < selectedDistance;
         }
 
         private bool IsDesignatedForechecker(PlayerController carrier)
