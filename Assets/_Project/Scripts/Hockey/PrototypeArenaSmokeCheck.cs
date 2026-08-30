@@ -21,6 +21,10 @@
  * constrained builds, physical mappings, fatigue, dekes, actions, contests,
  * snapshots, and AI-difficulty separation. Offside checks cover mirrored warning
  * grids, tag-up/turnover clearing, swept zone entry, and neutral-dot restarts.
+ * Modular-character checks cover ten bound humanoid skaters, two safe idle goalie
+ * presentations, complete equipment, two-hand IK, and visual blade alignment.
+ * Rounded-corner containment measures tangential recovery against the local radial
+ * board normal instead of an inaccurate fixed diagonal.
  */
 
 using System.Collections.Generic;
@@ -28,6 +32,7 @@ using IceClash.AI;
 using IceClash.CameraSystem;
 using IceClash.Core;
 using IceClash.Gameplay;
+using IceClash.Hockey.Character;
 using IceClash.Input;
 using IceClash.Match;
 using IceClash.Player;
@@ -125,6 +130,7 @@ namespace IceClash.Hockey
                 && setup != null && setup.SwitchController != null && setup.ControlManager != null
                 && setup.DefenseController != null && setup.DefenseController.Tuning != null
                 && setup.MatchController != null && setup.OffsideController == offside && offside != null;
+            bool modularCharacter = VerifyModularCharacters(players, goalies);
             bool presentation = Object.FindAnyObjectByType<HockeyCameraController>() != null
                 && virtualJoystick != null
                 && Object.FindAnyObjectByType<MatchHUD>() != null
@@ -432,7 +438,7 @@ namespace IceClash.Hockey
                 && setup.MatchController.RemainingSeconds == 0f && setup.MatchController.ResultText == "HUMAN TEAM WINS";
 
             if (!roster || !roleDistribution || !faceoffFormation || !spacedRoleTargets || !rolePersistence
-                || !smallerSkaters || !broaderGoalies || !modular || !presentation || !arenaPresentation || !puckIndependent || !snapshots
+                || !smallerSkaters || !broaderGoalies || !modular || !modularCharacter || !presentation || !arenaPresentation || !puckIndependent || !snapshots
                 || !humanPossessionAutoControl || !loosePuckAutoControl || !opponentPossessionAutoDefense
                 || !manualOverride || !recommendedPassFlow || !reliablePassTuning || !reliablePassOutcomes || !passReceptionAutoControl
                 || !defensiveControlMode || !heldTransitionCleared || !defensiveChecks || !repeatedControlTransitions
@@ -440,9 +446,39 @@ namespace IceClash.Hockey
                 || !puckSizeAndPosition || !forgivingPickup
                 || !velocityMatchedControl || !hardShotTuning || !airborneShotRelease
                 || !hockeySizedGoals || !physicalBackNetStopsPuck || !goalFlow || !resultFlow)
-                throw new System.InvalidOperationException($"PHASE1_PVE_SMOKE_FAIL roster={roster} roleDistribution={roleDistribution} faceoffFormation={faceoffFormation} spacedRoleTargets={spacedRoleTargets} rolePersistence={rolePersistence} immediatePostGoalReset={immediatePostGoalReset} postGoalFaceoffEntry={postGoalFaceoffEntry} smallerSkaters={smallerSkaters} broaderGoalies={broaderGoalies} modular={modular} presentation={presentation} arenaPresentation={arenaPresentation} controlHierarchy={controlHierarchy} controlScaling={controlScaling} actionLayout={actionLayout} refinedControlVisuals={refinedControlVisuals} fixedJoystick={fixedJoystick} analogInput={analogInput} sourceSelection={sourceSelection} pointerOwnership={pointerOwnership} hardwareActionContract={hardwareActionContract} defensiveControlMode={defensiveControlMode} heldTransitionCleared={heldTransitionCleared} repeatedControlTransitions={repeatedControlTransitions} opponentPuckDecisions={opponentPuckDecisions} singlePuckChaser={singlePuckChaser} cornerPuckPursuit={cornerPuckPursuit} opponentPressureCheck={opponentPressureCheck} tacticalPassIntent={tacticalPassIntent} shotIntent={shotIntent} tuningBounds={tuningBounds} bodyCheck={bodyCheck} pullCheck={pullCheck} sharedCooldown={sharedCooldown} rejectedCheck={rejectedCheck} impulseReset={impulseReset} looseAfterCheck={looseAfterCheck} puckIndependent={puckIndependent} snapshots={snapshots} puckSizeAndPosition={puckSizeAndPosition} forgivingPickup={forgivingPickup} velocityMatchedControl={velocityMatchedControl} hardShotTuning={hardShotTuning} airborneShotRelease={airborneShotRelease} reliablePassTuning={reliablePassTuning} reliablePassOutcomes={reliablePassOutcomes} shortPassReceived={shortPassReceived} mediumPassReceived={mediumPassReceived} longPassReceived={longPassReceived} movingPassReceived={movingPassReceived} obstructedPassIntercepted={obstructedPassIntercepted} missedPassStayedLoose={missedPassStayedLoose} passReceptionAutoControl={passReceptionAutoControl} genericReleaseVelocity={genericReleaseVelocity} ordinaryClaimLimits={ordinaryClaimLimits} tapShotPower={tapShotPower} chargedShotPower={chargedShotPower} hockeySizedGoals={hockeySizedGoals} physicalBackNetStopsPuck={physicalBackNetStopsPuck} puckScale={puckScale} controlOffset={controlOffset} recommendedPassFlow={recommendedPassFlow} recommendationShown={recommendationShown} recommendedTarget={recommendationBeforeMove?.PlayerId} movementInputIndependent={movementInputIndependent} carriedBeforePassTap={carriedBeforePassTap} tapReleased={tapReleased} releaseSequenceBefore={releasesBeforePass} recommendedPassReleased={recommendedPassReleased} humanPossessionAutoControl={humanPossessionAutoControl} loosePuckAutoControl={loosePuckAutoControl} opponentPossessionAutoDefense={opponentPossessionAutoDefense} manualOverride={manualOverride} offsideRule={offsideRule} offsideWarningVisual={offsideWarningVisual} offsideTagUp={offsideTagUp} offsideLooseRetention={offsideLooseRetention} offsideTurnoverClear={offsideTurnoverClear} blueOffsideRestart={blueOffsideRestart} redOffsideRestart={redOffsideRestart} legalZoneEntry={legalZoneEntry} offsideFaceoffResume={offsideFaceoffResume} beforeGoalLineRejected={beforeGoalLineRejected} backSideGoalRejected={backSideGoalRejected} bothDirectionsConfigured={bothGoalDirectionsConfigured} frontSideGoalRegistered={frontSideGoalRegistered} oppositeFrontSideGoalRegistered={oppositeFrontSideGoalRegistered} bothDirectionsScored={bothDirectionsScored} winningGoalRegistered={winningGoalRegistered} goalFlow={goalFlow} resultFlow={resultFlow} attributeSystem={attributeSystem} attributeBudget={attributeBudget} attributePresets={attributePresets} attributeMovement={attributeMovement} attributeStamina={attributeStamina} attributeDeke={attributeDeke} attributePuckControl={attributePuckControl} attributeShot={attributeShot} attributePass={attributePass} attributeReception={attributeReception} attributeChecks={attributeChecks} attributeSnapshots={attributeSnapshots} aiAttributeSeparation={aiAttributeSeparation}");
+                throw new System.InvalidOperationException($"PHASE1_PVE_SMOKE_FAIL roster={roster} roleDistribution={roleDistribution} faceoffFormation={faceoffFormation} spacedRoleTargets={spacedRoleTargets} rolePersistence={rolePersistence} immediatePostGoalReset={immediatePostGoalReset} postGoalFaceoffEntry={postGoalFaceoffEntry} smallerSkaters={smallerSkaters} broaderGoalies={broaderGoalies} modular={modular} modularCharacter={modularCharacter} presentation={presentation} arenaPresentation={arenaPresentation} controlHierarchy={controlHierarchy} controlScaling={controlScaling} actionLayout={actionLayout} refinedControlVisuals={refinedControlVisuals} fixedJoystick={fixedJoystick} analogInput={analogInput} sourceSelection={sourceSelection} pointerOwnership={pointerOwnership} hardwareActionContract={hardwareActionContract} defensiveControlMode={defensiveControlMode} heldTransitionCleared={heldTransitionCleared} repeatedControlTransitions={repeatedControlTransitions} opponentPuckDecisions={opponentPuckDecisions} singlePuckChaser={singlePuckChaser} cornerPuckPursuit={cornerPuckPursuit} opponentPressureCheck={opponentPressureCheck} tacticalPassIntent={tacticalPassIntent} shotIntent={shotIntent} tuningBounds={tuningBounds} bodyCheck={bodyCheck} pullCheck={pullCheck} sharedCooldown={sharedCooldown} rejectedCheck={rejectedCheck} impulseReset={impulseReset} looseAfterCheck={looseAfterCheck} puckIndependent={puckIndependent} snapshots={snapshots} puckSizeAndPosition={puckSizeAndPosition} forgivingPickup={forgivingPickup} velocityMatchedControl={velocityMatchedControl} hardShotTuning={hardShotTuning} airborneShotRelease={airborneShotRelease} reliablePassTuning={reliablePassTuning} reliablePassOutcomes={reliablePassOutcomes} shortPassReceived={shortPassReceived} mediumPassReceived={mediumPassReceived} longPassReceived={longPassReceived} movingPassReceived={movingPassReceived} obstructedPassIntercepted={obstructedPassIntercepted} missedPassStayedLoose={missedPassStayedLoose} passReceptionAutoControl={passReceptionAutoControl} genericReleaseVelocity={genericReleaseVelocity} ordinaryClaimLimits={ordinaryClaimLimits} tapShotPower={tapShotPower} chargedShotPower={chargedShotPower} hockeySizedGoals={hockeySizedGoals} physicalBackNetStopsPuck={physicalBackNetStopsPuck} puckScale={puckScale} controlOffset={controlOffset} recommendedPassFlow={recommendedPassFlow} recommendationShown={recommendationShown} recommendedTarget={recommendationBeforeMove?.PlayerId} movementInputIndependent={movementInputIndependent} carriedBeforePassTap={carriedBeforePassTap} tapReleased={tapReleased} releaseSequenceBefore={releasesBeforePass} recommendedPassReleased={recommendedPassReleased} humanPossessionAutoControl={humanPossessionAutoControl} loosePuckAutoControl={loosePuckAutoControl} opponentPossessionAutoDefense={opponentPossessionAutoDefense} manualOverride={manualOverride} offsideRule={offsideRule} offsideWarningVisual={offsideWarningVisual} offsideTagUp={offsideTagUp} offsideLooseRetention={offsideLooseRetention} offsideTurnoverClear={offsideTurnoverClear} blueOffsideRestart={blueOffsideRestart} redOffsideRestart={redOffsideRestart} legalZoneEntry={legalZoneEntry} offsideFaceoffResume={offsideFaceoffResume} beforeGoalLineRejected={beforeGoalLineRejected} backSideGoalRejected={backSideGoalRejected} bothDirectionsConfigured={bothGoalDirectionsConfigured} frontSideGoalRegistered={frontSideGoalRegistered} oppositeFrontSideGoalRegistered={oppositeFrontSideGoalRegistered} bothDirectionsScored={bothDirectionsScored} winningGoalRegistered={winningGoalRegistered} goalFlow={goalFlow} resultFlow={resultFlow} attributeSystem={attributeSystem} attributeBudget={attributeBudget} attributePresets={attributePresets} attributeMovement={attributeMovement} attributeStamina={attributeStamina} attributeDeke={attributeDeke} attributePuckControl={attributePuckControl} attributeShot={attributeShot} attributePass={attributePass} attributeReception={attributeReception} attributeChecks={attributeChecks} attributeSnapshots={attributeSnapshots} aiAttributeSeparation={aiAttributeSeparation}");
 
-            Debug.Log("PHASE1_PVE_SMOKE_PASS skaters=10 roles=C_LW_RW_LD_RD rolePersistence=true spacedRoleTargets=true singlePuckChaser=true centerFaceoff=true postGoalFaceoff=true offsideWarning=true offsideTagUp=true offsideTurnoverClear=true sweptOffsideOrdering=true mirroredOffside=true neutralDotRestart=true offsideFaceoffResume=true smallerSkaters=true goalies=2 broaderGoalies=true mobileArena=true elongatedRink=true layeredBoards=true dimensionalNets=true hockeySizedGoals=true alignedArenaAnchors=true closeCamera=true humanInputs=1 aiSkaters=9 controls=OFFENSE_PASS_DEKE_SHOOT_LOOSE_SWITCH_DEFENSE_SWITCH_CHECK adaptiveControls=true heldTransitionCleared=true repeatedControlTransitions=true hardwareActionContract=true bodyCheck=true pullCheck=true sharedCheckCooldown=true rejectedCheck=true boundedCheckImpulse=true resetClearsImpulse=true looseAfterCheck=true nonHomingCheckRelease=true opponentCornerPuckPursuit=true opponentPressureCheck=true opponentTacticalPass=true opponentShotIntent=true attributeBudget=true attributePresets=true attributeMovement=true attributeStamina=true attributeDeke=true attributePuckControl=true attributeShot=true deterministicShot=true attributePass=true deterministicPass=true attributeReception=true attributeChecks=true attributeSnapshots=true aiAttributeSeparation=true largerActionButtons=true equalActionSizes=true unityUI=true safeArea=true referenceResolution=1920x1080 fixedJoystick=true persistentJoystick=true circularControls=true separateHitVisuals=true nonOverlappingActions=true deadZone=true analog=true independentPointers=true movementClamped=true movementOnly=true recommendedPassTarget=true dottedPassPath=true tapPass=true distanceScaledPass=true configurableReceptionZone=true shortPassReceived=true mediumPassReceived=true longPassReceived=true movingPassReceived=true passReceptionAutoControl=true obstructedPassIntercepted=true missedPassStayedLoose=true genericReleaseVelocity=true ordinaryClaimLimits=true harderShots=true hardChargedShot=true continuousPuckCollision=true possessionAutoControl=true loosePuckAutoControl=true opponentAutoDefense=true touchSwitch=true keyboardSwitchOverride=true cameraRetargetSmooth=true puckIndependent=true smallerPuck=true frontPuckControl=true forgivingPickup=true velocityMatchedPuck=true oneWayGoals=true beforeGoalLineRejected=true bothDirectionsScored=true backSideGoalRejected=true goalReset=true timerResult=true");
+            Debug.Log("PHASE1_PVE_SMOKE_PASS skaters=10 modularHumanoids=12 boundSkaters=10 idleGoalies=2 twoHandIK=true roles=C_LW_RW_LD_RD rolePersistence=true spacedRoleTargets=true singlePuckChaser=true centerFaceoff=true postGoalFaceoff=true offsideWarning=true offsideTagUp=true offsideTurnoverClear=true sweptOffsideOrdering=true mirroredOffside=true neutralDotRestart=true offsideFaceoffResume=true smallerSkaters=true goalies=2 broaderGoalies=true mobileArena=true elongatedRink=true layeredBoards=true dimensionalNets=true hockeySizedGoals=true alignedArenaAnchors=true closeCamera=true humanInputs=1 aiSkaters=9 controls=OFFENSE_PASS_DEKE_SHOOT_LOOSE_SWITCH_DEFENSE_SWITCH_CHECK adaptiveControls=true heldTransitionCleared=true repeatedControlTransitions=true hardwareActionContract=true bodyCheck=true pullCheck=true sharedCheckCooldown=true rejectedCheck=true boundedCheckImpulse=true resetClearsImpulse=true looseAfterCheck=true nonHomingCheckRelease=true opponentCornerPuckPursuit=true opponentPressureCheck=true opponentTacticalPass=true opponentShotIntent=true attributeBudget=true attributePresets=true attributeMovement=true attributeStamina=true attributeDeke=true attributePuckControl=true attributeShot=true deterministicShot=true attributePass=true deterministicPass=true attributeReception=true attributeChecks=true attributeSnapshots=true aiAttributeSeparation=true largerActionButtons=true equalActionSizes=true unityUI=true safeArea=true referenceResolution=1920x1080 fixedJoystick=true persistentJoystick=true circularControls=true separateHitVisuals=true nonOverlappingActions=true deadZone=true analog=true independentPointers=true movementClamped=true movementOnly=true recommendedPassTarget=true dottedPassPath=true tapPass=true distanceScaledPass=true configurableReceptionZone=true shortPassReceived=true mediumPassReceived=true longPassReceived=true movingPassReceived=true passReceptionAutoControl=true obstructedPassIntercepted=true missedPassStayedLoose=true genericReleaseVelocity=true ordinaryClaimLimits=true harderShots=true hardChargedShot=true continuousPuckCollision=true possessionAutoControl=true loosePuckAutoControl=true opponentAutoDefense=true touchSwitch=true keyboardSwitchOverride=true cameraRetargetSmooth=true puckIndependent=true smallerPuck=true frontPuckControl=true forgivingPickup=true velocityMatchedPuck=true oneWayGoals=true beforeGoalLineRejected=true bothDirectionsScored=true backSideGoalRejected=true goalReset=true timerResult=true");
+        }
+
+        private static bool VerifyModularCharacters(PlayerController[] players, HockeyGoalieAI[] goalies)
+        {
+            HockeyCharacterPresentation[] presentations = Object.FindObjectsByType<HockeyCharacterPresentation>();
+            HockeyEquipmentLoadout[] loadouts = Object.FindObjectsByType<HockeyEquipmentLoadout>();
+            HockeyStickRig[] rigs = Object.FindObjectsByType<HockeyStickRig>();
+            if (presentations.Length != 12 || loadouts.Length != 12 || rigs.Length != 12) return false;
+            for (int i = 0; i < players.Length; i++)
+            {
+                HockeyCharacterPresentation presentation = players[i].GetComponent<HockeyCharacterPresentation>();
+                HockeyEquipmentLoadout loadout = players[i].GetComponent<HockeyEquipmentLoadout>();
+                HockeyStickRig rig = players[i].GetComponent<HockeyStickRig>();
+                Transform visualBlade = loadout != null
+                    ? loadout.FindEquippedChild(HockeyEquipmentSlot.Stick, "Stick Blade") : null;
+                if (presentation == null || !presentation.IsBound || presentation.BoundPlayer != players[i]
+                    || presentation.Animator == null || presentation.Animator.avatar == null
+                    || !presentation.Animator.avatar.isHuman || !presentation.Animator.avatar.isValid
+                    || presentation.Animator.applyRootMotion || loadout == null || !loadout.IsComplete()
+                    || rig == null || !rig.HasValidReferences
+                    || rig.LeftHandConstraint.weight < 0.99f || rig.RightHandConstraint.weight < 0.99f
+                    || visualBlade == null || Vector3.Distance(visualBlade.position, players[i].ControlPoint) > 0.25f) return false;
+            }
+            for (int i = 0; i < goalies.Length; i++)
+            {
+                HockeyCharacterPresentation presentation = goalies[i].GetComponent<HockeyCharacterPresentation>();
+                if (presentation == null || presentation.IsBound
+                    || presentation.CurrentPresentationState != HockeyPresentationState.Idle) return false;
+            }
+            return true;
         }
 
         private static bool VerifyPuckBoardContainment(PuckController puck)
@@ -472,6 +508,8 @@ namespace IceClash.Hockey
             float coreX = PrototypeRinkGeometry.Width * 0.5f - PrototypeRinkGeometry.CornerRadius;
             float coreZ = PrototypeRinkGeometry.Length * 0.5f - PrototypeRinkGeometry.CornerRadius;
             float innerRadius = PrototypeRinkGeometry.CornerRadius - clearance;
+            Vector3 constrainedCornerNormal = new(
+                constrainedCornerTarget.x - coreX, 0f, constrainedCornerTarget.z - coreZ);
             bool geometryContained = clearance >= 0.4f
                 && Vector3.Distance(unchangedInterior, interior) < 0.001f
                 && straightBoard.z <= PrototypeRinkGeometry.Length * 0.5f - clearance + 0.001f
@@ -481,7 +519,7 @@ namespace IceClash.Hockey
                 && outwardCarryVelocity.z <= 0.001f
                 && new Vector2(constrainedCornerTarget.x - coreX, constrainedCornerTarget.z - coreZ).sqrMagnitude
                     <= innerRadius * innerRadius + 0.001f
-                && Vector3.Dot(cornerOutward, new Vector3(1f, 0f, 1f)) <= 0.001f;
+                && Vector3.Dot(cornerOutward, constrainedCornerNormal.normalized) <= 0.001f;
 
             puck.ResetPuck(new Vector3(0f, PrototypeRinkGeometry.PuckY, PrototypeRinkGeometry.Length));
             puck.Body.linearVelocity = Vector3.forward * 8f;
@@ -496,7 +534,8 @@ namespace IceClash.Hockey
             bool liveCornerRecovery = new Vector2(
                     puck.Body.position.x - coreX, puck.Body.position.z - coreZ).sqrMagnitude
                     <= innerRadius * innerRadius + 0.001f
-                && Vector3.Dot(puck.Body.linearVelocity, new Vector3(1f, 0f, 1f)) <= 0.001f;
+                && Vector3.Dot(puck.Body.linearVelocity, new Vector3(
+                    puck.Body.position.x - coreX, 0f, puck.Body.position.z - coreZ).normalized) <= 0.001f;
             puck.ResetPuck(new Vector3(0f, PrototypeRinkGeometry.PuckY, 0f));
             return geometryContained && liveRecovery && liveCornerRecovery;
         }
