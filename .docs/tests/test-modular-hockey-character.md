@@ -5,16 +5,16 @@
 1. Open `ModularCharacterTest` and enter Play Mode.
 2. Observe the validation result after scene initialization.
 3. Verify exactly ten active HockeyPlayer roots exist.
-4. Verify every player uses the selected valid Humanoid avatar and has one active Helmet, Jersey, Gloves, Pants, Skates, and Stick item.
+4. Verify every player uses the selected valid Humanoid avatar and has one active Helmet, Jersey, Shoulder Pads, Gloves, Pants, Socks, Skates, and Stick item.
 5. Verify the harness configures the first existing character against the scene puck, claims it at the authoritative control point, observes carried follow, and releases it without creating an eleventh character.
 
-Expected: validation passes with ten humanoid players, all six modular equipment slots populated, and claim/carry/release completed through the existing puck system.
+Expected: validation passes with ten humanoid players, all eight modular equipment slots populated, and claim/carry/release completed through the existing puck system.
 
 ## Scenario 2 - Equipment slots replace independently
 
 1. Select one test player.
 2. Replace and clear each slot through the equipment API in turn.
-3. Observe the remaining five slots after each operation.
+3. Observe the remaining seven slots after each operation.
 4. Run the Edit Mode asset validator and verify a temporary prefab save/reload preserves the selected change, all other slot references, and stable Stick IK references.
 
 Expected: the selected slot changes or clears while every other slot keeps the same equipped object and reference.

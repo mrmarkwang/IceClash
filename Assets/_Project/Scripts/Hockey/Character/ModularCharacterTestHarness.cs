@@ -1,7 +1,7 @@
 /*
  * IceClash modular character scene validation harness.
- * Exercises ten humanoids, independent equipment replacement, preview animation,
- * two-hand stick IK, and claim/carry/release through the existing puck system.
+ * Exercises ten humanoids, all eight active gear pieces, paired replacements,
+ * uniform tinting, two-hand stick IK, and the existing puck system.
  */
 
 using System;
@@ -59,6 +59,12 @@ namespace IceClash.Hockey.Character
                     throw Fail($"Player {i} has no valid Humanoid avatar.");
                 if (players[i].Equipment == null || !players[i].Equipment.IsComplete())
                     throw Fail($"Player {i} equipment slots are incomplete.");
+                foreach (HockeyEquipmentSlot slot in Enum.GetValues(typeof(HockeyEquipmentSlot)))
+                {
+                    GameObject equipped = players[i].Equipment.GetEquipped(slot);
+                    if (equipped == null || !equipped.activeInHierarchy)
+                        throw Fail($"Player {i} has no active {slot} item.");
+                }
             }
 
             ValidateTwoHandStickPose(players[0]);
@@ -119,6 +125,7 @@ namespace IceClash.Hockey.Character
 
         private static void ValidateEquipmentIndependence(HockeyEquipmentLoadout loadout)
         {
+            ValidateUniformMaterial(loadout);
             HockeyStickRig rig = loadout.GetComponent<HockeyStickRig>();
             Transform stableLeftTarget = rig != null ? rig.LeftHandTarget : null;
             Transform stableRightTarget = rig != null ? rig.RightHandTarget : null;
@@ -146,7 +153,8 @@ namespace IceClash.Hockey.Character
                     || rig.LeftHandConstraint.weight > 0f || rig.RightHandConstraint.weight > 0f
                     || rig.LeftHandTarget != stableLeftTarget || rig.RightHandTarget != stableRightTarget))
                     throw new InvalidOperationException("Clearing Stick did not safely disable the stable two-hand IK rig.");
-                GameObject replacement = slot == HockeyEquipmentSlot.Gloves || slot == HockeyEquipmentSlot.Skates
+                GameObject replacement = slot == HockeyEquipmentSlot.Gloves || slot == HockeyEquipmentSlot.Socks
+                    || slot == HockeyEquipmentSlot.Skates
                     ? CreatePairedReplacement(slot)
                     : GameObject.CreatePrimitive(PrimitiveType.Cube);
                 replacement.name = $"Validation {slot}";
@@ -160,7 +168,8 @@ namespace IceClash.Hockey.Character
                     || rig.RightHandConstraint.weight < 0.99f || rig.LeftHandTarget != stableLeftTarget
                     || rig.RightHandTarget != stableRightTarget))
                     throw new InvalidOperationException("Replacing Stick did not restore the stable two-hand IK rig.");
-                if (slot == HockeyEquipmentSlot.Gloves || slot == HockeyEquipmentSlot.Skates)
+                if (slot == HockeyEquipmentSlot.Gloves || slot == HockeyEquipmentSlot.Socks
+                    || slot == HockeyEquipmentSlot.Skates)
                 {
                     HockeyPairedEquipmentFollower replacementFollower = loadout.GetEquipped(slot)
                         .GetComponent<HockeyPairedEquipmentFollower>();
@@ -171,6 +180,34 @@ namespace IceClash.Hockey.Character
                             $"Replacement {slot} did not inherit the destination player's stable paired-slot pose.");
                 }
             }
+        }
+
+        private static void ValidateUniformMaterial(HockeyEquipmentLoadout loadout)
+        {
+            Renderer jerseyRenderer = loadout.GetEquipped(HockeyEquipmentSlot.Jersey)
+                ?.GetComponentInChildren<Renderer>(true);
+            Renderer sockRenderer = loadout.GetEquipped(HockeyEquipmentSlot.Socks)
+                ?.GetComponentInChildren<Renderer>(true);
+            Material original = jerseyRenderer != null ? jerseyRenderer.sharedMaterial : null;
+            if (original == null || sockRenderer == null)
+                throw new InvalidOperationException("Jersey or Socks renderers are missing for uniform tint validation.");
+            Material validationMaterial = new(original) { name = "Validation Uniform Material" };
+            loadout.SetJerseyMaterial(validationMaterial);
+            if (!AllRenderersUse(loadout.GetEquipped(HockeyEquipmentSlot.Jersey), validationMaterial)
+                || !AllRenderersUse(loadout.GetEquipped(HockeyEquipmentSlot.Socks), validationMaterial))
+                throw new InvalidOperationException("Uniform material did not apply to both Jersey and Socks.");
+            loadout.SetJerseyMaterial(original);
+            Destroy(validationMaterial);
+        }
+
+        private static bool AllRenderersUse(GameObject equipment, Material material)
+        {
+            if (equipment == null) return false;
+            Renderer[] renderers = equipment.GetComponentsInChildren<Renderer>(true);
+            if (renderers.Length == 0) return false;
+            for (int i = 0; i < renderers.Length; i++)
+                if (renderers[i].sharedMaterial != material) return false;
+            return true;
         }
 
         private static GameObject CreatePairedReplacement(HockeyEquipmentSlot slot)
@@ -222,8 +259,11 @@ namespace IceClash.Hockey.Character
                 ?.GetComponent<HockeyPairedEquipmentFollower>();
             HockeyPairedEquipmentFollower skates = loadout.GetEquipped(HockeyEquipmentSlot.Skates)
                 ?.GetComponent<HockeyPairedEquipmentFollower>();
-            if (gloves == null || skates == null || !gloves.IsAligned(0.03f) || !skates.IsAligned(0.03f))
-                throw new InvalidOperationException("Paired gloves or skates did not follow their animated Humanoid bones.");
+            HockeyPairedEquipmentFollower socks = loadout.GetEquipped(HockeyEquipmentSlot.Socks)
+                ?.GetComponent<HockeyPairedEquipmentFollower>();
+            if (gloves == null || socks == null || skates == null || !gloves.IsAligned(0.03f)
+                || !socks.IsAligned(0.03f) || !skates.IsAligned(0.03f))
+                throw new InvalidOperationException("Paired gloves, socks, or skates did not follow their animated Humanoid bones.");
             Transform leftHand = player.Animator.GetBoneTransform(HumanBodyBones.LeftHand);
             Transform rightHand = player.Animator.GetBoneTransform(HumanBodyBones.RightHand);
             if (leftHand == null || rightHand == null

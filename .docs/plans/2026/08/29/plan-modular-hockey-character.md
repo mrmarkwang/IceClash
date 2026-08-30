@@ -21,7 +21,7 @@ Make the existing 5v5 roster render and animate a reusable humanoid hockey playe
 - `HockeyCharacterAssetSetup` configures the FBX as Humanoid and fails if its avatar is not both human and valid.
 - Add presentation-only `HockeyEquipmentLoadout`, `HockeyCharacterPresentation`, and `HockeyStickRig` components. They do not own movement, shooting, possession, or puck physics.
 - `HockeyCharacterPresentation.Bind(PlayerController)` is called by `LocalMatchSetup` after controller configuration. Before binding, and for `Bind(null)`, presentation remains safely idle for goalies and scene previews.
-- Six stable slot anchors own replaceable Helmet, Jersey, Gloves, Pants, Skates, and Stick items. Equip/clear changes one slot atomically.
+- Eight stable slot anchors own replaceable Helmet, Jersey, Shoulder Pads, Gloves, Pants, Socks, Skates, and Stick items. Equip/clear changes one slot atomically.
 - Stable hand targets and hints live under non-replaceable `StickRigTargets`, aligned with but never parented under the equipped Stick. Clearing Stick zeroes both IK weights; equipping any replacement restores them without invalidating references.
 - Placeholder Humanoid muscle clips provide idle, skating, and shooting presentation. Root motion stays disabled; runtime validation requires observable leg/torso bone motion.
 - `ModularCharacterTestHarness` drives deterministic preview states and equipment operations on exactly ten prefab instances. It adds/configures a `PlayerController` on the first of those existing ten against a real scene `PuckController`, then verifies claim, carried follow, and release; it never creates an additional skater. `PrototypeArena` remains the full gameplay regression.
@@ -36,7 +36,7 @@ Make the existing 5v5 roster render and animate a reusable humanoid hockey playe
 ### Phase 1 - Import and runtime contracts
 
 - [x] Add `Assets/_Project/Tests/Editor/HockeyCharacterAssetSetup.cs` with idempotent `GenerateAll`, batch generation/validation, Humanoid import configuration, avatar validation, and mobile texture configuration.
-- [x] Add `Assets/_Project/Scripts/Hockey/Character/HockeyEquipmentLoadout.cs` with the six-slot enum, serialized anchors/items, atomic equip/clear, Jersey tint, and independence validation.
+- [x] Add `Assets/_Project/Scripts/Hockey/Character/HockeyEquipmentLoadout.cs` with the eight-slot enum, serialized anchors/items, atomic equip/clear, Jersey-and-Socks uniform tint, and independence validation.
 - [x] Add `Assets/_Project/Scripts/Hockey/Character/HockeyCharacterPresentation.cs` with explicit late `Bind`, safe null/controller-less idle, Animator `Speed`/`Shoot` driving, and deterministic preview state.
 - [x] Add `Assets/_Project/Scripts/Hockey/Character/HockeyStickRig.cs` with serialized constraints/targets/hints and equipment-aware atomic weight changes.
 - [x] Update `Assets/_Project/Tests/Editor/SkaterPrefabSetup.cs` so `Create` delegates to `HockeyCharacterAssetSetup.GenerateAll`; verify no primitive capsule writer remains.
@@ -44,16 +44,16 @@ Make the existing 5v5 roster render and animate a reusable humanoid hockey playe
 ### Phase 2 - Generated assets and prefab composition
 
 - [x] Extend `HockeyCharacterAssetSetup` to create shared materials plus `Idle.anim`, `Skate.anim`, `Shoot.anim`, and `HockeyPlayer.controller` under `Assets/_Project/Art/HockeyPrototype`.
-- [x] Generate `Assets/_Project/Prefabs/HockeyPlayer.prefab` as the sole authored hierarchy with selected humanoid, Animator, CharacterController, six anchors/items, presentation components, and primitive placeholder equipment.
+- [x] Generate `Assets/_Project/Prefabs/HockeyPlayer.prefab` as the sole authored hierarchy with selected humanoid, Animator, CharacterController, eight anchors/items, presentation components, and primitive placeholder equipment.
 - [x] Configure one `RigBuilder`, one `Rig`, and independent left/right `TwoBoneIKConstraint` components using human arm bones and stable `StickRigTargets` targets/hints.
 - [x] Generate `Assets/_Project/Prefabs/Resources/Skater.prefab` as a connected Unity prefab variant and validate its corresponding-source/base-prefab relationship.
-- [x] Verify clearing/replacing every slot preserves the other five references; Stick clear/replacement also preserves IK references and toggles both weights.
+- [x] Verify clearing/replacing every slot preserves the other seven references; Stick clear/replacement also preserves IK references and toggles both weights.
 - [x] In `HockeyCharacterAssetSetup.ValidateEditorEquipmentPersistence`, load prefab contents, change each slot through the API, save/reload a temporary prefab, verify changed-slot serialization plus other-slot identity and Stick IK references, then delete only that temporary validation prefab.
 - [x] Configure shared material references, disabled motion vectors, and disabled reflection probes on the selected model and equipment renderers.
 
 ### Phase 3 - Gameplay and deterministic scene integration
 
-- [x] Update `LocalMatchSetup` to tint `HockeyEquipmentLoadout` Jersey and call `HockeyCharacterPresentation.Bind(controller)` after each skater is configured; explicitly keep goalies in controller-less idle presentation.
+- [x] Update `LocalMatchSetup` to tint the `HockeyEquipmentLoadout` Jersey-and-Socks uniform and call `HockeyCharacterPresentation.Bind(controller)` after each skater is configured; explicitly keep goalies in controller-less idle presentation.
 - [x] Add `Assets/_Project/Scripts/Hockey/Character/ModularCharacterTestHarness.cs` to validate exactly ten characters, deterministically exercise preview animation/equipment independence, configure the first existing character with `PlayerController` plus the real puck, and verify claim/carried follow/release.
 - [x] Generate `Assets/_Project/Scenes/ModularCharacterTest.unity` with exactly ten active HockeyPlayer instances, one Rigidbody/collider/`PuckController` puck, and one test harness; do not create an additional gameplay skater.
 - [x] Extend `PrototypeArenaSmokeCheck` with modular structure, twelve-humanoid/two-idle-goalie, bound presentation, two-hand IK, animation, and visual-blade/control-point proximity checks without weakening existing assertions.
@@ -74,7 +74,7 @@ Make the existing 5v5 roster render and animate a reusable humanoid hockey playe
 - Run `/Applications/Unity/Hub/Editor/6000.5.9f1/Unity.app/Contents/MacOS/Unity -batchmode -nographics -projectPath /Users/markwang/mw/IceClash -executeMethod IceClash.Tests.Editor.ModularCharacterSmokeRunner.RunBatch -logFile /tmp/iceclash-modular-smoke.log`; require exit code 0 and `MODULAR_CHARACTER_SMOKE_PASS players=10`.
 - Run `/Applications/Unity/Hub/Editor/6000.5.9f1/Unity.app/Contents/MacOS/Unity -batchmode -nographics -projectPath /Users/markwang/mw/IceClash -executeMethod IceClash.Tests.Editor.Phase3SmokeRunner.Run -logFile /tmp/iceclash-prototype-smoke.log`; require exit code 0 and the existing Phase 1 smoke pass marker plus new modular assertions.
 - Execute `.docs/tests/test-modular-hockey-character.md` scenarios in the two scenes.
-- Require one Animator, one CharacterController, six named slots, two constraints, one RigBuilder, no root motion, no baked gameplay controllers, and a connected resource prefab variant.
+- Require one Animator, one CharacterController, eight named and populated slots, two constraints, one RigBuilder, no root motion, no baked gameplay controllers, and a connected resource prefab variant.
 - Require shared material identity and policy compliance on all covered textures/renderers for ten test and twelve gameplay humanoids.
 
 ## Rollback / Risk
@@ -83,6 +83,6 @@ Make the existing 5v5 roster render and animate a reusable humanoid hockey playe
 - Presenters initialize before runtime-added components. Only explicit post-configuration binding drives skaters; controller-less goalies remain valid and idle.
 - Replaceable Stick content must never own targets/hints or replacement would break serialized constraints.
 - The realistic character appears twelve times in gameplay. Mobile import settings and shared assets mitigate cost; rollback restores the previous resource prefab without gameplay changes.
-- Team tinting must target Jersey only, avoiding skin and other equipment.
+- Team tinting must target Jersey and Socks only, avoiding skin and protective equipment.
 - The visual blade must stay near `StickPuckInteraction.ControlPoint`; both test-scene claim/carry/release and gameplay smoke validation guard against presentation/gameplay divergence.
 - Roll back the complete scoped change with a Git revert/restore of `Assets/_Project/Scripts/Hockey/Character`, `Assets/_Project/Tests/Editor/HockeyCharacterAssetSetup.cs`, `Assets/_Project/Tests/Editor/ModularCharacterSmokeRunner.cs`, `Assets/_Project/Tests/Editor/SkaterPrefabSetup.cs`, `Assets/_Project/Scripts/Match/LocalMatchSetup.cs`, `Assets/_Project/Scripts/Hockey/PrototypeArenaSmokeCheck.cs`, `Assets/_Project/Prefabs/HockeyPlayer.prefab`, `Assets/_Project/Prefabs/Resources/Skater.prefab`, `Assets/_Project/Art/HockeyPrototype`, `Assets/_Project/Scenes/ModularCharacterTest.unity`, and importer metadata below `RealisticHumanMale`; do not leave generated assets or mobile overrides behind.

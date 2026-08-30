@@ -12,7 +12,7 @@ Replace the visual shell used by the existing 5v5 skater roster with a reusable 
 
 - [x] The selected `RealisticHumanMale/unity.Fbx` asset is imported with a valid Unity Humanoid avatar.
 - [x] A reusable `HockeyPlayer` prefab contains the selected humanoid character and remains compatible with the existing runtime-added player components.
-- [x] The prefab exposes distinct Helmet, Jersey, Gloves, Pants, Skates, and Stick equipment slots.
+- [x] The prefab exposes distinct Helmet, Jersey, Shoulder Pads, Gloves, Pants, Socks, Skates, and Stick equipment slots, each populated with one active item by default.
 - [x] Every equipment slot can replace or clear its equipped object independently without rebuilding the player prefab or affecting the other slots.
 - [x] The hockey stick is driven by a two-hand IK rig with independently inspectable left- and right-hand constraints and targets.
 - [x] Placeholder idle/skating and shooting animation states visibly drive the humanoid and respond to current movement and shooting state.

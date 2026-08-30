@@ -1,7 +1,8 @@
 /*
  * IceClash modular humanoid asset generator and validator.
  * Configures the selected FBX as Humanoid, applies the mobile texture policy,
- * builds shared placeholder presentation assets, prefabs, IK, and the ten-player scene.
+ * builds all eight hockey gear pieces, shared presentation assets, prefabs, IK,
+ * and the ten-player scene.
  */
 
 #if UNITY_EDITOR
@@ -32,6 +33,7 @@ namespace IceClash.Tests.Editor
         private const string ScenePath = "Assets/_Project/Scenes/ModularCharacterTest.unity";
         private const string ControllerPath = GeneratedDirectory + "/HockeyPlayer.controller";
         private const string AutoGenerationKey = "IceClash.ModularCharacterGenerationRunning";
+        private const int ExpectedEquipmentSlotCount = 8;
 
         static HockeyCharacterAssetSetup()
         {
@@ -120,8 +122,10 @@ namespace IceClash.Tests.Editor
             if (animator == null || animator.avatar == null || !animator.avatar.isHuman || !animator.avatar.isValid
                 || animator.applyRootMotion || animator.runtimeAnimatorController == null)
                 throw new InvalidOperationException("HockeyPlayer Animator is invalid or root motion is enabled.");
-            if (loadout == null || !loadout.IsComplete() || loadout.SlotCount != 6)
-                throw new InvalidOperationException("HockeyPlayer does not contain all six equipment slots.");
+            if (loadout == null || !loadout.IsComplete() || loadout.SlotCount != ExpectedEquipmentSlotCount)
+                throw new InvalidOperationException("HockeyPlayer does not contain all eight equipment slots.");
+            if (!HasActiveEquipment(loadout))
+                throw new InvalidOperationException("HockeyPlayer does not have one active item in every equipment slot.");
             if (stickRig == null || !stickRig.HasValidReferences || rigBuilder == null || rigBuilder.layers.Count != 1)
                 throw new InvalidOperationException("HockeyPlayer two-hand IK rig is incomplete.");
             if (stickRig.LeftHandConstraint.transform == stickRig.RightHandConstraint.transform
@@ -166,7 +170,9 @@ namespace IceClash.Tests.Editor
             if (Application.isPlaying || SessionState.GetBool(AutoGenerationKey, false)) return;
             GameObject canonical = AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath);
             ModelImporter importer = AssetImporter.GetAtPath(ModelPath) as ModelImporter;
-            if (canonical != null && canonical.GetComponent<HockeyEquipmentLoadout>() != null
+            HockeyEquipmentLoadout loadout = canonical != null ? canonical.GetComponent<HockeyEquipmentLoadout>() : null;
+            if (loadout != null && loadout.IsComplete() && loadout.SlotCount == ExpectedEquipmentSlotCount
+                && HasActiveEquipment(loadout)
                 && importer != null && importer.animationType == ModelImporterAnimationType.Human) return;
 
             SessionState.SetBool(AutoGenerationKey, true);
@@ -280,20 +286,25 @@ namespace IceClash.Tests.Editor
             Transform rightHand = animator.GetBoneTransform(HumanBodyBones.RightHand) ?? visual.transform;
             Transform leftFoot = animator.GetBoneTransform(HumanBodyBones.LeftFoot) ?? visual.transform;
             Transform rightFoot = animator.GetBoneTransform(HumanBodyBones.RightFoot) ?? visual.transform;
-            HockeyEquipmentBinding[] bindings = new HockeyEquipmentBinding[6];
+            HockeyEquipmentBinding[] bindings = new HockeyEquipmentBinding[ExpectedEquipmentSlotCount];
             bindings[0] = CreateBinding(HockeyEquipmentSlot.Helmet, head, "HelmetSlot",
                 BuildSinglePrimitive("Helmet", PrimitiveType.Sphere, equipmentMaterial, new Vector3(0f, 0.1f, 0f), new Vector3(0.25f, 0.19f, 0.28f)));
-            bindings[1] = CreateBinding(HockeyEquipmentSlot.Jersey, chest, "JerseySlot",
+            bindings[1] = CreateBinding(HockeyEquipmentSlot.ShoulderPads, chest, "ShoulderPadsSlot",
+                BuildShoulderPads(equipmentMaterial));
+            bindings[2] = CreateBinding(HockeyEquipmentSlot.Jersey, chest, "JerseySlot",
                 BuildSinglePrimitive("Jersey", PrimitiveType.Cube, jerseyMaterial, Vector3.zero, new Vector3(0.42f, 0.34f, 0.2f)));
-            bindings[2] = CreateBinding(HockeyEquipmentSlot.Gloves, visual.transform, "GlovesSlot",
+            bindings[3] = CreateBinding(HockeyEquipmentSlot.Gloves, visual.transform, "GlovesSlot",
                 BuildFollowedPair("Gloves", PrimitiveType.Sphere, equipmentMaterial, leftTarget.localPosition,
                     rightTarget.localPosition, new Vector3(0.13f, 0.11f, 0.14f)));
-            bindings[3] = CreateBinding(HockeyEquipmentSlot.Pants, hips, "PantsSlot",
+            bindings[4] = CreateBinding(HockeyEquipmentSlot.Pants, hips, "PantsSlot",
                 BuildSinglePrimitive("Pants", PrimitiveType.Cube, equipmentMaterial, Vector3.zero, new Vector3(0.38f, 0.25f, 0.22f)));
-            bindings[4] = CreateBinding(HockeyEquipmentSlot.Skates, visual.transform, "SkatesSlot",
+            bindings[5] = CreateBinding(HockeyEquipmentSlot.Socks, visual.transform, "SocksSlot",
+                BuildFollowedPair("Socks", PrimitiveType.Cube, jerseyMaterial, new Vector3(-0.13f, 0.35f, 0.01f),
+                    new Vector3(0.13f, 0.35f, 0.01f), new Vector3(0.13f, 0.28f, 0.13f)));
+            bindings[6] = CreateBinding(HockeyEquipmentSlot.Skates, visual.transform, "SkatesSlot",
                 BuildFollowedPair("Skates", PrimitiveType.Cube, equipmentMaterial, new Vector3(-0.13f, 0.08f, 0.03f),
                     new Vector3(0.13f, 0.08f, 0.03f), new Vector3(0.11f, 0.07f, 0.27f)));
-            bindings[5] = CreateBinding(HockeyEquipmentSlot.Stick, presentationRoot.transform, "StickSlot",
+            bindings[7] = CreateBinding(HockeyEquipmentSlot.Stick, presentationRoot.transform, "StickSlot",
                 BuildStick(equipmentMaterial, rightTarget.localPosition, shaftEndReference.localPosition,
                     bladeReference.localPosition));
             HockeyEquipmentLoadout loadout = root.AddComponent<HockeyEquipmentLoadout>();
@@ -360,6 +371,20 @@ namespace IceClash.Tests.Editor
             second.transform.localScale = scale;
             HockeyPairedEquipmentFollower follower = item.AddComponent<HockeyPairedEquipmentFollower>();
             follower.ConfigureVisuals(first.transform, second.transform);
+            return item;
+        }
+
+        private static GameObject BuildShoulderPads(Material material)
+        {
+            GameObject item = new("Shoulder Pads");
+            GameObject chestPad = CreatePrimitive("Shoulder Pads Chest", PrimitiveType.Cube, material, item.transform);
+            chestPad.transform.localScale = new Vector3(0.44f, 0.2f, 0.22f);
+            GameObject leftCap = CreatePrimitive("Shoulder Pad L", PrimitiveType.Sphere, material, item.transform);
+            leftCap.transform.localPosition = new Vector3(-0.38f, 0.08f, 0f);
+            leftCap.transform.localScale = new Vector3(0.18f, 0.16f, 0.2f);
+            GameObject rightCap = CreatePrimitive("Shoulder Pad R", PrimitiveType.Sphere, material, item.transform);
+            rightCap.transform.localPosition = new Vector3(0.38f, 0.08f, 0f);
+            rightCap.transform.localScale = new Vector3(0.18f, 0.16f, 0.2f);
             return item;
         }
 
@@ -589,6 +614,17 @@ namespace IceClash.Tests.Editor
                 if (persisted.GetEquipped(slot) == null || !persisted.GetEquipped(slot).name.StartsWith("EditorReplacement_"))
                     throw new InvalidOperationException($"Edit Mode {slot} replacement did not persist after save/reload.");
             DeleteAssetIfPresent(tempPath);
+        }
+
+        private static bool HasActiveEquipment(HockeyEquipmentLoadout loadout)
+        {
+            if (loadout == null) return false;
+            foreach (HockeyEquipmentSlot slot in Enum.GetValues(typeof(HockeyEquipmentSlot)))
+            {
+                GameObject equipped = loadout.GetEquipped(slot);
+                if (equipped == null || !equipped.activeSelf) return false;
+            }
+            return true;
         }
 
         private static void ValidateTexturePolicy()
