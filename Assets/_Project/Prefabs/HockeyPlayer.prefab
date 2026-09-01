@@ -413,7 +413,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a37c2b2f40fb846959ac3b3942c40108, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::IceClash.Hockey.Character.HockeyStickRig
   leftHandConstraint: {fileID: 6400775227744272760}
   rightHandConstraint: {fileID: 3225747980447732745}
@@ -433,7 +433,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 0862fe8dfc2db4bb78b8cc0a1626a5a7, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::IceClash.Hockey.Character.HockeyEquipmentLoadout
   slots:
   - slot: 0
@@ -483,7 +483,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a0bfdb4d2c49f4a4d90069f3442beaf8, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::IceClash.Hockey.Character.HockeyCharacterPresentation
   animator: {fileID: 6913868794912571042}
   equipment: {fileID: 1705107826706233213}
@@ -691,9 +691,9 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1985944291982334204}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.74387205, y: -0, z: 0.43222857, w: 0.509738}
-  m_LocalPosition: {x: 0.20322353, y: 0.8656859, z: 0.6472788}
-  m_LocalScale: {x: 0.035, y: 1.8916583, z: 0.035}
+  m_LocalRotation: {x: 0.7963796, y: -0, z: 0.18476497, w: 0.57588327}
+  m_LocalPosition: {x: 0.2054412, y: 0.8721551, z: 0.6985933}
+  m_LocalScale: {x: 0.035, y: 1.8285079, z: 0.035}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 2013486280770410454}
@@ -876,9 +876,9 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2369244898735781987}
   serializedVersion: 2
-  m_LocalRotation: {x: -0.22677232, y: -0.8584944, z: 0.45651636, w: -0.05616581}
-  m_LocalPosition: {x: 0.39023387, y: 0.8230099, z: 0.6712907}
-  m_LocalScale: {x: 1.4095813, y: 1.4095813, z: 1.4095813}
+  m_LocalRotation: {x: -0.45558774, y: -0.6332929, z: 0.35225168, w: 0.51700944}
+  m_LocalPosition: {x: 0.22358242, y: 0.7150415, z: 0.59907717}
+  m_LocalScale: {x: 1.3625246, y: 1.3625246, z: 1.3625246}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 2107301310250710400}
@@ -909,7 +909,7 @@ Transform:
   m_GameObject: {fileID: 2645145809688789664}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.52, y: 0.75, z: 0}
+  m_LocalPosition: {x: 0.72, y: 1.18, z: -0.05}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1030,7 +1030,7 @@ Transform:
   m_GameObject: {fileID: 2954981150557569559}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.34670395, y: 1.0220891, z: 0.4003467}
+  m_LocalPosition: {x: 0.28517842, y: 0.998321, z: 0.35490754}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1078,7 +1078,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: aeda7bfbf984f2a4da5ab4b8967b115d, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Unity.Animation.Rigging::UnityEngine.Animations.Rigging.TwoBoneIKConstraint
   m_Weight: 1
   m_Data:
@@ -1369,7 +1369,7 @@ Transform:
   m_GameObject: {fileID: 4590398718088949427}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -0.21355295, y: 0.4113717, z: 1.3645575}
+  m_LocalPosition: {x: 0.049794197, y: 0.62587917, z: 1.369468}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1400,7 +1400,7 @@ Transform:
   m_GameObject: {fileID: 4684527768955723298}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.62, y: 1.32, z: -0.07}
+  m_LocalPosition: {x: 0.4, y: 1.18, z: -0.14}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1450,7 +1450,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 9f80e8461f0c4e489013dfc22ace8c47, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::IceClash.Hockey.Character.HockeyPairedEquipmentFollower
   firstBone: {fileID: 7599818823817891773}
   secondBone: {fileID: 2996160756874655550}
@@ -1577,7 +1577,7 @@ Transform:
   m_GameObject: {fileID: 4749845518542605052}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.62, y: 1.32, z: -0.07}
+  m_LocalPosition: {x: 0.4, y: 1.18, z: -0.14}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1747,7 +1747,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: aeda7bfbf984f2a4da5ab4b8967b115d, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Unity.Animation.Rigging::UnityEngine.Animations.Rigging.TwoBoneIKConstraint
   m_Weight: 1
   m_Data:
@@ -1805,7 +1805,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 70b342d8ce5c2fd48b8fa3147d48d1d1, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Unity.Animation.Rigging::UnityEngine.Animations.Rigging.Rig
   m_Weight: 1
   m_Effectors: []
@@ -1924,7 +1924,7 @@ Transform:
   m_GameObject: {fileID: 6802457276260599098}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -0.45, y: 0.65, z: 0.2}
+  m_LocalPosition: {x: -0.45, y: 1.05, z: 0.15}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -2064,7 +2064,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 9f80e8461f0c4e489013dfc22ace8c47, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::IceClash.Hockey.Character.HockeyPairedEquipmentFollower
   firstBone: {fileID: 7599818823817891773}
   secondBone: {fileID: 2996160756874655550}
@@ -2120,7 +2120,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 9f80e8461f0c4e489013dfc22ace8c47, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::IceClash.Hockey.Character.HockeyPairedEquipmentFollower
   firstBone: {fileID: 8225822751177847239}
   secondBone: {fileID: 6011459695016989136}
@@ -2486,7 +2486,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fff0960ef4ea6e04eac66b4a7fd2189d, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Unity.Animation.Rigging::UnityEngine.Animations.Rigging.RigBuilder
   m_RigLayers:
   - m_Rig: {fileID: 194416584603042021}

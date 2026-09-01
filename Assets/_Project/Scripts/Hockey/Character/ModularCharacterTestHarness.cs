@@ -1,7 +1,8 @@
 /*
  * IceClash modular clean-character scene validation harness.
  * Exercises ten Humanoids, Idle/temporary Running playback, all existing gear
- * and two-hand IK contracts, paired replacements, and the existing puck system.
+ * and professional two-hand IK contracts, including outward elbow bend,
+ * paired replacements, and the existing puck system.
  */
 
 using System;
@@ -237,6 +238,33 @@ namespace IceClash.Hockey.Character
             if (leftDistance > 0.1f || rightDistance > 0.1f)
                 throw new InvalidOperationException(
                     $"Animation Rigging did not place both hands on their stick targets (left={leftDistance:F3} {leftHand?.position}->{rig.LeftHandTarget.position}, right={rightDistance:F3} {rightHand?.position}->{rig.RightHandTarget.position}).");
+            ValidateNaturalArmBend(player.transform, player.Animator, HumanBodyBones.LeftUpperArm,
+                HumanBodyBones.LeftLowerArm, HumanBodyBones.LeftHand, -1f, "left");
+            ValidateNaturalArmBend(player.transform, player.Animator, HumanBodyBones.RightUpperArm,
+                HumanBodyBones.RightLowerArm, HumanBodyBones.RightHand, 1f, "right");
+        }
+
+        private static void ValidateNaturalArmBend(Transform playerRoot, Animator animator,
+            HumanBodyBones upperArmBone, HumanBodyBones lowerArmBone, HumanBodyBones handBone,
+            float outwardDirection, string side)
+        {
+            Transform upperArm = animator.GetBoneTransform(upperArmBone);
+            Transform elbow = animator.GetBoneTransform(lowerArmBone);
+            Transform hand = animator.GetBoneTransform(handBone);
+            if (upperArm == null || elbow == null || hand == null)
+                throw new InvalidOperationException($"Professional {side}-arm pose is missing a Humanoid bone.");
+            float bend = Vector3.Angle(upperArm.position - elbow.position, hand.position - elbow.position);
+            float elbowX = playerRoot.InverseTransformPoint(elbow.position).x;
+            float handX = playerRoot.InverseTransformPoint(hand.position).x;
+            float outwardOffset = (elbowX - handX) * outwardDirection;
+            float reach = Vector3.Distance(upperArm.position, hand.position);
+            float armLength = Vector3.Distance(upperArm.position, elbow.position)
+                + Vector3.Distance(elbow.position, hand.position);
+            if (bend < 25f || bend > 165f || outwardOffset < 0.02f)
+                throw new InvalidOperationException(
+                    $"Professional {side}-arm pose is unnatural (bend={bend:F1}, outward={outwardOffset:F3}, "
+                    + $"reach={reach:F3}/{armLength:F3}, shoulder={playerRoot.InverseTransformPoint(upperArm.position)}, "
+                    + $"hand={playerRoot.InverseTransformPoint(hand.position)}).");
         }
 
         private static void ValidatePairedEquipment(HockeyCharacterPresentation player)

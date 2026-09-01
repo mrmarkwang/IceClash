@@ -53,7 +53,9 @@ namespace IceClash.Tests.Editor
         private const float GameplayIceY = 0.2f;
         private const float GameplaySpawnY = 1f;
         private const float ProductionShaftExtension = 3.05f;
-        private static readonly Vector3 PrimaryGripPose = new(0.58f, 1.16f, 0.02f);
+        private const float LowerHandGripFraction = 0.90f;
+        // Professional carry: top hand beside the hip and slightly behind the lower hand.
+        private static readonly Vector3 PrimaryGripPose = new(0.40f, 1.18f, -0.14f);
         private static readonly Vector3 SecondaryGripPoseHint = new(0.30f, 1.10f, 0.30f);
         private static readonly Vector3 LeftElbowHintPose = new(-0.45f, 1.05f, 0.15f);
         private static readonly Vector3 RightElbowHintPose = new(0.72f, 1.18f, -0.05f);
@@ -187,6 +189,8 @@ namespace IceClash.Tests.Editor
             if (stickRig.LeftHandConstraint.transform == stickRig.RightHandConstraint.transform
                 || stickRig.LeftHandTarget == stickRig.RightHandTarget)
                 throw new InvalidOperationException("Left and right hand IK constraints are not independent.");
+            if (!MatchesProfessionalPose(loadout, stickRig))
+                throw new InvalidOperationException("HockeyPlayer professional grip targets or elbow hints are stale.");
             if (canonical.GetComponent<PlayerController>() != null)
                 throw new InvalidOperationException("Gameplay PlayerController must remain runtime-composed.");
 
@@ -245,20 +249,21 @@ namespace IceClash.Tests.Editor
             if (Vector3.Distance(stickBounds.ClosestPoint(gripMarker.position), gripMarker.position) > fittedLength * 0.15f
                 || Vector3.Distance(stickBounds.ClosestPoint(visualBlade.position), visualBlade.position) > fittedLength * 0.15f)
                 throw new InvalidOperationException("Production hockey stick no longer reaches its grip and blade markers.");
+            Vector3 lowerHandGrip = Vector3.Lerp(primaryGrip.position, secondaryGrip.position, LowerHandGripFraction);
             if (Vector3.Distance(primaryGrip.position, stickRig.RightHandTarget.position) > 0.001f
-                || Vector3.Distance(secondaryGrip.position, stickRig.LeftHandTarget.position) > 0.001f
+                || Vector3.Distance(lowerHandGrip, stickRig.LeftHandTarget.position) > 0.001f
                 || Vector3.Distance(bladeContact.position, visualBlade.position) > 0.001f
                 || DistanceToSegment(stickRig.LeftHandTarget.position, primaryGrip.position, secondaryGrip.position) > 0.001f
                 || Vector3.Distance(stickBounds.ClosestPoint(stickRig.LeftHandTarget.position),
                     stickRig.LeftHandTarget.position) > fittedLength * 0.05f)
-                throw new InvalidOperationException("Production stick grip markers are not aligned to the two-hand IK targets.");
+                throw new InvalidOperationException("Production stick shaft grips are not aligned to the two-hand IK targets.");
             Vector3 gripToBlade = visualBlade.position - gripMarker.position;
             if (gripMarker.position.y - visualBlade.position.y < 0.8f
-                || Mathf.Abs(gripToBlade.x) < 0.55f || gripToBlade.z < 1f
-                || primaryGrip.position.y - secondaryGrip.position.y < 0.25f
-                || secondaryGrip.position.z - primaryGrip.position.z < 0.25f
-                || Vector3.Distance(primaryGrip.position, secondaryGrip.position) < 0.55f
-                || stickRig.RightHandTarget.localPosition.x < 0.45f
+                || Mathf.Abs(gripToBlade.x) < 0.30f || gripToBlade.z < 1f
+                || primaryGrip.position.y - lowerHandGrip.y < 0.18f
+                || lowerHandGrip.z - primaryGrip.position.z < 0.25f
+                || Vector3.Distance(primaryGrip.position, lowerHandGrip) < 0.50f
+                || stickRig.RightHandTarget.localPosition.x < 0.30f
                 || stickRig.RightHandTarget.localPosition.y < 0.95f
                 || stickRig.RightHandTarget.localPosition.y > 1.25f)
                 throw new InvalidOperationException("Production stick no longer forms the required professional two-hand carry.");
@@ -282,8 +287,7 @@ namespace IceClash.Tests.Editor
             if (loadout != null && loadout.IsComplete() && loadout.SlotCount == ExpectedEquipmentSlotCount
                 && HasActiveEquipment(loadout)
                 && loadout.FindEquippedChild(HockeyEquipmentSlot.Stick, "Production Hockey Stick") != null
-                && stickRig != null && stickRig.RightHandTarget != null
-                && Vector3.Distance(stickRig.RightHandTarget.localPosition, PrimaryGripPose) <= 0.001f
+                && MatchesProfessionalPose(loadout, stickRig)
                 && importer != null && importer.animationType == ModelImporterAnimationType.Human
                 && stickImporter != null && !stickImporter.isReadable) return;
 
@@ -359,6 +363,42 @@ namespace IceClash.Tests.Editor
             return (int)(indices / 3);
         }
 
+        private static bool MatchesProfessionalPose(HockeyEquipmentLoadout loadout, HockeyStickRig stickRig)
+        {
+            if (loadout == null || stickRig == null || !stickRig.HasValidReferences) return false;
+            Transform primaryGrip = loadout.FindEquippedChild(HockeyEquipmentSlot.Stick, "PrimaryGrip");
+            Transform secondaryGrip = loadout.FindEquippedChild(HockeyEquipmentSlot.Stick, "SecondaryGrip");
+            Transform leftHint = stickRig.LeftHandConstraint.data.hint;
+            Transform rightHint = stickRig.RightHandConstraint.data.hint;
+            Transform targetSpace = stickRig.RightHandTarget.parent;
+            Vector3 expectedShaftEnd = stickRig.RightHandTarget.localPosition
+                + (stickRig.LeftHandTarget.localPosition - stickRig.RightHandTarget.localPosition)
+                * ProductionShaftExtension;
+            Vector3 expectedLowerHand = primaryGrip != null && secondaryGrip != null
+                ? Vector3.Lerp(primaryGrip.position, secondaryGrip.position, LowerHandGripFraction)
+                : Vector3.zero;
+            Vector3 expectedShaftDirection = BladePose - PrimaryGripPose;
+            Vector3 expectedSecondaryDirection = Vector3.ProjectOnPlane(
+                SecondaryGripPoseHint - PrimaryGripPose, expectedShaftDirection).normalized;
+            Vector3 generatedPrimary = primaryGrip != null && targetSpace != null
+                ? targetSpace.InverseTransformPoint(primaryGrip.position) : Vector3.zero;
+            Vector3 generatedSecondary = secondaryGrip != null && targetSpace != null
+                ? targetSpace.InverseTransformPoint(secondaryGrip.position) : Vector3.zero;
+            Vector3 generatedSecondaryDirection = Vector3.ProjectOnPlane(
+                generatedSecondary - generatedPrimary, expectedShaftDirection).normalized;
+            return primaryGrip != null && secondaryGrip != null && leftHint != null && rightHint != null
+                && targetSpace != null && expectedSecondaryDirection.sqrMagnitude > 0.99f
+                && generatedSecondaryDirection.sqrMagnitude > 0.99f
+                && Vector3.Angle(generatedSecondaryDirection, expectedSecondaryDirection) <= 0.1f
+                && Vector3.Distance(stickRig.RightHandTarget.localPosition, PrimaryGripPose) <= 0.001f
+                && Vector3.Distance(stickRig.BladeReference.localPosition, BladePose) <= 0.001f
+                && Vector3.Distance(leftHint.localPosition, LeftElbowHintPose) <= 0.001f
+                && Vector3.Distance(rightHint.localPosition, RightElbowHintPose) <= 0.001f
+                && Vector3.Distance(stickRig.ShaftEndReference.localPosition, expectedShaftEnd) <= 0.001f
+                && Vector3.Distance(primaryGrip.position, stickRig.RightHandTarget.position) <= 0.001f
+                && Vector3.Distance(expectedLowerHand, stickRig.LeftHandTarget.position) <= 0.001f;
+        }
+
         private static void ApplyMobilePlatform(TextureImporter importer, string platform)
         {
             TextureImporterPlatformSettings settings = importer.GetPlatformTextureSettings(platform);
@@ -423,8 +463,9 @@ namespace IceClash.Tests.Editor
                 throw new InvalidOperationException("Production stick is missing its authored grip markers.");
             // Keep the blade on the established gameplay control point and place the
             // presentation-only hand targets on the authored grips.
-            leftTarget.localPosition = productionStick.transform.InverseTransformPoint(productionSecondaryGrip.position);
             Vector3 primaryLocal = productionStick.transform.InverseTransformPoint(productionPrimaryGrip.position);
+            Vector3 secondaryLocal = productionStick.transform.InverseTransformPoint(productionSecondaryGrip.position);
+            leftTarget.localPosition = Vector3.Lerp(primaryLocal, secondaryLocal, LowerHandGripFraction);
             shaftEndReference.localPosition = primaryLocal
                 + (leftTarget.localPosition - primaryLocal) * ProductionShaftExtension;
 
