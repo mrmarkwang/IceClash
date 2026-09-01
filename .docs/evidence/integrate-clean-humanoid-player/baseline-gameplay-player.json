@@ -1,0 +1,37 @@
+{
+  "prefabPath": "Assets/_Project/Prefabs/HockeyPlayer.prefab",
+  "prefabGuid": "6c6bb83d49b624f17aa9bbe09172f5a0",
+  "resourceVariantPath": "Assets/_Project/Prefabs/Resources/Skater.prefab",
+  "resourceVariantSourceGuid": "6c6bb83d49b624f17aa9bbe09172f5a0",
+  "rootComponents": [
+    "UnityEngine.Transform",
+    "UnityEngine.CharacterController",
+    "IceClash.Hockey.Character.HockeyStickRig",
+    "IceClash.Hockey.Character.HockeyEquipmentLoadout",
+    "IceClash.Hockey.Character.HockeyCharacterPresentation"
+  ],
+  "characterController": {
+    "enabled": true,
+    "center": { "x": 0.0, "y": 0.0, "z": 0.0 },
+    "height": 2.0,
+    "radius": 0.45,
+    "slopeLimit": 45.0,
+    "stepOffset": 0.3,
+    "skinWidth": 0.08,
+    "minMoveDistance": 0.001
+  },
+  "cameraFollowAuthority": "runtime controlled PlayerController.transform",
+  "visual": {
+    "name": "HumanoidVisual",
+    "sourceGuid": "5d51fe69a09e242a0a723b537d5f59ac",
+    "animatorControllerGuid": "0e72cde9f96784e5fa741be272959186",
+    "applyRootMotion": false
+  },
+  "authorizedSourceChanges": [
+    "Assets/Characters/Male/Male_Base_v1/Editor/MaleBaseV11GameplayIntegrationSetup.cs",
+    "Assets/_Project/Tests/Editor/HockeyCharacterAssetSetup.cs",
+    "Assets/_Project/Scripts/Hockey/Character/HockeyCharacterPresentation.cs",
+    "Assets/_Project/Scripts/Hockey/Character/ModularCharacterTestHarness.cs",
+    "Assets/_Project/Scripts/Hockey/PrototypeArenaSmokeCheck.cs"
+  ]
+}

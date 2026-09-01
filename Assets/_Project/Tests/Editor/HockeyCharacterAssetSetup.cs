@@ -1,6 +1,7 @@
 /*
- * IceClash modular humanoid asset generator and validator.
- * Configures the selected FBX as Humanoid, applies the mobile texture policy,
+ * IceClash modular clean-humanoid asset generator and validator.
+ * Consumes the isolated Male_Base_v1_1_Clean production visual/controller,
+ * applies the existing mobile presentation policy,
  * builds all eight hockey gear pieces, imports the licensed low-poly stick,
  * orients its real textured blade for the arena camera, and creates shared
  * presentation assets, prefabs, IK, and the ten-player scene without debug geometry.
@@ -11,6 +12,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using IceClash.CharacterValidation.Editor;
 using IceClash.Hockey.Character;
 using IceClash.Player;
 using IceClash.Puck;
@@ -26,7 +28,7 @@ namespace IceClash.Tests.Editor
     [InitializeOnLoad]
     public static class HockeyCharacterAssetSetup
     {
-        private const string ModelPath = "Assets/_Project/Art/Characters/RealisticHumanMale/unity.Fbx";
+        private const string ModelPath = MaleBaseV11GameplayIntegrationSetup.CleanModelPath;
         private const string CharacterDirectory = "Assets/_Project/Art/Characters/RealisticHumanMale";
         private const string StickDirectory = "Assets/_Project/Art/HockeyGear/LowPolyStick";
         private const string StickModelPath = StickDirectory + "/hockey_stick_002.fbx";
@@ -34,10 +36,15 @@ namespace IceClash.Tests.Editor
         private const string PrefabPath = "Assets/_Project/Prefabs/HockeyPlayer.prefab";
         private const string ResourcePrefabPath = "Assets/_Project/Prefabs/Resources/Skater.prefab";
         private const string ScenePath = "Assets/_Project/Scenes/ModularCharacterTest.unity";
-        private const string ControllerPath = GeneratedDirectory + "/HockeyPlayer.controller";
+        private const string ControllerPath = MaleBaseV11GameplayIntegrationSetup.ControllerPath;
         private const string AutoGenerationKey = "IceClash.ModularCharacterGenerationRunning";
         private const int ExpectedEquipmentSlotCount = 8;
         private const float StickTransverseScale = 2.6f;
+        private const float GameplayControlForwardOffset = 1.15f;
+        private const float GameplayControlVerticalOffset = 0.28f;
+        private const float GameplaySkaterScale = 0.68f;
+        private const float GameplayIceY = 0.2f;
+        private const float GameplaySpawnY = 1f;
 
         static HockeyCharacterAssetSetup()
         {
@@ -48,7 +55,7 @@ namespace IceClash.Tests.Editor
         public static void GenerateAll()
         {
             EnsureFolder(GeneratedDirectory);
-            ConfigureHumanoidImporter();
+            MaleBaseV11GameplayIntegrationSetup.GenerateProductionAssets();
             ConfigureMobileTextures();
             try
             {
@@ -60,7 +67,6 @@ namespace IceClash.Tests.Editor
                 GameObject player = BuildPlayer(skinMaterial, equipmentMaterial, jerseyMaterial, stickMaterial);
                 try
                 {
-                    CreateAnimationAssets(player);
                     Animator animator = player.GetComponentInChildren<Animator>();
                     animator.runtimeAnimatorController = AssetDatabase.LoadAssetAtPath<RuntimeAnimatorController>(ControllerPath);
                     PrefabUtility.SaveAsPrefabAsset(player, PrefabPath);
@@ -152,23 +158,12 @@ namespace IceClash.Tests.Editor
             if (canonical.GetComponent<PlayerController>() != null)
                 throw new InvalidOperationException("Gameplay PlayerController must remain runtime-composed.");
 
-            AnimationClip idle = AssetDatabase.LoadAssetAtPath<AnimationClip>(GeneratedDirectory + "/Idle.anim");
-            AnimationClip skate = AssetDatabase.LoadAssetAtPath<AnimationClip>(GeneratedDirectory + "/Skate.anim");
-            AnimationClip shoot = AssetDatabase.LoadAssetAtPath<AnimationClip>(GeneratedDirectory + "/Shoot.anim");
-            if (idle == null || skate == null || shoot == null || !idle.humanMotion || !skate.humanMotion || !shoot.humanMotion
-                || AnimationUtility.GetCurveBindings(idle).Length == 0
-                || AnimationUtility.GetCurveBindings(skate).Length == 0
-                || AnimationUtility.GetCurveBindings(shoot).Length == 0)
-                throw new InvalidOperationException("Placeholder animation clips are missing Humanoid muscle motion.");
-            ValidateHumanoidCurves(idle);
-            ValidateHumanoidCurves(skate);
-            ValidateHumanoidCurves(shoot);
             AnimatorController controller = AssetDatabase.LoadAssetAtPath<AnimatorController>(ControllerPath);
             string[] stateNames = controller != null
                 ? controller.layers[0].stateMachine.states.Select(state => state.state.name).ToArray()
                 : Array.Empty<string>();
-            if (!stateNames.Contains("Idle") || !stateNames.Contains("Skate") || !stateNames.Contains("Shoot"))
-                throw new InvalidOperationException("Animator controller is missing placeholder states.");
+            if (stateNames.Length != 2 || !stateNames.Contains("Idle") || !stateNames.Contains("Running"))
+                throw new InvalidOperationException("Animator controller must contain only Idle and temporary Running.");
             Transform visualBlade = loadout.FindEquippedChild(HockeyEquipmentSlot.Stick, "Stick Blade");
             if (visualBlade == null) throw new InvalidOperationException("Replaceable Stick has no visual blade.");
             Transform shaftMarker = loadout.FindEquippedChild(HockeyEquipmentSlot.Stick, "Stick Shaft");
@@ -325,7 +320,8 @@ namespace IceClash.Tests.Editor
         private static GameObject BuildPlayer(Material skinMaterial, Material equipmentMaterial, Material jerseyMaterial,
             Material stickMaterial)
         {
-            GameObject modelAsset = AssetDatabase.LoadAssetAtPath<GameObject>(ModelPath);
+            GameObject modelAsset = AssetDatabase.LoadAssetAtPath<GameObject>(
+                MaleBaseV11GameplayIntegrationSetup.VisualPrefabPath);
             Avatar avatar = LoadHumanoidAvatar();
             if (modelAsset == null || avatar == null) throw new InvalidOperationException("Selected humanoid model is unavailable.");
 
@@ -335,25 +331,36 @@ namespace IceClash.Tests.Editor
             characterController.height = 2f;
             characterController.radius = 0.45f;
 
+            GameObject visualRoot = NewChild("Visual", root.transform);
             GameObject visual = PrefabUtility.InstantiatePrefab(modelAsset) as GameObject;
             if (visual == null) throw new InvalidOperationException("Unable to instantiate selected humanoid model.");
-            visual.name = "HumanoidVisual";
-            visual.transform.SetParent(root.transform, false);
+            visual.name = "Male_Base_v1_1_Clean_Visual";
+            visual.transform.SetParent(visualRoot.transform, false);
             Animator animator = visual.GetComponent<Animator>();
             if (animator == null) animator = visual.AddComponent<Animator>();
             animator.avatar = avatar;
             animator.applyRootMotion = false;
             animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
             OptimizeRenderers(visual, skinMaterial);
+            animator.Rebind();
+            animator.Play("Idle", 0, 0f);
+            animator.Update(0f);
+            MaleBaseV11GameplayIntegrationSetup.AlignVisualToGameplayIce(root, visualRoot.transform, animator);
+            // Alignment is sampled from the evaluated Idle pose, but generated prefabs must retain the
+            // clean FBX bind transforms rather than serializing an Animator-evaluated bone pose.
+            animator.Rebind();
 
             RigBuilder rigBuilder = visual.AddComponent<RigBuilder>();
-            GameObject presentationRoot = NewChild("StickPresentationRoot", visual.transform);
+            // Keep gameplay presentation helpers outside the animated FBX root. Humanoid evaluation can
+            // apply a body-position offset to that root even when root motion is disabled, which would
+            // otherwise pull the blade reference away from StickPuckInteraction's control point.
+            GameObject presentationRoot = NewChild("StickPresentationRoot", visualRoot.transform);
             GameObject targetsRoot = NewChild("StickRigTargets", presentationRoot.transform);
-            Transform leftTarget = NewTarget("LeftHandTarget", targetsRoot.transform, new Vector3(0.05f, 0.66f, 0.36f));
-            Transform rightTarget = NewTarget("RightHandTarget", targetsRoot.transform, new Vector3(0.24f, 0.95f, 0.1f));
-            Transform leftHint = NewTarget("LeftElbowHint", targetsRoot.transform, new Vector3(-0.45f, 0.95f, 0.2f));
-            Transform rightHint = NewTarget("RightElbowHint", targetsRoot.transform, new Vector3(0.52f, 1.05f, 0f));
-            Transform shaftEndReference = NewTarget("ShaftEndReference", targetsRoot.transform, new Vector3(-0.153f, 0.35f, 0.638f));
+            Transform leftTarget = NewTarget("LeftHandTarget", targetsRoot.transform, new Vector3(0.05f, 0.36f, 0.36f));
+            Transform rightTarget = NewTarget("RightHandTarget", targetsRoot.transform, new Vector3(0.24f, 0.65f, 0.1f));
+            Transform leftHint = NewTarget("LeftElbowHint", targetsRoot.transform, new Vector3(-0.45f, 0.65f, 0.2f));
+            Transform rightHint = NewTarget("RightElbowHint", targetsRoot.transform, new Vector3(0.52f, 0.75f, 0f));
+            Transform shaftEndReference = NewTarget("ShaftEndReference", targetsRoot.transform, new Vector3(-0.153f, 0.05f, 0.638f));
             Transform bladeReference = NewTarget("BladeReference", targetsRoot.transform, new Vector3(0f, 0.412f, 1.69f));
 
             GameObject rigObject = NewChild("HockeyStickRigConstraints", visual.transform);
@@ -375,6 +382,12 @@ namespace IceClash.Tests.Editor
             Transform rightHand = animator.GetBoneTransform(HumanBodyBones.RightHand) ?? visual.transform;
             Transform leftFoot = animator.GetBoneTransform(HumanBodyBones.LeftFoot) ?? visual.transform;
             Transform rightFoot = animator.GetBoneTransform(HumanBodyBones.RightFoot) ?? visual.transform;
+            Vector3 leftSkatePosition = visualRoot.transform.InverseTransformPoint(leftFoot.position);
+            Vector3 rightSkatePosition = visualRoot.transform.InverseTransformPoint(rightFoot.position);
+            float skateCenterY = (GameplayIceY - GameplaySpawnY) / GameplaySkaterScale
+                - visualRoot.transform.localPosition.y + 0.035f;
+            leftSkatePosition.y = skateCenterY;
+            rightSkatePosition.y = skateCenterY;
             HockeyEquipmentBinding[] bindings = new HockeyEquipmentBinding[ExpectedEquipmentSlotCount];
             bindings[0] = CreateBinding(HockeyEquipmentSlot.Helmet, head, "HelmetSlot",
                 BuildSinglePrimitive("Helmet", PrimitiveType.Sphere, equipmentMaterial, new Vector3(0f, 0.1f, 0f), new Vector3(0.25f, 0.19f, 0.28f)));
@@ -382,25 +395,37 @@ namespace IceClash.Tests.Editor
                 BuildShoulderPads(equipmentMaterial));
             bindings[2] = CreateBinding(HockeyEquipmentSlot.Jersey, chest, "JerseySlot",
                 BuildSinglePrimitive("Jersey", PrimitiveType.Cube, jerseyMaterial, Vector3.zero, new Vector3(0.42f, 0.34f, 0.2f)));
-            bindings[3] = CreateBinding(HockeyEquipmentSlot.Gloves, visual.transform, "GlovesSlot",
+            bindings[3] = CreateBinding(HockeyEquipmentSlot.Gloves, visualRoot.transform, "GlovesSlot",
                 BuildFollowedPair("Gloves", PrimitiveType.Sphere, equipmentMaterial, leftTarget.localPosition,
                     rightTarget.localPosition, new Vector3(0.13f, 0.11f, 0.14f)));
             bindings[4] = CreateBinding(HockeyEquipmentSlot.Pants, hips, "PantsSlot",
                 BuildSinglePrimitive("Pants", PrimitiveType.Cube, equipmentMaterial, Vector3.zero, new Vector3(0.38f, 0.25f, 0.22f)));
-            bindings[5] = CreateBinding(HockeyEquipmentSlot.Socks, visual.transform, "SocksSlot",
+            bindings[5] = CreateBinding(HockeyEquipmentSlot.Socks, visualRoot.transform, "SocksSlot",
                 BuildFollowedPair("Socks", PrimitiveType.Cube, jerseyMaterial, new Vector3(-0.13f, 0.35f, 0.01f),
                     new Vector3(0.13f, 0.35f, 0.01f), new Vector3(0.13f, 0.28f, 0.13f)));
-            bindings[6] = CreateBinding(HockeyEquipmentSlot.Skates, visual.transform, "SkatesSlot",
-                BuildFollowedPair("Skates", PrimitiveType.Cube, equipmentMaterial, new Vector3(-0.13f, 0.08f, 0.03f),
-                    new Vector3(0.13f, 0.08f, 0.03f), new Vector3(0.11f, 0.07f, 0.27f)));
+            bindings[6] = CreateBinding(HockeyEquipmentSlot.Skates, visualRoot.transform, "SkatesSlot",
+                BuildFollowedPair("Skates", PrimitiveType.Cube, equipmentMaterial, leftSkatePosition,
+                    rightSkatePosition, new Vector3(0.11f, 0.07f, 0.27f)));
             bindings[7] = CreateBinding(HockeyEquipmentSlot.Stick, presentationRoot.transform, "StickSlot",
                 BuildStick(stickMaterial, rightTarget.localPosition, shaftEndReference.localPosition,
                     bladeReference.localPosition));
+            AlignStickPresentationToGameplayControl(root.transform, presentationRoot.transform, bladeReference);
             HockeyEquipmentLoadout loadout = root.AddComponent<HockeyEquipmentLoadout>();
             loadout.Configure(bindings, stickRig, leftHand, rightHand, leftFoot, rightFoot);
             HockeyCharacterPresentation presentation = root.AddComponent<HockeyCharacterPresentation>();
             presentation.Configure(animator, loadout);
             return root;
+        }
+
+        private static void AlignStickPresentationToGameplayControl(Transform gameplayRoot,
+            Transform presentationRoot, Transform bladeReference)
+        {
+            // StickPuckInteraction's world-space forward offset is intentionally not scaled with the actor.
+            // Pre-compensate the presentation child for the existing uniform runtime skater scale.
+            Vector3 gameplayControlPoint = gameplayRoot.TransformPoint(
+                (Vector3.forward * GameplayControlForwardOffset + Vector3.up * GameplayControlVerticalOffset)
+                / GameplaySkaterScale);
+            presentationRoot.position += gameplayControlPoint - bladeReference.position;
         }
 
         private static TwoBoneIKConstraint CreateArmConstraint(string name, Transform parent, Animator animator,

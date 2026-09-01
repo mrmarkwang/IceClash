@@ -1,7 +1,7 @@
 /*
- * IceClash modular character scene validation harness.
- * Exercises ten humanoids, all eight active gear pieces, paired replacements,
- * uniform tinting, two-hand stick IK, and the existing puck system.
+ * IceClash modular clean-character scene validation harness.
+ * Exercises ten Humanoids, Idle/temporary Running playback, all existing gear
+ * and two-hand IK contracts, paired replacements, and the existing puck system.
  */
 
 using System;
@@ -71,30 +71,17 @@ namespace IceClash.Hockey.Character
             players[0].SetPreviewState(HockeyPresentationState.Idle);
             yield return new WaitForSeconds(0.12f);
             Transform leftUpperLeg = players[0].Animator.GetBoneTransform(HumanBodyBones.LeftUpperLeg);
-            Transform spine = players[0].Animator.GetBoneTransform(HumanBodyBones.Spine);
-            Transform chest = players[0].Animator.GetBoneTransform(HumanBodyBones.Chest);
-            if (leftUpperLeg == null || spine == null || chest == null) throw Fail("Humanoid motion test bones are missing.");
+            if (leftUpperLeg == null) throw Fail("Humanoid motion test leg is missing.");
             Quaternion idleLegRotation = leftUpperLeg.localRotation;
-            players[0].SetPreviewState(HockeyPresentationState.Skating);
+            players[0].SetPreviewState(HockeyPresentationState.Running);
             yield return new WaitForSeconds(0.2f);
-            if (players[0].CurrentPresentationState != HockeyPresentationState.Skating)
-                throw Fail("Skating preview state did not apply.");
-            if (!AnimatorIsInOrTransitioningTo(players[0].Animator, "Skate"))
-                throw Fail("Animator did not enter the placeholder Skate state.");
+            if (players[0].CurrentPresentationState != HockeyPresentationState.Running)
+                throw Fail("Running preview state did not apply.");
+            if (!AnimatorIsInOrTransitioningTo(players[0].Animator, "Running"))
+                throw Fail("Animator did not enter the temporary Running state.");
             if (Quaternion.Angle(idleLegRotation, leftUpperLeg.localRotation) < 2f)
-                throw Fail("Placeholder Skate state did not visibly move a Humanoid leg bone.");
+                throw Fail("Temporary Running state did not visibly move a Humanoid leg bone.");
             ValidatePairedEquipment(players[0]);
-            Quaternion preShotSpineRotation = spine.localRotation;
-            Quaternion preShotChestRotation = chest.localRotation;
-            players[0].SetPreviewState(HockeyPresentationState.Shooting);
-            yield return new WaitForSeconds(0.12f);
-            if (players[0].CurrentPresentationState != HockeyPresentationState.Shooting)
-                throw Fail("Shooting preview state did not apply.");
-            if (!AnimatorIsInOrTransitioningTo(players[0].Animator, "Shoot"))
-                throw Fail("Animator did not enter the placeholder Shoot state.");
-            if (Mathf.Max(Quaternion.Angle(preShotSpineRotation, spine.localRotation),
-                    Quaternion.Angle(preShotChestRotation, chest.localRotation)) < 2f)
-                throw Fail("Placeholder Shoot state did not visibly move a Humanoid torso bone.");
 
             ValidateEquipmentIndependence(players[0].Equipment);
 

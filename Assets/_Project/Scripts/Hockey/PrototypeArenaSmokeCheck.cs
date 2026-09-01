@@ -21,13 +21,15 @@
  * constrained builds, physical mappings, fatigue, dekes, actions, contests,
  * snapshots, and AI-difficulty separation. Offside checks cover mirrored warning
  * grids, tag-up/turnover clearing, swept zone entry, and neutral-dot restarts.
- * Modular-character checks cover ten bound humanoid skaters, two safe idle goalie
- * presentations, complete equipment, two-hand IK, and visual blade alignment.
+ * Modular-character checks cover ten bound clean humanoid skaters, two safe idle
+ * goalie presentations, gameplay-root authority, real keyboard/joystick routing,
+ * Idle/temporary Running animation, foot alignment, equipment, IK, and blade alignment.
  * Rounded-corner containment measures tangential recovery against the local radial
  * board normal instead of an inaccurate fixed diagonal.
  */
 
 using System.Collections.Generic;
+using System.Linq;
 using IceClash.AI;
 using IceClash.CameraSystem;
 using IceClash.Core;
@@ -115,6 +117,11 @@ namespace IceClash.Hockey
                 && PlayerInputController.SelectMoveInput(Vector2.right * 0.2f, Vector2.up * 0.8f) == Vector2.up * 0.8f;
             bool pointerOwnership = VerifyIndependentPointers(virtualJoystick, dekeButton);
             bool hardwareActionContract = VerifyHardwareActionContract();
+            bool cleanWASDInput = false;
+            bool cleanJoystickInput = false;
+            bool cleanCameraCollider = false;
+            bool cleanAnimation = false;
+            bool cleanFootAlignment = false;
 
             bool roster = players.Length == 10 && skaterAi.Length == 10 && goalies.Length == 2
                 && CountTeam(players, TeamId.Blue) == 5 && CountTeam(players, TeamId.Red) == 5 && humanRouted == 1;
@@ -153,6 +160,9 @@ namespace IceClash.Hockey
             HockeyCameraController hockeyCamera = Object.FindAnyObjectByType<HockeyCameraController>();
             PlayerController passer = FindPlayer(players, "blue-1");
             PlayerController receiver = FindPlayer(players, "blue-2");
+            VerifyCleanPlayerInputRoutes(setup, virtualJoystick, out cleanWASDInput, out cleanJoystickInput);
+            VerifyCleanPlayerPresentation(setup.SwitchController.ControlledPlayer, hockeyCamera,
+                out cleanCameraCollider, out cleanAnimation, out cleanFootAlignment);
             PlayerController expectedDefender = FindPlayer(players, "blue-3");
             PlayerController opponentCarrier = FindPlayer(players, "red-1");
             Vector3 cameraBeforeAutoSwitch = hockeyCamera.transform.position;
@@ -437,6 +447,10 @@ namespace IceClash.Hockey
             bool resultFlow = setup.MatchController.State == MatchStateSnapshot.Finished
                 && setup.MatchController.RemainingSeconds == 0f && setup.MatchController.ResultText == "HUMAN TEAM WINS";
 
+            if (!cleanWASDInput || !cleanJoystickInput || !cleanCameraCollider || !cleanAnimation || !cleanFootAlignment)
+                throw new System.InvalidOperationException(
+                    $"CLEAN_PLAYER_SMOKE_FAIL wasd={cleanWASDInput} joystick={cleanJoystickInput} cameraCollider={cleanCameraCollider} animation={cleanAnimation} footAlignment={cleanFootAlignment}");
+
             if (!roster || !roleDistribution || !faceoffFormation || !spacedRoleTargets || !rolePersistence
                 || !smallerSkaters || !broaderGoalies || !modular || !modularCharacter || !presentation || !arenaPresentation || !puckIndependent || !snapshots
                 || !humanPossessionAutoControl || !loosePuckAutoControl || !opponentPossessionAutoDefense
@@ -464,13 +478,18 @@ namespace IceClash.Hockey
                 HockeyStickRig rig = players[i].GetComponent<HockeyStickRig>();
                 Transform visualBlade = loadout != null
                     ? loadout.FindEquippedChild(HockeyEquipmentSlot.Stick, "Stick Blade") : null;
-                if (presentation == null || !presentation.IsBound || presentation.BoundPlayer != players[i]
-                    || presentation.Animator == null || presentation.Animator.avatar == null
-                    || !presentation.Animator.avatar.isHuman || !presentation.Animator.avatar.isValid
-                    || presentation.Animator.applyRootMotion || loadout == null || !loadout.IsComplete()
-                    || rig == null || !rig.HasValidReferences
-                    || rig.LeftHandConstraint.weight < 0.99f || rig.RightHandConstraint.weight < 0.99f
-                    || visualBlade == null || Vector3.Distance(visualBlade.position, players[i].ControlPoint) > 0.25f) return false;
+                bool valid = presentation != null && presentation.IsBound && presentation.BoundPlayer == players[i]
+                    && presentation.Animator != null && presentation.Animator.avatar != null
+                    && presentation.Animator.avatar.isHuman && presentation.Animator.avatar.isValid
+                    && !presentation.Animator.applyRootMotion && loadout != null && loadout.IsComplete()
+                    && rig != null && rig.HasValidReferences
+                    && rig.LeftHandConstraint.weight >= 0.99f && rig.RightHandConstraint.weight >= 0.99f
+                    && visualBlade != null && Vector3.Distance(visualBlade.position, players[i].ControlPoint) <= 0.25f;
+                if (!valid)
+                {
+                    Debug.LogWarning($"MODULAR_CHARACTER_PLAYER_FAIL player={players[i].PlayerId} bound={presentation?.IsBound} animator={presentation?.Animator != null} avatarHuman={presentation?.Animator?.avatar?.isHuman} avatarValid={presentation?.Animator?.avatar?.isValid} rootMotion={presentation?.Animator?.applyRootMotion} loadout={loadout?.IsComplete()} rig={rig?.HasValidReferences} leftWeight={rig?.LeftHandConstraint?.weight} rightWeight={rig?.RightHandConstraint?.weight} bladeDistance={(visualBlade != null ? Vector3.Distance(visualBlade.position, players[i].ControlPoint) : -1f):F4} blade={visualBlade?.position} control={players[i].ControlPoint}");
+                    return false;
+                }
             }
             for (int i = 0; i < goalies.Length; i++)
             {
@@ -1576,6 +1595,257 @@ namespace IceClash.Hockey
                 ? Vector3.ProjectOnPlane(view.transform.right, Vector3.up).normalized
                 : Vector3.right;
             return Vector3.ClampMagnitude(forward * input.y + right * input.x, 1f);
+        }
+
+        private static void VerifyCleanPlayerInputRoutes(LocalMatchSetup setup, VirtualJoystick joystick,
+            out bool wasdPassed, out bool joystickPassed)
+        {
+            wasdPassed = false;
+            joystickPassed = false;
+            PlayerController player = setup?.SwitchController?.ControlledPlayer;
+            PlayerInputController sharedInput = setup?.HumanInput;
+            LocalPlayerInput hardware = Object.FindAnyObjectByType<LocalPlayerInput>();
+            if (player == null || sharedInput == null || hardware == null || joystick == null
+                || EventSystem.current == null) return;
+
+            Vector3 originalPosition = player.transform.position;
+            Quaternion originalRotation = player.transform.rotation;
+            Keyboard keyboard = Keyboard.current;
+            bool addedKeyboard = keyboard == null;
+            if (addedKeyboard) keyboard = InputSystem.AddDevice<Keyboard>();
+            try
+            {
+                player.Movement.ResetMotion(originalPosition, originalRotation);
+                InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.W));
+                InputSystem.Update();
+                Vector2 hardwareMove = hardware.Move;
+                Vector2 sharedHardwareMove = sharedInput.Move;
+                player.TickInputForValidation(sharedInput, 0.1f);
+                Vector2 routedHardwareMove = player.MoveInput;
+                player.Movement.StepPlanarForValidation(routedHardwareMove, 0.1f);
+                float acceleratedSpeed = player.Movement.Velocity.magnitude;
+                InputSystem.QueueStateEvent(keyboard, new KeyboardState());
+                InputSystem.Update();
+                player.TickInputForValidation(sharedInput, 0.1f);
+                player.Movement.StepPlanarForValidation(player.MoveInput, 0.1f);
+                float releasedSpeed = player.Movement.Velocity.magnitude;
+                wasdPassed = hardwareMove.y > 0.99f && sharedHardwareMove.y > 0.99f
+                    && routedHardwareMove.y > 0.99f && acceleratedSpeed > 0.1f
+                    && releasedSpeed < acceleratedSpeed;
+                if (wasdPassed) Debug.Log(
+                    "CLEAN_PLAYER_INPUT_WASD_PASS source=Keyboard pipeline=LocalPlayerInput>PlayerInputController>PlayerController>PlayerMovementController");
+
+                player.Movement.ResetMotion(originalPosition, originalRotation);
+                RectTransform background = joystick.transform.Find("JoystickBackground") as RectTransform;
+                if (background == null) return;
+                PointerEventData pointer = new(EventSystem.current)
+                {
+                    pointerId = 141,
+                    button = PointerEventData.InputButton.Left,
+                    position = RectTransformUtility.WorldToScreenPoint(null, background.position)
+                };
+                ExecuteEvents.Execute(joystick.gameObject, pointer, ExecuteEvents.pointerDownHandler);
+                pointer.position += Vector2.right * joystick.Radius * 0.8f;
+                ExecuteEvents.Execute(joystick.gameObject, pointer, ExecuteEvents.dragHandler);
+                Vector2 joystickDirection = joystick.Direction;
+                Vector2 sharedJoystickMove = sharedInput.Move;
+                player.TickInputForValidation(sharedInput, 0.1f);
+                Vector2 routedJoystickMove = player.MoveInput;
+                player.Movement.StepPlanarForValidation(routedJoystickMove, 0.1f);
+                float joystickSpeed = player.Movement.Velocity.magnitude;
+                ExecuteEvents.Execute(joystick.gameObject, pointer, ExecuteEvents.pointerUpHandler);
+                player.TickInputForValidation(sharedInput, 0.1f);
+                player.Movement.StepPlanarForValidation(player.MoveInput, 0.1f);
+                float joystickReleasedSpeed = player.Movement.Velocity.magnitude;
+                joystickPassed = joystickDirection.x > 0.5f && sharedJoystickMove.x > 0.5f
+                    && routedJoystickMove.x > 0.5f && joystickSpeed > 0.1f
+                    && joystick.Direction == Vector2.zero && joystickReleasedSpeed < joystickSpeed;
+                if (joystickPassed) Debug.Log(
+                    "CLEAN_PLAYER_INPUT_JOYSTICK_PASS source=PointerEvent pipeline=VirtualJoystick>PlayerInputController>PlayerController>PlayerMovementController");
+            }
+            finally
+            {
+                if (keyboard != null)
+                {
+                    InputSystem.QueueStateEvent(keyboard, new KeyboardState());
+                    InputSystem.Update();
+                    if (addedKeyboard) InputSystem.RemoveDevice(keyboard);
+                }
+                player.Movement.ResetMotion(originalPosition, originalRotation);
+            }
+        }
+
+        private static void VerifyCleanPlayerPresentation(PlayerController player, HockeyCameraController camera,
+            out bool cameraColliderPassed, out bool animationPassed, out bool footAlignmentPassed)
+        {
+            cameraColliderPassed = false;
+            animationPassed = false;
+            footAlignmentPassed = false;
+            if (player == null || camera == null) return;
+            CharacterController collider = player.GetComponent<CharacterController>();
+            Transform visual = player.transform.Find("Visual");
+            Transform clean = visual != null ? visual.Find("Male_Base_v1_1_Clean_Visual") : null;
+            HockeyCharacterPresentation presentation = player.GetComponent<HockeyCharacterPresentation>();
+            Animator animator = clean != null ? clean.GetComponentInChildren<Animator>(true) : null;
+            bool visualPhysics = visual != null && (visual.GetComponentsInChildren<Collider>(true).Length > 0
+                || visual.GetComponentsInChildren<Rigidbody>(true).Length > 0);
+            cameraColliderPassed = camera.Target == player.transform && collider != null && collider.enabled
+                && collider.center == Vector3.zero && Mathf.Approximately(collider.height, 2f)
+                && Mathf.Approximately(collider.radius, 0.45f) && !visualPhysics;
+            if (cameraColliderPassed)
+                Debug.Log("CLEAN_PLAYER_CAMERA_COLLIDER_PASS target=GameplayRoot rootMotion=false");
+
+            if (presentation != null && animator != null && animator.runtimeAnimatorController != null)
+            {
+                Vector3 position = player.transform.position;
+                Quaternion rotation = player.transform.rotation;
+                bool parameterContract = VerifyCleanAnimatorParameterContract(player, presentation, animator);
+                presentation.SetPreviewState(HockeyPresentationState.Running);
+                animator.Update(0.02f);
+                animator.Update(0.2f);
+                AnimatorStateInfo current = animator.GetCurrentAnimatorStateInfo(0);
+                AnimatorStateInfo next = animator.GetNextAnimatorStateInfo(0);
+                string[] required = { "Speed", "ForwardAmount", "TurnAmount", "IsMoving", "IsBackward",
+                    "IsBraking", "IsSprinting", "CrossoverDirection" };
+                animationPassed = parameterContract && !animator.applyRootMotion
+                    && required.All(name => animator.parameters.Count(parameter => parameter.name == name) == 1)
+                    && presentation.CurrentPresentationState == HockeyPresentationState.Running
+                    && (current.IsName("Running") || next.IsName("Running"))
+                    && Vector3.Distance(player.transform.position, position) < 0.0001f
+                    && Quaternion.Angle(player.transform.rotation, rotation) < 0.01f;
+                presentation.Bind(player);
+                if (animationPassed) Debug.Log("CLEAN_PLAYER_ANIMATION_PASS states=Idle,Running");
+            }
+
+            if (presentation != null && animator != null)
+            {
+                presentation.SetPreviewState(HockeyPresentationState.Idle);
+                animator.Play("Idle", 0, 0f);
+                animator.Update(0.05f);
+            }
+            if (clean != null && animator != null
+                && TryMeasureVisibleFootContacts(clean, animator, out float leftContact, out float rightContact))
+            {
+                float leftDistance = Mathf.Abs(leftContact - 0.2f);
+                float rightDistance = Mathf.Abs(rightContact - 0.2f);
+                Debug.Log($"CLEAN_PLAYER_FOOT_ALIGNMENT_MEASURE left={leftDistance:F4} right={rightDistance:F4} leftY={leftContact:F4} rightY={rightContact:F4} rootY={player.transform.position.y:F4} visualLocalY={visual.localPosition.y:F4} iceY=0.200");
+                footAlignmentPassed = leftDistance <= 0.03f && rightDistance <= 0.03f;
+                if (footAlignmentPassed) Debug.Log(
+                    $"CLEAN_PLAYER_FOOT_ALIGNMENT_PASS left={leftDistance:F4} right={rightDistance:F4} iceY=0.200");
+            }
+            presentation?.ClearPreview();
+        }
+
+        private static bool VerifyCleanAnimatorParameterContract(PlayerController player,
+            HockeyCharacterPresentation presentation, Animator animator)
+        {
+            AttributeValidationInput input = new();
+            Vector3 originalVelocity = player.Movement.Velocity;
+            try
+            {
+                bool idle = ApplyCleanAnimatorCase(player, presentation, animator, input,
+                    Vector3.zero, Vector3.zero)
+                    && Nearly(animator.GetFloat("Speed"), 0f)
+                    && Nearly(animator.GetFloat("ForwardAmount"), 0f)
+                    && Nearly(animator.GetFloat("TurnAmount"), 0f)
+                    && !animator.GetBool("IsMoving") && !animator.GetBool("IsBackward")
+                    && !animator.GetBool("IsBraking") && !animator.GetBool("IsSprinting")
+                    && Nearly(animator.GetFloat("CrossoverDirection"), 0f);
+
+                Vector3 forward = player.transform.forward * 4f;
+                bool forwardCase = ApplyCleanAnimatorCase(player, presentation, animator, input,
+                    forward, player.transform.forward)
+                    && Nearly(animator.GetFloat("Speed"), 4f)
+                    && Nearly(animator.GetFloat("ForwardAmount"), 1f)
+                    && Nearly(animator.GetFloat("TurnAmount"), 0f)
+                    && animator.GetBool("IsMoving") && !animator.GetBool("IsBackward")
+                    && !animator.GetBool("IsBraking") && !animator.GetBool("IsSprinting");
+
+                Vector3 right = player.transform.right * 3f;
+                bool turn = ApplyCleanAnimatorCase(player, presentation, animator, input,
+                    right, player.transform.right)
+                    && Nearly(animator.GetFloat("ForwardAmount"), 0f)
+                    && Nearly(animator.GetFloat("TurnAmount"), 0.5f)
+                    && Nearly(animator.GetFloat("CrossoverDirection"), 0.5f)
+                    && !animator.GetBool("IsBackward") && !animator.GetBool("IsBraking");
+
+                Vector3 backward = -player.transform.forward * 2f;
+                bool backwardCase = ApplyCleanAnimatorCase(player, presentation, animator, input,
+                    backward, -player.transform.forward)
+                    && Nearly(animator.GetFloat("ForwardAmount"), -1f)
+                    && animator.GetBool("IsBackward") && !animator.GetBool("IsBraking");
+
+                bool braking = ApplyCleanAnimatorCase(player, presentation, animator, input,
+                    player.transform.forward * 3f, -player.transform.forward)
+                    && Nearly(animator.GetFloat("ForwardAmount"), 1f)
+                    && !animator.GetBool("IsBackward") && animator.GetBool("IsBraking");
+
+                bool passed = idle && forwardCase && turn && backwardCase && braking;
+                if (passed) Debug.Log("CLEAN_PLAYER_ANIMATOR_PARAMETERS_PASS cases=Idle,Forward,Turn,Backward,Braking");
+                return passed;
+            }
+            finally
+            {
+                input.Move = Vector2.zero;
+                player.TickInputForValidation(input, 0f);
+                player.Movement.SetPlanarVelocityForValidation(originalVelocity);
+                presentation.TickForValidation();
+            }
+        }
+
+        private static bool ApplyCleanAnimatorCase(PlayerController player,
+            HockeyCharacterPresentation presentation, Animator animator, AttributeValidationInput input,
+            Vector3 velocity, Vector3 desiredWorldDirection)
+        {
+            input.Move = CameraInputForWorldDirection(desiredWorldDirection);
+            player.TickInputForValidation(input, 0f);
+            player.Movement.SetPlanarVelocityForValidation(velocity);
+            presentation.TickForValidation();
+            return !animator.applyRootMotion;
+        }
+
+        private static Vector2 CameraInputForWorldDirection(Vector3 worldDirection)
+        {
+            if (worldDirection.sqrMagnitude <= 0.0001f) return Vector2.zero;
+            Camera view = Camera.main;
+            Vector3 forward = view != null
+                ? Vector3.ProjectOnPlane(view.transform.forward, Vector3.up).normalized : Vector3.forward;
+            Vector3 right = view != null
+                ? Vector3.ProjectOnPlane(view.transform.right, Vector3.up).normalized : Vector3.right;
+            Vector3 direction = Vector3.ProjectOnPlane(worldDirection, Vector3.up).normalized;
+            return Vector2.ClampMagnitude(new Vector2(
+                Vector3.Dot(direction, right), Vector3.Dot(direction, forward)), 1f);
+        }
+
+        private static bool TryMeasureVisibleFootContacts(Transform clean, Animator animator,
+            out float leftContact, out float rightContact)
+        {
+            leftContact = float.PositiveInfinity;
+            rightContact = float.PositiveInfinity;
+            Transform leftFoot = animator.GetBoneTransform(HumanBodyBones.LeftFoot);
+            Transform rightFoot = animator.GetBoneTransform(HumanBodyBones.RightFoot);
+            if (leftFoot == null || rightFoot == null) return false;
+            float ceiling = Mathf.Max(leftFoot.position.y, rightFoot.position.y) + 0.2f;
+            foreach (SkinnedMeshRenderer renderer in clean.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+            {
+                Mesh baked = new Mesh();
+                renderer.BakeMesh(baked);
+                Matrix4x4 bakedToWorld = Matrix4x4.TRS(
+                    renderer.transform.position, renderer.transform.rotation, Vector3.one);
+                foreach (Vector3 vertex in baked.vertices)
+                {
+                    Vector3 world = bakedToWorld.MultiplyPoint3x4(vertex);
+                    if (world.y > ceiling) continue;
+                    float leftDistance = Mathf.Abs(world.x - leftFoot.position.x)
+                        + Mathf.Abs(world.z - leftFoot.position.z) * 0.25f;
+                    float rightDistance = Mathf.Abs(world.x - rightFoot.position.x)
+                        + Mathf.Abs(world.z - rightFoot.position.z) * 0.25f;
+                    if (leftDistance <= rightDistance) leftContact = Mathf.Min(leftContact, world.y);
+                    else rightContact = Mathf.Min(rightContact, world.y);
+                }
+                UnityEngine.Object.Destroy(baked);
+            }
+            return float.IsFinite(leftContact) && float.IsFinite(rightContact);
         }
 
         private static bool VerifyHardwareActionContract()
