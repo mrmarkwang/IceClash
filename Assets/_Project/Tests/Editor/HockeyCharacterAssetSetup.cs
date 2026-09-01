@@ -2,9 +2,12 @@
  * IceClash modular clean-humanoid asset generator and validator.
  * Consumes the isolated Male_Base_v1_1_Clean production visual/controller,
  * applies the existing mobile presentation policy,
- * builds all eight hockey gear pieces, imports the licensed low-poly stick,
- * orients its real textured blade for the arena camera, and creates shared
- * presentation assets, prefabs, IK, and the ten-player scene without debug geometry.
+ * builds all eight hockey gear pieces, nests the validated production stick,
+ * aligns its explicit grip/contact markers in a professional two-hand hockey carry
+ * with the top hand beside the hip and naturally bent, outward-facing elbows,
+ * keeps the blade on the established gameplay control point, and creates shared
+ * presentation assets, prefabs, IK, the ten-player scene, and gameplay evidence
+ * without debug geometry.
  */
 
 #if UNITY_EDITOR
@@ -30,21 +33,31 @@ namespace IceClash.Tests.Editor
     {
         private const string ModelPath = MaleBaseV11GameplayIntegrationSetup.CleanModelPath;
         private const string CharacterDirectory = "Assets/_Project/Art/Characters/RealisticHumanMale";
-        private const string StickDirectory = "Assets/_Project/Art/HockeyGear/LowPolyStick";
-        private const string StickModelPath = StickDirectory + "/hockey_stick_002.fbx";
+        private const string StickDirectory = "Assets/Equipment/Sticks/Hockey_Stick_Base_v1";
+        private const string StickModelPath = StickDirectory + "/Meshy_Hockey_Stick_Base_v1.fbx";
+        private const string StickPrefabPath = StickDirectory + "/Hockey_Stick_Base_v1.prefab";
+        private const string StickMaterialPath = StickDirectory + "/Hockey_Stick_Base_v1.mat";
+        private const string LegacyStickModelPath = "Assets/_Project/Art/HockeyGear/LowPolyStick/hockey_stick_002.fbx";
+        private const string LegacyStickMaterialPath = "Assets/_Project/Art/HockeyPrototype/LowPolyHockeyStick.mat";
         private const string GeneratedDirectory = "Assets/_Project/Art/HockeyPrototype";
         private const string PrefabPath = "Assets/_Project/Prefabs/HockeyPlayer.prefab";
         private const string ResourcePrefabPath = "Assets/_Project/Prefabs/Resources/Skater.prefab";
         private const string ScenePath = "Assets/_Project/Scenes/ModularCharacterTest.unity";
         private const string ControllerPath = MaleBaseV11GameplayIntegrationSetup.ControllerPath;
         private const string AutoGenerationKey = "IceClash.ModularCharacterGenerationRunning";
+        private const string GameplayEvidencePath = ".docs/evidence/use-production-stick-in-gameplay/prototype-arena-production-stick.png";
         private const int ExpectedEquipmentSlotCount = 8;
-        private const float StickTransverseScale = 2.6f;
         private const float GameplayControlForwardOffset = 1.15f;
         private const float GameplayControlVerticalOffset = 0.28f;
         private const float GameplaySkaterScale = 0.68f;
         private const float GameplayIceY = 0.2f;
         private const float GameplaySpawnY = 1f;
+        private const float ProductionShaftExtension = 3.05f;
+        private static readonly Vector3 PrimaryGripPose = new(0.58f, 1.16f, 0.02f);
+        private static readonly Vector3 SecondaryGripPoseHint = new(0.30f, 1.10f, 0.30f);
+        private static readonly Vector3 LeftElbowHintPose = new(-0.45f, 1.05f, 0.15f);
+        private static readonly Vector3 RightElbowHintPose = new(0.72f, 1.18f, -0.05f);
+        private static readonly Vector3 BladePose = new(0f, 0.25f, 1.55f);
 
         static HockeyCharacterAssetSetup()
         {
@@ -57,36 +70,59 @@ namespace IceClash.Tests.Editor
             EnsureFolder(GeneratedDirectory);
             MaleBaseV11GameplayIntegrationSetup.GenerateProductionAssets();
             ConfigureMobileTextures();
+            ConfigureStickAssets();
+            Material skinMaterial = CreateOrUpdateMaterial("CharacterMobile", new Color(0.72f, 0.52f, 0.4f));
+            Material equipmentMaterial = CreateOrUpdateMaterial("EquipmentDark", new Color(0.035f, 0.055f, 0.085f));
+            Material jerseyMaterial = CreateOrUpdateMaterial("JerseyNeutral", new Color(0.22f, 0.42f, 0.78f));
+            GameObject player = BuildPlayer(skinMaterial, equipmentMaterial, jerseyMaterial);
             try
             {
-                ConfigureStickAssets();
-                Material skinMaterial = CreateOrUpdateMaterial("CharacterMobile", new Color(0.72f, 0.52f, 0.4f));
-                Material equipmentMaterial = CreateOrUpdateMaterial("EquipmentDark", new Color(0.035f, 0.055f, 0.085f));
-                Material jerseyMaterial = CreateOrUpdateMaterial("JerseyNeutral", new Color(0.22f, 0.42f, 0.78f));
-                Material stickMaterial = CreateOrUpdateStickMaterial();
-                GameObject player = BuildPlayer(skinMaterial, equipmentMaterial, jerseyMaterial, stickMaterial);
-                try
-                {
-                    Animator animator = player.GetComponentInChildren<Animator>();
-                    animator.runtimeAnimatorController = AssetDatabase.LoadAssetAtPath<RuntimeAnimatorController>(ControllerPath);
-                    PrefabUtility.SaveAsPrefabAsset(player, PrefabPath);
-                }
-                finally
-                {
-                    UnityEngine.Object.DestroyImmediate(player);
-                }
-
-                CreateResourceVariant();
-                CreateTestScene();
-                AssetDatabase.SaveAssets();
+                Animator animator = player.GetComponentInChildren<Animator>();
+                animator.runtimeAnimatorController = AssetDatabase.LoadAssetAtPath<RuntimeAnimatorController>(ControllerPath);
+                PrefabUtility.SaveAsPrefabAsset(player, PrefabPath);
             }
             finally
             {
-                SetStickModelReadable(false);
+                UnityEngine.Object.DestroyImmediate(player);
             }
+
+            CreateResourceVariant();
+            CreateTestScene();
+            AssetDatabase.SaveAssets();
 
             AssetDatabase.Refresh();
             Debug.Log("MODULAR_CHARACTER_GENERATED");
+        }
+
+        [MenuItem("IceClash/Capture Production Stick Gameplay Evidence")]
+        public static void CaptureProductionStickGameplayEvidence()
+        {
+            if (!Application.isPlaying)
+                throw new InvalidOperationException("PrototypeArena must be in Play Mode to capture gameplay evidence.");
+            string projectRoot = Directory.GetParent(Application.dataPath).FullName;
+            string absolutePath = Path.Combine(projectRoot, GameplayEvidencePath);
+            Directory.CreateDirectory(Path.GetDirectoryName(absolutePath));
+            ScreenCapture.CaptureScreenshot(absolutePath, 1);
+            Debug.Log($"PRODUCTION_STICK_GAMEPLAY_EVIDENCE path={GameplayEvidencePath}");
+        }
+
+        [MenuItem("IceClash/Validate Production Stick Gameplay Evidence")]
+        public static void ValidateProductionStickGameplayEvidence()
+        {
+            string projectRoot = Directory.GetParent(Application.dataPath).FullName;
+            string evidencePath = Path.Combine(projectRoot, GameplayEvidencePath);
+            if (!File.Exists(evidencePath))
+                throw new FileNotFoundException("Production-stick gameplay evidence is missing.", evidencePath);
+            DateTime evidenceTime = File.GetLastWriteTimeUtc(evidencePath);
+            string[] renderInputs = { PrefabPath, ScenePath };
+            for (int i = 0; i < renderInputs.Length; i++)
+            {
+                string inputPath = Path.Combine(projectRoot, renderInputs[i]);
+                if (!File.Exists(inputPath) || File.GetLastWriteTimeUtc(inputPath) > evidenceTime)
+                    throw new InvalidOperationException(
+                        $"Gameplay evidence predates its render input: {renderInputs[i]}.");
+            }
+            Debug.Log($"PRODUCTION_STICK_GAMEPLAY_EVIDENCE_VALID path={GameplayEvidencePath}");
         }
 
         public static void GenerateAndValidateBatch()
@@ -99,7 +135,6 @@ namespace IceClash.Tests.Editor
                     GeneratedDirectory + "/CharacterMobile.mat",
                     GeneratedDirectory + "/EquipmentDark.mat",
                     GeneratedDirectory + "/JerseyNeutral.mat",
-                    GeneratedDirectory + "/LowPolyHockeyStick.mat",
                     GeneratedDirectory + "/Idle.anim",
                     GeneratedDirectory + "/Skate.anim",
                     GeneratedDirectory + "/Shoot.anim",
@@ -152,9 +187,6 @@ namespace IceClash.Tests.Editor
             if (stickRig.LeftHandConstraint.transform == stickRig.RightHandConstraint.transform
                 || stickRig.LeftHandTarget == stickRig.RightHandTarget)
                 throw new InvalidOperationException("Left and right hand IK constraints are not independent.");
-            if (DistanceToSegment(stickRig.LeftHandTarget.localPosition, stickRig.RightHandTarget.localPosition,
-                    stickRig.ShaftEndReference.localPosition) > 0.03f)
-                throw new InvalidOperationException("Left-hand IK target is not aligned to the replaceable stick shaft.");
             if (canonical.GetComponent<PlayerController>() != null)
                 throw new InvalidOperationException("Gameplay PlayerController must remain runtime-composed.");
 
@@ -171,41 +203,65 @@ namespace IceClash.Tests.Editor
             Transform debugBlade = loadout.FindEquippedChild(HockeyEquipmentSlot.Stick, "Stick Blade Visibility");
             if (shaftMarker == null || gripMarker == null || shaftMarker.GetComponent<Renderer>() != null || debugBlade != null)
                 throw new InvalidOperationException("Hockey stick must render only the imported mesh, not debug primitives.");
-            Transform importedStick = loadout.FindEquippedChild(HockeyEquipmentSlot.Stick, "Low Poly Hockey Stick");
-            Renderer[] stickRenderers = importedStick != null
-                ? importedStick.GetComponentsInChildren<Renderer>(true) : Array.Empty<Renderer>();
-            int stickTriangles = importedStick != null
-                ? importedStick.GetComponentsInChildren<MeshFilter>(true)
+            Transform importedStick = loadout.FindEquippedChild(HockeyEquipmentSlot.Stick, "Production Hockey Stick");
+            Transform productionRoot = importedStick != null ? importedStick.Find("Hockey_Stick_Base_v1") : null;
+            Transform primaryGrip = productionRoot != null ? productionRoot.Find("PrimaryGrip") : null;
+            Transform secondaryGrip = productionRoot != null ? productionRoot.Find("SecondaryGrip") : null;
+            Transform bladeContact = productionRoot != null ? productionRoot.Find("BladeContact") : null;
+            Renderer[] stickRenderers = productionRoot != null
+                ? productionRoot.GetComponentsInChildren<Renderer>(true) : Array.Empty<Renderer>();
+            int stickTriangles = productionRoot != null
+                ? productionRoot.GetComponentsInChildren<MeshFilter>(true)
                     .Where(filter => filter.sharedMesh != null)
                     .Sum(filter => CountMeshTriangles(filter.sharedMesh))
                 : 0;
-            if (importedStick == null || stickRenderers.Length == 0 || stickTriangles <= 0 || stickTriangles > 2000)
+            if (importedStick == null || productionRoot == null || primaryGrip == null || secondaryGrip == null
+                || bladeContact == null || stickRenderers.Length == 0 || stickTriangles != 4347)
                 throw new InvalidOperationException(
-                    $"Imported low-poly hockey stick is missing or outside its mobile mesh budget ({stickTriangles} triangles).");
+                    $"Validated production hockey stick is missing or has unexpected geometry ({stickTriangles} triangles).");
             Vector3 stickScale = importedStick.localScale;
             float minStickScale = Mathf.Min(stickScale.x, Mathf.Min(stickScale.y, stickScale.z));
             float maxStickScale = Mathf.Max(stickScale.x, Mathf.Max(stickScale.y, stickScale.z));
-            Material stickMaterial = AssetDatabase.LoadAssetAtPath<Material>(GeneratedDirectory + "/LowPolyHockeyStick.mat");
-            Transform importedMeshRoot = importedStick != null ? importedStick.Find("CC0 Stick Mesh") : null;
-            GameObject sourceStick = AssetDatabase.LoadAssetAtPath<GameObject>(StickModelPath);
+            Material stickMaterial = AssetDatabase.LoadAssetAtPath<Material>(StickMaterialPath);
+            GameObject sourceStick = AssetDatabase.LoadAssetAtPath<GameObject>(StickPrefabPath);
             ModelImporter stickImporter = AssetImporter.GetAtPath(StickModelPath) as ModelImporter;
-            if (minStickScale <= 0f || maxStickScale / minStickScale < StickTransverseScale - 0.01f
+            string[] prefabDependencies = AssetDatabase.GetDependencies(PrefabPath, true);
+            string[] resourceDependencies = AssetDatabase.GetDependencies(ResourcePrefabPath, true);
+            if (minStickScale <= 0f || maxStickScale / minStickScale > 1.001f
                 || stickRenderers.Any(renderer => renderer.allowOcclusionWhenDynamic
                     || renderer.sharedMaterial != stickMaterial || !HasSmallMeshCullingDisabled(renderer))
-                || stickMaterial == null || stickMaterial.shader.name != "Unlit/Color"
-                || AssetDatabase.GetDependencies(GeneratedDirectory + "/LowPolyHockeyStick.mat", false)
-                    .Any(path => path.EndsWith(".png", StringComparison.OrdinalIgnoreCase))
-                || importedMeshRoot == null || sourceStick == null || stickImporter == null || stickImporter.isReadable
-                || !Approximately(importedMeshRoot.localPosition, sourceStick.transform.localPosition)
-                || !Approximately(importedMeshRoot.localRotation, sourceStick.transform.localRotation)
-                || !Approximately(importedMeshRoot.localScale, sourceStick.transform.localScale))
-                throw new InvalidOperationException("Low-poly hockey stick is missing its arena legibility policy.");
+                || stickMaterial == null || stickMaterial.shader.name != "Standard"
+                || stickMaterial.GetTexture("_MainTex") == null || stickMaterial.GetTexture("_BumpMap") == null
+                || stickMaterial.GetTexture("_MetallicGlossMap") == null
+                || sourceStick == null || stickImporter == null || stickImporter.isReadable
+                || stickImporter.animationType != ModelImporterAnimationType.None || stickImporter.importAnimation
+                || !prefabDependencies.Contains(StickPrefabPath) || !resourceDependencies.Contains(StickPrefabPath)
+                || prefabDependencies.Contains(LegacyStickModelPath) || resourceDependencies.Contains(LegacyStickModelPath)
+                || prefabDependencies.Contains(LegacyStickMaterialPath) || resourceDependencies.Contains(LegacyStickMaterialPath))
+                throw new InvalidOperationException("Production hockey stick integration or arena renderer policy is invalid.");
             Bounds stickBounds = stickRenderers[0].bounds;
             for (int i = 1; i < stickRenderers.Length; i++) stickBounds.Encapsulate(stickRenderers[i].bounds);
             float fittedLength = Vector3.Distance(gripMarker.position, visualBlade.position);
             if (Vector3.Distance(stickBounds.ClosestPoint(gripMarker.position), gripMarker.position) > fittedLength * 0.15f
                 || Vector3.Distance(stickBounds.ClosestPoint(visualBlade.position), visualBlade.position) > fittedLength * 0.15f)
-                throw new InvalidOperationException("Low-poly hockey stick no longer reaches its grip and blade markers.");
+                throw new InvalidOperationException("Production hockey stick no longer reaches its grip and blade markers.");
+            if (Vector3.Distance(primaryGrip.position, stickRig.RightHandTarget.position) > 0.001f
+                || Vector3.Distance(secondaryGrip.position, stickRig.LeftHandTarget.position) > 0.001f
+                || Vector3.Distance(bladeContact.position, visualBlade.position) > 0.001f
+                || DistanceToSegment(stickRig.LeftHandTarget.position, primaryGrip.position, secondaryGrip.position) > 0.001f
+                || Vector3.Distance(stickBounds.ClosestPoint(stickRig.LeftHandTarget.position),
+                    stickRig.LeftHandTarget.position) > fittedLength * 0.05f)
+                throw new InvalidOperationException("Production stick grip markers are not aligned to the two-hand IK targets.");
+            Vector3 gripToBlade = visualBlade.position - gripMarker.position;
+            if (gripMarker.position.y - visualBlade.position.y < 0.8f
+                || Mathf.Abs(gripToBlade.x) < 0.55f || gripToBlade.z < 1f
+                || primaryGrip.position.y - secondaryGrip.position.y < 0.25f
+                || secondaryGrip.position.z - primaryGrip.position.z < 0.25f
+                || Vector3.Distance(primaryGrip.position, secondaryGrip.position) < 0.55f
+                || stickRig.RightHandTarget.localPosition.x < 0.45f
+                || stickRig.RightHandTarget.localPosition.y < 0.95f
+                || stickRig.RightHandTarget.localPosition.y > 1.25f)
+                throw new InvalidOperationException("Production stick no longer forms the required professional two-hand carry.");
 
             ValidateEditorEquipmentPersistence();
             ValidateTexturePolicy();
@@ -222,9 +278,12 @@ namespace IceClash.Tests.Editor
             ModelImporter importer = AssetImporter.GetAtPath(ModelPath) as ModelImporter;
             ModelImporter stickImporter = AssetImporter.GetAtPath(StickModelPath) as ModelImporter;
             HockeyEquipmentLoadout loadout = canonical != null ? canonical.GetComponent<HockeyEquipmentLoadout>() : null;
+            HockeyStickRig stickRig = canonical != null ? canonical.GetComponent<HockeyStickRig>() : null;
             if (loadout != null && loadout.IsComplete() && loadout.SlotCount == ExpectedEquipmentSlotCount
                 && HasActiveEquipment(loadout)
-                && loadout.FindEquippedChild(HockeyEquipmentSlot.Stick, "Low Poly Hockey Stick") != null
+                && loadout.FindEquippedChild(HockeyEquipmentSlot.Stick, "Production Hockey Stick") != null
+                && stickRig != null && stickRig.RightHandTarget != null
+                && Vector3.Distance(stickRig.RightHandTarget.localPosition, PrimaryGripPose) <= 0.001f
                 && importer != null && importer.animationType == ModelImporterAnimationType.Human
                 && stickImporter != null && !stickImporter.isReadable) return;
 
@@ -279,23 +338,17 @@ namespace IceClash.Tests.Editor
         private static void ConfigureStickAssets()
         {
             ModelImporter importer = AssetImporter.GetAtPath(StickModelPath) as ModelImporter;
-            if (importer == null) throw new FileNotFoundException("Licensed low-poly hockey stick FBX is missing.", StickModelPath);
+            if (importer == null) throw new FileNotFoundException("Production hockey stick FBX is missing.", StickModelPath);
             bool modelChanged = importer.animationType != ModelImporterAnimationType.None
-                || importer.importAnimation || !importer.isReadable || importer.addCollider;
+                || importer.importAnimation || importer.isReadable || importer.addCollider;
             importer.animationType = ModelImporterAnimationType.None;
             importer.importAnimation = false;
-            importer.isReadable = true;
+            importer.isReadable = false;
             importer.addCollider = false;
             if (modelChanged) importer.SaveAndReimport();
-
-        }
-
-        private static void SetStickModelReadable(bool readable)
-        {
-            ModelImporter importer = AssetImporter.GetAtPath(StickModelPath) as ModelImporter;
-            if (importer == null || importer.isReadable == readable) return;
-            importer.isReadable = readable;
-            importer.SaveAndReimport();
+            if (AssetDatabase.LoadAssetAtPath<GameObject>(StickPrefabPath) == null
+                || AssetDatabase.LoadAssetAtPath<Material>(StickMaterialPath) == null)
+                throw new FileNotFoundException("Validated production hockey stick prefab or material is missing.", StickDirectory);
         }
 
         private static int CountMeshTriangles(Mesh mesh)
@@ -317,8 +370,7 @@ namespace IceClash.Tests.Editor
             importer.SetPlatformTextureSettings(settings);
         }
 
-        private static GameObject BuildPlayer(Material skinMaterial, Material equipmentMaterial, Material jerseyMaterial,
-            Material stickMaterial)
+        private static GameObject BuildPlayer(Material skinMaterial, Material equipmentMaterial, Material jerseyMaterial)
         {
             GameObject modelAsset = AssetDatabase.LoadAssetAtPath<GameObject>(
                 MaleBaseV11GameplayIntegrationSetup.VisualPrefabPath);
@@ -356,12 +408,25 @@ namespace IceClash.Tests.Editor
             // otherwise pull the blade reference away from StickPuckInteraction's control point.
             GameObject presentationRoot = NewChild("StickPresentationRoot", visualRoot.transform);
             GameObject targetsRoot = NewChild("StickRigTargets", presentationRoot.transform);
-            Transform leftTarget = NewTarget("LeftHandTarget", targetsRoot.transform, new Vector3(0.05f, 0.36f, 0.36f));
-            Transform rightTarget = NewTarget("RightHandTarget", targetsRoot.transform, new Vector3(0.24f, 0.65f, 0.1f));
-            Transform leftHint = NewTarget("LeftElbowHint", targetsRoot.transform, new Vector3(-0.45f, 0.65f, 0.2f));
-            Transform rightHint = NewTarget("RightElbowHint", targetsRoot.transform, new Vector3(0.52f, 0.75f, 0f));
-            Transform shaftEndReference = NewTarget("ShaftEndReference", targetsRoot.transform, new Vector3(-0.153f, 0.05f, 0.638f));
-            Transform bladeReference = NewTarget("BladeReference", targetsRoot.transform, new Vector3(0f, 0.412f, 1.69f));
+            Transform leftTarget = NewTarget("LeftHandTarget", targetsRoot.transform, Vector3.zero);
+            Transform rightTarget = NewTarget("RightHandTarget", targetsRoot.transform, PrimaryGripPose);
+            Transform leftHint = NewTarget("LeftElbowHint", targetsRoot.transform, LeftElbowHintPose);
+            Transform rightHint = NewTarget("RightElbowHint", targetsRoot.transform, RightElbowHintPose);
+            Transform shaftEndReference = NewTarget("ShaftEndReference", targetsRoot.transform, Vector3.zero);
+            Transform bladeReference = NewTarget("BladeReference", targetsRoot.transform, BladePose);
+            GameObject productionStick = BuildStick(rightTarget.localPosition, bladeReference.localPosition);
+            Transform productionPrimaryGrip = productionStick.transform.Find(
+                "Production Hockey Stick/Hockey_Stick_Base_v1/PrimaryGrip");
+            Transform productionSecondaryGrip = productionStick.transform.Find(
+                "Production Hockey Stick/Hockey_Stick_Base_v1/SecondaryGrip");
+            if (productionPrimaryGrip == null || productionSecondaryGrip == null)
+                throw new InvalidOperationException("Production stick is missing its authored grip markers.");
+            // Keep the blade on the established gameplay control point and place the
+            // presentation-only hand targets on the authored grips.
+            leftTarget.localPosition = productionStick.transform.InverseTransformPoint(productionSecondaryGrip.position);
+            Vector3 primaryLocal = productionStick.transform.InverseTransformPoint(productionPrimaryGrip.position);
+            shaftEndReference.localPosition = primaryLocal
+                + (leftTarget.localPosition - primaryLocal) * ProductionShaftExtension;
 
             GameObject rigObject = NewChild("HockeyStickRigConstraints", visual.transform);
             Rig rig = rigObject.AddComponent<Rig>();
@@ -407,8 +472,7 @@ namespace IceClash.Tests.Editor
                 BuildFollowedPair("Skates", PrimitiveType.Cube, equipmentMaterial, leftSkatePosition,
                     rightSkatePosition, new Vector3(0.11f, 0.07f, 0.27f)));
             bindings[7] = CreateBinding(HockeyEquipmentSlot.Stick, presentationRoot.transform, "StickSlot",
-                BuildStick(stickMaterial, rightTarget.localPosition, shaftEndReference.localPosition,
-                    bladeReference.localPosition));
+                productionStick);
             AlignStickPresentationToGameplayControl(root.transform, presentationRoot.transform, bladeReference);
             HockeyEquipmentLoadout loadout = root.AddComponent<HockeyEquipmentLoadout>();
             loadout.Configure(bindings, stickRig, leftHand, rightHand, leftFoot, rightFoot);
@@ -502,39 +566,80 @@ namespace IceClash.Tests.Editor
             return item;
         }
 
-        private static GameObject BuildStick(Material material, Vector3 grip, Vector3 shaftEnd, Vector3 blade)
+        private static GameObject BuildStick(Vector3 grip, Vector3 blade)
         {
             GameObject item = new("Stick");
-            Vector3 middle = (grip + shaftEnd) * 0.5f;
-            Vector3 direction = shaftEnd - grip;
-            Transform shaftMarker = NewTarget("Stick Shaft", item.transform, middle);
-            shaftMarker.localScale = new Vector3(0.035f, direction.magnitude, 0.035f);
-            shaftMarker.localRotation = Quaternion.FromToRotation(Vector3.up, direction.normalized);
+            Transform shaftMarker = NewTarget("Stick Shaft", item.transform, Vector3.zero);
 
             NewTarget("Stick Grip", item.transform, grip);
             NewTarget("Stick Blade", item.transform, blade);
 
-            GameObject modelAsset = AssetDatabase.LoadAssetAtPath<GameObject>(StickModelPath);
-            if (modelAsset == null) throw new InvalidOperationException("Unable to load the low-poly hockey stick FBX.");
-            GameObject modelFit = NewChild("Low Poly Hockey Stick", item.transform);
-            GameObject model = UnityEngine.Object.Instantiate(modelAsset);
-            model.name = "CC0 Stick Mesh";
+            GameObject modelAsset = AssetDatabase.LoadAssetAtPath<GameObject>(StickPrefabPath);
+            if (modelAsset == null) throw new InvalidOperationException("Unable to load the production hockey stick prefab.");
+            GameObject modelFit = NewChild("Production Hockey Stick", item.transform);
+            GameObject model = PrefabUtility.InstantiatePrefab(modelAsset) as GameObject;
+            if (model == null) throw new InvalidOperationException("Unable to instantiate the production hockey stick prefab.");
+            model.name = "Hockey_Stick_Base_v1";
             model.transform.SetParent(modelFit.transform, false);
-            FitStickModel(modelFit, item.transform, grip, blade);
+            FitProductionStick(modelFit.transform, model.transform, grip, blade);
+            Transform primaryGrip = model.transform.Find("PrimaryGrip");
+            Transform secondaryGrip = model.transform.Find("SecondaryGrip");
+            if (primaryGrip == null || secondaryGrip == null)
+                throw new InvalidOperationException("Production stick is missing its authored grip markers.");
+            Vector3 primaryLocal = item.transform.InverseTransformPoint(primaryGrip.position);
+            Vector3 secondaryLocal = item.transform.InverseTransformPoint(secondaryGrip.position);
+            Vector3 shaftEnd = primaryLocal + (secondaryLocal - primaryLocal) * ProductionShaftExtension;
+            Vector3 direction = shaftEnd - primaryLocal;
+            shaftMarker.localPosition = (primaryLocal + shaftEnd) * 0.5f;
+            shaftMarker.localScale = new Vector3(0.035f, direction.magnitude, 0.035f);
+            shaftMarker.localRotation = Quaternion.FromToRotation(Vector3.up, direction.normalized);
             Renderer[] renderers = modelFit.GetComponentsInChildren<Renderer>(true);
-            if (renderers.Length == 0) throw new InvalidOperationException("Low-poly hockey stick FBX has no renderers.");
+            if (renderers.Length == 0) throw new InvalidOperationException("Production hockey stick prefab has no renderers.");
             Bounds renderedBounds = renderers[0].bounds;
             for (int i = 0; i < renderers.Length; i++)
             {
-                renderers[i].sharedMaterial = material;
                 ApplyArenaStickRendererPolicy(renderers[i]);
                 if (i > 0) renderedBounds.Encapsulate(renderers[i].bounds);
             }
             float expectedLength = Vector3.Distance(grip, blade);
             if (renderedBounds.size.magnitude < expectedLength * 0.75f
                 || renderedBounds.size.magnitude > expectedLength * 2f)
-                throw new InvalidOperationException($"Low-poly stick rendered bounds are invalid: {renderedBounds.size}.");
+                throw new InvalidOperationException($"Production stick rendered bounds are invalid: {renderedBounds.size}.");
             return item;
+        }
+
+        private static void FitProductionStick(Transform fittedRoot, Transform productionRoot,
+            Vector3 targetGrip, Vector3 targetBlade)
+        {
+            Transform primaryGrip = productionRoot.Find("PrimaryGrip");
+            Transform bladeContact = productionRoot.Find("BladeContact");
+            if (primaryGrip == null || bladeContact == null)
+                throw new InvalidOperationException("Production stick is missing PrimaryGrip or BladeContact.");
+
+            Vector3 sourceGrip = fittedRoot.InverseTransformPoint(primaryGrip.position);
+            Vector3 sourceBlade = fittedRoot.InverseTransformPoint(bladeContact.position);
+            Vector3 sourceDirection = sourceBlade - sourceGrip;
+            Vector3 targetDirection = targetBlade - targetGrip;
+            if (sourceDirection.sqrMagnitude < 0.000001f || targetDirection.sqrMagnitude < 0.000001f)
+                throw new InvalidOperationException("Production stick alignment endpoints are invalid.");
+
+            Transform secondaryGrip = productionRoot.Find("SecondaryGrip");
+            if (secondaryGrip == null)
+                throw new InvalidOperationException("Production stick is missing SecondaryGrip.");
+            Vector3 sourceSecondary = fittedRoot.InverseTransformPoint(secondaryGrip.position);
+            Vector3 sourceFace = Vector3.ProjectOnPlane(sourceSecondary - sourceGrip, sourceDirection).normalized;
+            Vector3 targetFace = Vector3.ProjectOnPlane(
+                SecondaryGripPoseHint - targetGrip, targetDirection).normalized;
+            if (sourceFace.sqrMagnitude < 0.000001f || targetFace.sqrMagnitude < 0.000001f)
+                throw new InvalidOperationException("Production stick secondary-grip orientation is invalid.");
+
+            float scale = targetDirection.magnitude / sourceDirection.magnitude;
+            Quaternion sourceBasis = Quaternion.LookRotation(sourceDirection.normalized, sourceFace);
+            Quaternion targetBasis = Quaternion.LookRotation(targetDirection.normalized, targetFace);
+            Quaternion rotation = targetBasis * Quaternion.Inverse(sourceBasis);
+            fittedRoot.localScale = Vector3.one * scale;
+            fittedRoot.localRotation = rotation;
+            fittedRoot.localPosition = targetGrip - rotation * (sourceGrip * scale);
         }
 
         private static void ApplyArenaStickRendererPolicy(Renderer renderer)
@@ -556,89 +661,6 @@ namespace IceClash.Tests.Editor
         {
             SerializedProperty property = new SerializedObject(renderer).FindProperty("m_SmallMeshCulling");
             return property != null && !property.boolValue;
-        }
-
-        private static bool Approximately(Vector3 left, Vector3 right) => (left - right).sqrMagnitude < 0.000001f;
-
-        private static bool Approximately(Quaternion left, Quaternion right) => Mathf.Abs(Quaternion.Dot(left, right)) > 0.99999f;
-
-        private static void FitStickModel(GameObject model, Transform item, Vector3 grip, Vector3 blade)
-        {
-            List<Vector3> points = new();
-            MeshFilter[] filters = model.GetComponentsInChildren<MeshFilter>(true);
-            for (int i = 0; i < filters.Length; i++)
-            {
-                Mesh mesh = filters[i].sharedMesh;
-                if (mesh == null) continue;
-                Vector3[] vertices = mesh.vertices;
-                for (int vertex = 0; vertex < vertices.Length; vertex++)
-                    points.Add(item.InverseTransformPoint(filters[i].transform.TransformPoint(vertices[vertex])));
-            }
-            if (points.Count == 0) throw new InvalidOperationException("Low-poly hockey stick FBX has no readable mesh vertices.");
-
-            Bounds bounds = new(points[0], Vector3.zero);
-            for (int i = 1; i < points.Count; i++) bounds.Encapsulate(points[i]);
-            int axisIndex = bounds.size.x >= bounds.size.y && bounds.size.x >= bounds.size.z ? 0
-                : bounds.size.y >= bounds.size.z ? 1 : 2;
-            Vector3 axis = AxisVector(axisIndex);
-            float min = points.Min(point => Vector3.Dot(point, axis));
-            float max = points.Max(point => Vector3.Dot(point, axis));
-            float slice = Mathf.Max((max - min) * 0.12f, 0.0001f);
-            List<Vector3> minPoints = points.Where(point => Vector3.Dot(point, axis) <= min + slice).ToList();
-            List<Vector3> maxPoints = points.Where(point => Vector3.Dot(point, axis) >= max - slice).ToList();
-            bool minIsBlade = EndpointSpread(minPoints, axis) >= EndpointSpread(maxPoints, axis);
-            Vector3 sourceBlade = Average(minIsBlade ? minPoints : maxPoints);
-            Vector3 sourceGrip = Average(minIsBlade ? maxPoints : minPoints);
-            Vector3 sourceDirection = sourceBlade - sourceGrip;
-            Vector3 targetDirection = blade - grip;
-            if (sourceDirection.sqrMagnitude < 0.000001f || targetDirection.sqrMagnitude < 0.000001f)
-                throw new InvalidOperationException("Low-poly hockey stick alignment endpoints are invalid.");
-
-            float scale = targetDirection.magnitude / sourceDirection.magnitude;
-            int normalAxisIndex = Enumerable.Range(0, 3)
-                .Where(index => index != axisIndex)
-                .OrderBy(index => AxisComponent(bounds.size, index))
-                .First();
-            Vector3 sourceUp = Vector3.ProjectOnPlane(AxisVector(normalAxisIndex), sourceDirection).normalized;
-            Vector3 targetUp = Vector3.ProjectOnPlane(Vector3.up, targetDirection).normalized;
-            if (sourceUp.sqrMagnitude < 0.000001f || targetUp.sqrMagnitude < 0.000001f)
-                throw new InvalidOperationException("Low-poly hockey stick broad-face orientation is invalid.");
-            Quaternion sourceBasis = Quaternion.LookRotation(sourceDirection.normalized, sourceUp);
-            Quaternion targetBasis = Quaternion.LookRotation(targetDirection.normalized, targetUp);
-            Quaternion rotation = targetBasis * Quaternion.Inverse(sourceBasis);
-            Vector3 visibleScale = Vector3.one * (scale * StickTransverseScale);
-            if (axisIndex == 0) visibleScale.x = scale;
-            else if (axisIndex == 1) visibleScale.y = scale;
-            else visibleScale.z = scale;
-            model.transform.localScale = visibleScale;
-            model.transform.localRotation = rotation;
-            model.transform.localPosition = grip - rotation * Vector3.Scale(sourceGrip, visibleScale);
-        }
-
-        private static Vector3 AxisVector(int axisIndex) => axisIndex == 0
-            ? Vector3.right : axisIndex == 1 ? Vector3.up : Vector3.forward;
-
-        private static float AxisComponent(Vector3 value, int axisIndex) => axisIndex == 0
-            ? value.x : axisIndex == 1 ? value.y : value.z;
-
-        private static float EndpointSpread(List<Vector3> points, Vector3 axis)
-        {
-            Vector3 center = Average(points);
-            float max = 0f;
-            for (int i = 0; i < points.Count; i++)
-            {
-                Vector3 offset = points[i] - center;
-                max = Mathf.Max(max, (offset - Vector3.Project(offset, axis)).magnitude);
-            }
-            return max;
-        }
-
-        private static Vector3 Average(List<Vector3> points)
-        {
-            if (points == null || points.Count == 0) return Vector3.zero;
-            Vector3 total = Vector3.zero;
-            for (int i = 0; i < points.Count; i++) total += points[i];
-            return total / points.Count;
         }
 
         private static GameObject CreatePrimitive(string name, PrimitiveType type, Material material, Transform parent)
@@ -904,29 +926,6 @@ namespace IceClash.Tests.Editor
             material.name = name;
             material.shader = shader;
             material.color = color;
-            EditorUtility.SetDirty(material);
-            return material;
-        }
-
-        private static Material CreateOrUpdateStickMaterial()
-        {
-            string path = GeneratedDirectory + "/LowPolyHockeyStick.mat";
-            Shader shader = Shader.Find("Unlit/Color") ?? throw new InvalidOperationException("Unlit/Color shader is missing.");
-            Material material = AssetDatabase.LoadAssetAtPath<Material>(path);
-            if (material == null)
-            {
-                material = new Material(shader);
-                AssetDatabase.CreateAsset(material, path);
-            }
-            else
-            {
-                Material cleanMaterial = new(shader);
-                EditorUtility.CopySerialized(cleanMaterial, material);
-                UnityEngine.Object.DestroyImmediate(cleanMaterial);
-            }
-            material.name = "LowPolyHockeyStick";
-            material.shader = shader;
-            material.color = new Color(0.82f, 0.29f, 0.055f, 1f);
             EditorUtility.SetDirty(material);
             return material;
         }
