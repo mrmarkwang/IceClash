@@ -1,8 +1,8 @@
 /*
  * IceClash modular hockey equipment registry.
- * Owns eight stable hockey-gear anchors and replaces one equipped child at a
- * time while preserving unrelated slots and rebinding the left-hand IK target
- * to the equipped stick's SecondaryGrip.
+ * Owns four independently replaceable wearables plus the gameplay stick.
+ * Preserves retained serialized slot IDs, paired glove/skate following, and
+ * left-hand IK rebinding to the equipped stick's SecondaryGrip.
  */
 
 using System;
@@ -13,15 +13,12 @@ namespace IceClash.Hockey.Character
 {
     public enum HockeyEquipmentSlot
     {
-        // Keep the original values stable because prefab bindings serialize this enum as integers.
+        // Retained values are stable because prefab bindings serialize this enum as integers.
         Helmet = 0,
-        Jersey = 1,
         Gloves = 2,
-        Pants = 3,
         Skates = 4,
         Stick = 5,
-        ShoulderPads = 6,
-        Socks = 7
+        Visor = 8
     }
 
     [Serializable]
@@ -57,10 +54,6 @@ namespace IceClash.Hockey.Character
         [SerializeField] private Vector3 rightSkatePositionOffset;
         [SerializeField] private Quaternion leftSkateRotationOffset = Quaternion.identity;
         [SerializeField] private Quaternion rightSkateRotationOffset = Quaternion.identity;
-        [SerializeField] private Vector3 leftSockPositionOffset;
-        [SerializeField] private Vector3 rightSockPositionOffset;
-        [SerializeField] private Quaternion leftSockRotationOffset = Quaternion.identity;
-        [SerializeField] private Quaternion rightSockRotationOffset = Quaternion.identity;
 
         public IReadOnlyList<HockeyEquipmentBinding> Slots => slots;
         public int SlotCount => slots != null ? slots.Length : 0;
@@ -77,7 +70,6 @@ namespace IceClash.Hockey.Character
             leftFoot = footA;
             rightFoot = footB;
             CaptureSkateContract();
-            CaptureSockContract();
             BindAllPairedEquipment();
             NotifyStickState();
         }
@@ -124,21 +116,6 @@ namespace IceClash.Hockey.Character
 
         public void Clear(HockeyEquipmentSlot slot) => Equip(slot, null);
 
-        public void SetJerseyMaterial(Material material)
-        {
-            if (material == null) return;
-            SetEquipmentMaterial(HockeyEquipmentSlot.Jersey, material);
-            SetEquipmentMaterial(HockeyEquipmentSlot.Socks, material);
-        }
-
-        private void SetEquipmentMaterial(HockeyEquipmentSlot slot, Material material)
-        {
-            GameObject equipment = GetEquipped(slot);
-            if (equipment == null) return;
-            Renderer[] renderers = equipment.GetComponentsInChildren<Renderer>(true);
-            for (int i = 0; i < renderers.Length; i++) renderers[i].sharedMaterial = material;
-        }
-
         public bool IsComplete()
         {
             if (slots == null || slots.Length != Enum.GetValues(typeof(HockeyEquipmentSlot)).Length) return false;
@@ -156,7 +133,6 @@ namespace IceClash.Hockey.Character
         private void BindAllPairedEquipment()
         {
             BindPairedEquipment(HockeyEquipmentSlot.Gloves, GetEquipped(HockeyEquipmentSlot.Gloves));
-            BindPairedEquipment(HockeyEquipmentSlot.Socks, GetEquipped(HockeyEquipmentSlot.Socks));
             BindPairedEquipment(HockeyEquipmentSlot.Skates, GetEquipped(HockeyEquipmentSlot.Skates));
         }
 
@@ -168,9 +144,6 @@ namespace IceClash.Hockey.Character
             if (slot == HockeyEquipmentSlot.Gloves)
                 follower.BindBones(leftHand, rightHand, Vector3.zero, Vector3.zero,
                     Quaternion.identity, Quaternion.identity);
-            else if (slot == HockeyEquipmentSlot.Socks)
-                follower.BindBones(leftFoot, rightFoot, leftSockPositionOffset, rightSockPositionOffset,
-                    leftSockRotationOffset, rightSockRotationOffset);
             else if (slot == HockeyEquipmentSlot.Skates)
                 follower.BindBones(leftFoot, rightFoot, leftSkatePositionOffset, rightSkatePositionOffset,
                     leftSkateRotationOffset, rightSkateRotationOffset, true, transform);
@@ -187,19 +160,6 @@ namespace IceClash.Hockey.Character
             rightSkatePositionOffset = rightFoot.InverseTransformPoint(follower.SecondVisual.position);
             leftSkateRotationOffset = Quaternion.Inverse(transform.rotation) * follower.FirstVisual.rotation;
             rightSkateRotationOffset = Quaternion.Inverse(transform.rotation) * follower.SecondVisual.rotation;
-        }
-
-        private void CaptureSockContract()
-        {
-            GameObject socks = GetEquipped(HockeyEquipmentSlot.Socks);
-            HockeyPairedEquipmentFollower follower = socks != null
-                ? socks.GetComponent<HockeyPairedEquipmentFollower>() : null;
-            if (follower == null || follower.FirstVisual == null || follower.SecondVisual == null
-                || leftFoot == null || rightFoot == null) return;
-            leftSockPositionOffset = leftFoot.InverseTransformPoint(follower.FirstVisual.position);
-            rightSockPositionOffset = rightFoot.InverseTransformPoint(follower.SecondVisual.position);
-            leftSockRotationOffset = Quaternion.Inverse(leftFoot.rotation) * follower.FirstVisual.rotation;
-            rightSockRotationOffset = Quaternion.Inverse(rightFoot.rotation) * follower.SecondVisual.rotation;
         }
 
         private HockeyEquipmentBinding Find(HockeyEquipmentSlot slot)

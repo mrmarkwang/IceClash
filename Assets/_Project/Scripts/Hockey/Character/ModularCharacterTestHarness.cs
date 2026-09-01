@@ -1,8 +1,8 @@
 /*
  * IceClash modular clean-character scene validation harness.
- * Exercises ten Humanoids, Idle/temporary Running playback, all existing gear
+ * Exercises ten Humanoids, Idle/temporary Running playback, supported wearables
  * and right-hand-authoritative two-hand IK contracts, including live
- * SecondaryGrip rebinding, outward elbow bend, and the existing puck system.
+ * SecondaryGrip rebinding, main-visual material tinting, and the puck system.
  */
 
 using System;
@@ -70,6 +70,9 @@ namespace IceClash.Hockey.Character
                 }
             }
 
+            ValidatePairedEquipment(players[0]);
+            ValidateEquipmentIndependence(players[1]);
+            Debug.Log("SUPPORTED_WEARABLE_RUNTIME_PASS slots=Helmet,Visor,Gloves,Skates stickBindingPreserved=true");
             ValidateTwoHandStickPose(players[0]);
             players[0].SetPreviewState(HockeyPresentationState.Idle);
             yield return new WaitForSeconds(0.12f);
@@ -84,10 +87,6 @@ namespace IceClash.Hockey.Character
                 throw Fail("Animator did not enter the temporary Running state.");
             if (Quaternion.Angle(idleLegRotation, leftUpperLeg.localRotation) < 2f)
                 throw Fail("Temporary Running state did not visibly move a Humanoid leg bone.");
-            ValidatePairedEquipment(players[0]);
-
-            ValidateEquipmentIndependence(players[0].Equipment);
-
             PlayerController controller = players[0].GetComponent<PlayerController>();
             if (controller == null) controller = players[0].gameObject.AddComponent<PlayerController>();
             controller.Configure("modular-test", TeamId.Blue, SkaterRole.Center, null, puck,
@@ -113,16 +112,17 @@ namespace IceClash.Hockey.Character
             Debug.Log("MODULAR_CHARACTER_SMOKE_PASS players=10");
         }
 
-        private static void ValidateEquipmentIndependence(HockeyEquipmentLoadout loadout)
+        private static void ValidateEquipmentIndependence(HockeyCharacterPresentation presentation)
         {
-            ValidateUniformMaterial(loadout);
+            ValidateCharacterMaterial(presentation);
+            HockeyEquipmentLoadout loadout = presentation.Equipment;
             HockeyStickRig rig = loadout.GetComponent<HockeyStickRig>();
             Transform stableLeftTarget = rig != null ? rig.LeftHandTarget : null;
             Transform stableRightTarget = rig != null ? rig.RightHandTarget : null;
-            GameObject jersey = loadout.GetEquipped(HockeyEquipmentSlot.Jersey);
-            loadout.Equip(HockeyEquipmentSlot.Helmet, jersey);
-            if (loadout.GetEquipped(HockeyEquipmentSlot.Jersey) != jersey
-                || loadout.GetEquipped(HockeyEquipmentSlot.Helmet) == jersey)
+            GameObject visor = loadout.GetEquipped(HockeyEquipmentSlot.Visor);
+            loadout.Equip(HockeyEquipmentSlot.Helmet, visor);
+            if (loadout.GetEquipped(HockeyEquipmentSlot.Visor) != visor
+                || loadout.GetEquipped(HockeyEquipmentSlot.Helmet) == visor)
                 throw new InvalidOperationException("Cross-slot equipment replacement stole the source slot item.");
             foreach (HockeyEquipmentSlot slot in Enum.GetValues(typeof(HockeyEquipmentSlot)))
             {
@@ -144,8 +144,7 @@ namespace IceClash.Hockey.Character
                     || rig.LeftHandTarget != stableLeftTarget || rig.EquippedSecondaryGrip != null
                     || rig.RightHandTarget != stableRightTarget))
                     throw new InvalidOperationException("Clearing Stick did not safely disable and unbind the two-hand IK rig.");
-                GameObject replacement = slot == HockeyEquipmentSlot.Gloves || slot == HockeyEquipmentSlot.Socks
-                    || slot == HockeyEquipmentSlot.Skates
+                GameObject replacement = slot == HockeyEquipmentSlot.Gloves || slot == HockeyEquipmentSlot.Skates
                     ? CreatePairedReplacement(slot)
                     : GameObject.CreatePrimitive(PrimitiveType.Cube);
                 replacement.name = $"Validation {slot}";
@@ -167,8 +166,7 @@ namespace IceClash.Hockey.Character
                     || !rig.EquippedSecondaryGrip.IsChildOf(loadout.GetEquipped(HockeyEquipmentSlot.Stick).transform)
                     || rig.RightHandTarget != stableRightTarget))
                     throw new InvalidOperationException("Replacing Stick did not rebind the SecondaryGrip IK target.");
-                if (slot == HockeyEquipmentSlot.Gloves || slot == HockeyEquipmentSlot.Socks
-                    || slot == HockeyEquipmentSlot.Skates)
+                if (slot == HockeyEquipmentSlot.Gloves || slot == HockeyEquipmentSlot.Skates)
                 {
                     HockeyPairedEquipmentFollower replacementFollower = loadout.GetEquipped(slot)
                         .GetComponent<HockeyPairedEquipmentFollower>();
@@ -181,32 +179,29 @@ namespace IceClash.Hockey.Character
             }
         }
 
-        private static void ValidateUniformMaterial(HockeyEquipmentLoadout loadout)
+        private static void ValidateCharacterMaterial(HockeyCharacterPresentation presentation)
         {
-            Renderer jerseyRenderer = loadout.GetEquipped(HockeyEquipmentSlot.Jersey)
-                ?.GetComponentInChildren<Renderer>(true);
-            Renderer sockRenderer = loadout.GetEquipped(HockeyEquipmentSlot.Socks)
-                ?.GetComponentInChildren<Renderer>(true);
-            Material original = jerseyRenderer != null ? jerseyRenderer.sharedMaterial : null;
-            if (original == null || sockRenderer == null)
-                throw new InvalidOperationException("Jersey or Socks renderers are missing for uniform tint validation.");
-            Material validationMaterial = new(original) { name = "Validation Uniform Material" };
-            loadout.SetJerseyMaterial(validationMaterial);
-            if (!AllRenderersUse(loadout.GetEquipped(HockeyEquipmentSlot.Jersey), validationMaterial)
-                || !AllRenderersUse(loadout.GetEquipped(HockeyEquipmentSlot.Socks), validationMaterial))
-                throw new InvalidOperationException("Uniform material did not apply to both Jersey and Socks.");
-            loadout.SetJerseyMaterial(original);
+            if (presentation.CharacterRenderers.Count == 0 || presentation.CharacterRenderers[0] == null)
+                throw new InvalidOperationException("Main character renderers are missing for team tint validation.");
+            Material original = presentation.CharacterRenderers[0].sharedMaterial;
+            Material wearableOriginal = presentation.Equipment.GetEquipped(HockeyEquipmentSlot.Helmet)
+                ?.GetComponentInChildren<Renderer>(true)?.sharedMaterial;
+            Material validationMaterial = new(original) { name = "Validation Team Material" };
+            presentation.SetTeamMaterial(validationMaterial);
+            for (int i = 0; i < presentation.CharacterRenderers.Count; i++)
+            {
+                Renderer renderer = presentation.CharacterRenderers[i];
+                if (renderer == null || renderer.sharedMaterials.Length == 0)
+                    throw new InvalidOperationException("A configured main character renderer is missing materials.");
+                for (int materialIndex = 0; materialIndex < renderer.sharedMaterials.Length; materialIndex++)
+                    if (renderer.sharedMaterials[materialIndex] != validationMaterial)
+                        throw new InvalidOperationException("Team material did not apply to the main character visual.");
+            }
+            if (presentation.Equipment.GetEquipped(HockeyEquipmentSlot.Helmet)
+                    ?.GetComponentInChildren<Renderer>(true)?.sharedMaterial != wearableOriginal)
+                throw new InvalidOperationException("Main-character team tint changed a wearable material.");
+            presentation.SetTeamMaterial(original);
             Destroy(validationMaterial);
-        }
-
-        private static bool AllRenderersUse(GameObject equipment, Material material)
-        {
-            if (equipment == null) return false;
-            Renderer[] renderers = equipment.GetComponentsInChildren<Renderer>(true);
-            if (renderers.Length == 0) return false;
-            for (int i = 0; i < renderers.Length; i++)
-                if (renderers[i].sharedMaterial != material) return false;
-            return true;
         }
 
         private static GameObject CreatePairedReplacement(HockeyEquipmentSlot slot)
@@ -298,11 +293,8 @@ namespace IceClash.Hockey.Character
                 ?.GetComponent<HockeyPairedEquipmentFollower>();
             HockeyPairedEquipmentFollower skates = loadout.GetEquipped(HockeyEquipmentSlot.Skates)
                 ?.GetComponent<HockeyPairedEquipmentFollower>();
-            HockeyPairedEquipmentFollower socks = loadout.GetEquipped(HockeyEquipmentSlot.Socks)
-                ?.GetComponent<HockeyPairedEquipmentFollower>();
-            if (gloves == null || socks == null || skates == null || !gloves.IsAligned(0.03f)
-                || !socks.IsAligned(0.03f) || !skates.IsAligned(0.03f))
-                throw new InvalidOperationException("Paired gloves, socks, or skates did not follow their animated Humanoid bones.");
+            if (gloves == null || skates == null || !gloves.IsAligned(0.03f) || !skates.IsAligned(0.03f))
+                throw new InvalidOperationException("Paired gloves or skates did not follow their animated Humanoid bones.");
             Transform leftHand = player.Animator.GetBoneTransform(HumanBodyBones.LeftHand);
             Transform rightHand = player.Animator.GetBoneTransform(HumanBodyBones.RightHand);
             if (leftHand == null || rightHand == null

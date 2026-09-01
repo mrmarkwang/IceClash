@@ -2,7 +2,7 @@
  * IceClash modular clean-humanoid asset generator and validator.
  * Consumes the isolated Male_Base_v1_1_Clean production visual/controller,
  * applies the existing mobile presentation policy,
- * builds all eight hockey gear pieces, parents the validated production stick
+ * builds four replaceable wearables plus the gameplay stick, parents the validated production stick
  * through RightHand/StickSocket, aligns its explicit grip/contact markers in a
  * right-handed two-hand hockey stance, binds LeftHand IK to SecondaryGrip, and
  * creates shared presentation assets, prefabs, IK, validation, and evidence
@@ -24,6 +24,7 @@ using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.Animations.Rigging;
 using UnityEngine.Rendering;
+using UnityEngine.SceneManagement;
 
 namespace IceClash.Tests.Editor
 {
@@ -42,7 +43,7 @@ namespace IceClash.Tests.Editor
         private const string ControllerPath = MaleBaseV11GameplayIntegrationSetup.ControllerPath;
         private const string AutoGenerationKey = "IceClash.ModularCharacterGenerationRunning";
         private const string GameplayEvidencePath = ".docs/evidence/use-production-stick-in-gameplay/prototype-arena-production-stick.png";
-        private const int ExpectedEquipmentSlotCount = 8;
+        private const int ExpectedEquipmentSlotCount = 5;
         private const float GameplayControlForwardOffset = 1.15f;
         private const float GameplayControlVerticalOffset = 0.28f;
         private const float GameplaySkaterScale = 0.68f;
@@ -175,10 +176,15 @@ namespace IceClash.Tests.Editor
             if (animator == null || animator.avatar == null || !animator.avatar.isHuman || !animator.avatar.isValid
                 || animator.applyRootMotion || animator.runtimeAnimatorController == null)
                 throw new InvalidOperationException("HockeyPlayer Animator is invalid or root motion is enabled.");
+            ValidateEquipmentEnumValues();
             if (loadout == null || !loadout.IsComplete() || loadout.SlotCount != ExpectedEquipmentSlotCount)
-                throw new InvalidOperationException("HockeyPlayer does not contain all eight equipment slots.");
+                throw new InvalidOperationException("HockeyPlayer does not contain the four wearables plus Stick.");
             if (!HasActiveEquipment(loadout))
                 throw new InvalidOperationException("HockeyPlayer does not have one active item in every equipment slot.");
+            ValidateSupportedEquipmentStructure(canonical, "HockeyPlayer.prefab");
+            ValidateSupportedEquipmentStructure(resource, "Resources/Skater.prefab");
+            ValidateGeneratedSceneEquipment();
+            Debug.Log("SUPPORTED_EQUIPMENT_STRUCTURE_PASS slots=Helmet,Visor,Gloves,Skates,Stick players=10");
             if (stickRig == null || !stickRig.HasValidReferences || rigBuilder == null || rigBuilder.layers.Count != 2)
                 throw new InvalidOperationException("HockeyPlayer two-hand IK rig is incomplete.");
             if (stickRig.LeftHandConstraint.transform == stickRig.RightHandConstraint.transform
@@ -275,6 +281,21 @@ namespace IceClash.Tests.Editor
             if (AssetDatabase.LoadAssetAtPath<SceneAsset>(ScenePath) == null)
                 throw new InvalidOperationException("ModularCharacterTest scene is missing.");
             Debug.Log("MODULAR_CHARACTER_ASSETS_VALID");
+        }
+
+        [MenuItem("IceClash/Validate Supported Equipment Contract")]
+        public static void ValidateSupportedEquipmentContract()
+        {
+            GameObject canonical = AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath);
+            GameObject resource = AssetDatabase.LoadAssetAtPath<GameObject>(ResourcePrefabPath);
+            if (canonical == null || resource == null)
+                throw new InvalidOperationException("Generated hockey-player prefabs are missing.");
+            ValidateEquipmentEnumValues();
+            ValidateSupportedEquipmentStructure(canonical, "HockeyPlayer.prefab");
+            ValidateSupportedEquipmentStructure(resource, "Resources/Skater.prefab");
+            ValidateGeneratedSceneEquipment();
+            ValidateEditorEquipmentPersistence();
+            Debug.Log("SUPPORTED_EQUIPMENT_CONTRACT_PASS slots=Helmet,Visor,Gloves,Skates,Stick persistence=true players=10");
         }
 
         private static void EnsureGenerated()
@@ -416,6 +437,9 @@ namespace IceClash.Tests.Editor
             animator.applyRootMotion = false;
             animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
             OptimizeRenderers(visual, skinMaterial);
+            Renderer[] characterRenderers = visual.GetComponentsInChildren<Renderer>(true);
+            if (characterRenderers.Length == 0)
+                throw new InvalidOperationException("Selected humanoid visual has no main-character renderers.");
             animator.Rebind();
             animator.Play("Idle", 0, 0f);
             animator.Update(0f);
@@ -429,8 +453,6 @@ namespace IceClash.Tests.Editor
             // apply a body-position offset to that root even when root motion is disabled, which would
             // otherwise pull the blade reference away from StickPuckInteraction's control point.
             Transform head = animator.GetBoneTransform(HumanBodyBones.Head) ?? root.transform;
-            Transform chest = animator.GetBoneTransform(HumanBodyBones.Chest) ?? root.transform;
-            Transform hips = animator.GetBoneTransform(HumanBodyBones.Hips) ?? root.transform;
             Transform leftHand = animator.GetBoneTransform(HumanBodyBones.LeftHand)
                 ?? throw new InvalidOperationException("Humanoid LeftHand mapping is unavailable.");
             Transform rightHand = animator.GetBoneTransform(HumanBodyBones.RightHand)
@@ -494,29 +516,24 @@ namespace IceClash.Tests.Editor
             HockeyEquipmentBinding[] bindings = new HockeyEquipmentBinding[ExpectedEquipmentSlotCount];
             bindings[0] = CreateBinding(HockeyEquipmentSlot.Helmet, head, "HelmetSlot",
                 BuildSinglePrimitive("Helmet", PrimitiveType.Sphere, equipmentMaterial, new Vector3(0f, 0.1f, 0f), new Vector3(0.25f, 0.19f, 0.28f)));
-            bindings[1] = CreateBinding(HockeyEquipmentSlot.ShoulderPads, chest, "ShoulderPadsSlot",
-                BuildShoulderPads(equipmentMaterial));
-            bindings[2] = CreateBinding(HockeyEquipmentSlot.Jersey, chest, "JerseySlot",
-                BuildSinglePrimitive("Jersey", PrimitiveType.Cube, jerseyMaterial, Vector3.zero, new Vector3(0.42f, 0.34f, 0.2f)));
-            bindings[3] = CreateBinding(HockeyEquipmentSlot.Gloves, visualRoot.transform, "GlovesSlot",
+            bindings[1] = CreateBinding(HockeyEquipmentSlot.Visor, head, "VisorSlot",
+                BuildSinglePrimitive("Visor", PrimitiveType.Cube, equipmentMaterial,
+                    new Vector3(0f, 0.03f, 0.24f), new Vector3(0.22f, 0.08f, 0.025f)));
+            bindings[2] = CreateBinding(HockeyEquipmentSlot.Gloves, visualRoot.transform, "GlovesSlot",
                 BuildFollowedPair("Gloves", PrimitiveType.Sphere, equipmentMaterial, leftTarget.localPosition,
                     rightTarget.localPosition, new Vector3(0.13f, 0.11f, 0.14f)));
-            bindings[4] = CreateBinding(HockeyEquipmentSlot.Pants, hips, "PantsSlot",
-                BuildSinglePrimitive("Pants", PrimitiveType.Cube, equipmentMaterial, Vector3.zero, new Vector3(0.38f, 0.25f, 0.22f)));
-            bindings[5] = CreateBinding(HockeyEquipmentSlot.Socks, visualRoot.transform, "SocksSlot",
-                BuildFollowedPair("Socks", PrimitiveType.Cube, jerseyMaterial, new Vector3(-0.13f, 0.35f, 0.01f),
-                    new Vector3(0.13f, 0.35f, 0.01f), new Vector3(0.13f, 0.28f, 0.13f)));
-            bindings[6] = CreateBinding(HockeyEquipmentSlot.Skates, visualRoot.transform, "SkatesSlot",
+            bindings[3] = CreateBinding(HockeyEquipmentSlot.Skates, visualRoot.transform, "SkatesSlot",
                 BuildFollowedPair("Skates", PrimitiveType.Cube, equipmentMaterial, leftSkatePosition,
                     rightSkatePosition, new Vector3(0.11f, 0.07f, 0.27f)));
             HockeyEquipmentBinding stickBinding = new();
             stickBinding.Configure(HockeyEquipmentSlot.Stick, stickSocket, productionStick);
-            bindings[7] = stickBinding;
+            bindings[4] = stickBinding;
             AlignStickPresentationToGameplayControl(root.transform, presentationRoot.transform, bladeReference);
             HockeyEquipmentLoadout loadout = root.AddComponent<HockeyEquipmentLoadout>();
             loadout.Configure(bindings, stickRig, leftHand, rightHand, leftFoot, rightFoot);
             HockeyCharacterPresentation presentation = root.AddComponent<HockeyCharacterPresentation>();
-            presentation.Configure(animator, loadout);
+            presentation.Configure(animator, loadout, characterRenderers);
+            presentation.SetTeamMaterial(jerseyMaterial);
             return root;
         }
 
@@ -590,20 +607,6 @@ namespace IceClash.Tests.Editor
             second.transform.localScale = scale;
             HockeyPairedEquipmentFollower follower = item.AddComponent<HockeyPairedEquipmentFollower>();
             follower.ConfigureVisuals(first.transform, second.transform);
-            return item;
-        }
-
-        private static GameObject BuildShoulderPads(Material material)
-        {
-            GameObject item = new("Shoulder Pads");
-            GameObject chestPad = CreatePrimitive("Shoulder Pads Chest", PrimitiveType.Cube, material, item.transform);
-            chestPad.transform.localScale = new Vector3(0.44f, 0.2f, 0.22f);
-            GameObject leftCap = CreatePrimitive("Shoulder Pad L", PrimitiveType.Sphere, material, item.transform);
-            leftCap.transform.localPosition = new Vector3(-0.38f, 0.08f, 0f);
-            leftCap.transform.localScale = new Vector3(0.18f, 0.16f, 0.2f);
-            GameObject rightCap = CreatePrimitive("Shoulder Pad R", PrimitiveType.Sphere, material, item.transform);
-            rightCap.transform.localPosition = new Vector3(0.38f, 0.08f, 0f);
-            rightCap.transform.localScale = new Vector3(0.18f, 0.16f, 0.2f);
             return item;
         }
 
@@ -909,6 +912,75 @@ namespace IceClash.Tests.Editor
                 if (equipped == null || !equipped.activeSelf) return false;
             }
             return true;
+        }
+
+        private static void ValidateEquipmentEnumValues()
+        {
+            HockeyEquipmentSlot[] values = Enum.GetValues(typeof(HockeyEquipmentSlot))
+                .Cast<HockeyEquipmentSlot>().ToArray();
+            if (values.Length != ExpectedEquipmentSlotCount
+                || (int)HockeyEquipmentSlot.Helmet != 0
+                || (int)HockeyEquipmentSlot.Gloves != 2
+                || (int)HockeyEquipmentSlot.Skates != 4
+                || (int)HockeyEquipmentSlot.Stick != 5
+                || (int)HockeyEquipmentSlot.Visor != 8)
+                throw new InvalidOperationException("Equipment slot serialized IDs are not migration-safe.");
+        }
+
+        private static void ValidateSupportedEquipmentStructure(GameObject root, string artifactName)
+        {
+            HockeyEquipmentLoadout loadout = root != null ? root.GetComponent<HockeyEquipmentLoadout>() : null;
+            HockeyCharacterPresentation presentation = root != null
+                ? root.GetComponent<HockeyCharacterPresentation>() : null;
+            HashSet<HockeyEquipmentSlot> expected = new()
+            {
+                HockeyEquipmentSlot.Helmet,
+                HockeyEquipmentSlot.Visor,
+                HockeyEquipmentSlot.Gloves,
+                HockeyEquipmentSlot.Skates,
+                HockeyEquipmentSlot.Stick
+            };
+            if (loadout == null || loadout.SlotCount != expected.Count
+                || loadout.Slots.Any(binding => binding == null || !expected.Remove(binding.Slot))
+                || expected.Count != 0)
+                throw new InvalidOperationException($"{artifactName} does not contain exactly the supported equipment bindings.");
+            if (presentation == null || presentation.CharacterRenderers.Count == 0
+                || presentation.CharacterRenderers.Any(renderer => renderer == null))
+                throw new InvalidOperationException($"{artifactName} does not capture its main-character renderers.");
+
+            HashSet<string> unsupportedNames = new(StringComparer.Ordinal)
+            {
+                "ShoulderPadsSlot", "Shoulder Pads", "Shoulder Pads Chest", "Shoulder Pad L", "Shoulder Pad R",
+                "JerseySlot", "Jersey", "JerseyVisual", "PantsSlot", "Pants", "PantsVisual",
+                "SocksSlot", "Socks", "Socks L", "Socks R"
+            };
+            Transform[] transforms = root.GetComponentsInChildren<Transform>(true);
+            for (int i = 0; i < transforms.Length; i++)
+                if (unsupportedNames.Contains(transforms[i].name))
+                    throw new InvalidOperationException(
+                        $"{artifactName} still contains unsupported equipment object {transforms[i].name}.");
+        }
+
+        private static void ValidateGeneratedSceneEquipment()
+        {
+            Scene scene = SceneManager.GetSceneByPath(ScenePath);
+            bool openedForValidation = !scene.IsValid() || !scene.isLoaded;
+            if (openedForValidation) scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Additive);
+            try
+            {
+                HockeyEquipmentLoadout[] loadouts = scene.GetRootGameObjects()
+                    .SelectMany(root => root.GetComponentsInChildren<HockeyEquipmentLoadout>(true)).ToArray();
+                if (loadouts.Length != 10)
+                    throw new InvalidOperationException(
+                        $"ModularCharacterTest must contain 10 generated players, found {loadouts.Length}.");
+                for (int i = 0; i < loadouts.Length; i++)
+                    ValidateSupportedEquipmentStructure(loadouts[i].gameObject,
+                        $"ModularCharacterTest player {i + 1}");
+            }
+            finally
+            {
+                if (openedForValidation && scene.IsValid()) EditorSceneManager.CloseScene(scene, true);
+            }
         }
 
         private static void ValidateRendererPolicy(GameObject canonical)

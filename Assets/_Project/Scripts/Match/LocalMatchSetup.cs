@@ -4,7 +4,8 @@
  * mirrored center-faceoff reset positions, two goalies, shared input/HUD systems,
  * per-skater role presets, AI, possession control, defensive checks, delayed
  * offside warnings/stoppages, match flow, attribute-aware snapshots, and explicit
- * late binding for modular humanoid presentation without changing gameplay ownership.
+ * late binding for modular humanoid presentation, including main-visual team
+ * coloring without separate jersey/sock equipment.
  */
 
 using System;
@@ -95,14 +96,14 @@ namespace IceClash.Match
             skater.transform.localScale = Vector3.one * SkaterScale;
             HockeyEquipmentLoadout equipment = skater.GetComponent<HockeyEquipmentLoadout>();
             if (equipment == null) throw new InvalidOperationException("Skater prefab is missing HockeyEquipmentLoadout.");
-            equipment.SetJerseyMaterial(material);
+            HockeyCharacterPresentation presentation = skater.GetComponent<HockeyCharacterPresentation>();
+            if (presentation == null) throw new InvalidOperationException("Skater prefab is missing HockeyCharacterPresentation.");
+            presentation.SetTeamMaterial(material);
             HockeyPlayerAI ai = skater.AddComponent<HockeyPlayerAI>();
             PlayerController controller = skater.AddComponent<PlayerController>();
             PlayerAttributeBuild build = PlayerAttributeBuild.CreatePreset(PlayerAttributeBuild.PresetForRole(role));
             controller.Configure(id, team, role, ai, puck, position, build);
             ai.Configure(controller, puck, slot, SkatersPerTeam, difficulty);
-            HockeyCharacterPresentation presentation = skater.GetComponent<HockeyCharacterPresentation>();
-            if (presentation == null) throw new InvalidOperationException("Skater prefab is missing HockeyCharacterPresentation.");
             presentation.Bind(controller);
             players.Add(controller);
             return controller;
@@ -116,9 +117,9 @@ namespace IceClash.Match
             goalie.transform.localScale = GoalieScale;
             HockeyEquipmentLoadout equipment = goalie.GetComponent<HockeyEquipmentLoadout>();
             if (equipment == null) throw new InvalidOperationException("Goalie prefab is missing HockeyEquipmentLoadout.");
-            equipment.SetJerseyMaterial(material);
             HockeyCharacterPresentation presentation = goalie.GetComponent<HockeyCharacterPresentation>();
             if (presentation == null) throw new InvalidOperationException("Goalie prefab is missing HockeyCharacterPresentation.");
+            presentation.SetTeamMaterial(material);
             presentation.Bind(null);
             HockeyGoalieAI ai = goalie.AddComponent<HockeyGoalieAI>();
             ai.Configure(team, puck, position);

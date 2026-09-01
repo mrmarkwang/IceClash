@@ -6,7 +6,8 @@
  * manual switching, loose-puck nearest-player SWITCH, possession-visible offense,
  * and SWITCH/CHECK defense controls,
  * contextual body/pull checks, smooth camera retargeting, modular systems, safe multi-touch Unity UI controls,
- * circular visual/hit separation, responsive puck possession, charge-speed-only
+ * circular visual/hit separation, main-character team coloring that excludes
+ * replaceable wearables, responsive puck possession, charge-speed-only
  * low/high airborne shots with Shooting-skilled open-lane aim, snapshots, and one-way goals.
  * Recent changes: validates the elongated rink,
  * compact physical hockey nets, rounded-rink puck containment, stationary-carrier and board-pressure turnovers,
@@ -138,6 +139,7 @@ namespace IceClash.Hockey
                 && setup.DefenseController != null && setup.DefenseController.Tuning != null
                 && setup.MatchController != null && setup.OffsideController == offside && offside != null;
             bool modularCharacter = VerifyModularCharacters(players, goalies);
+            bool teamCharacterMaterials = VerifyCharacterTeamMaterials(players, goalies);
             bool presentation = Object.FindAnyObjectByType<HockeyCameraController>() != null
                 && virtualJoystick != null
                 && Object.FindAnyObjectByType<MatchHUD>() != null
@@ -452,7 +454,7 @@ namespace IceClash.Hockey
                     $"CLEAN_PLAYER_SMOKE_FAIL wasd={cleanWASDInput} joystick={cleanJoystickInput} cameraCollider={cleanCameraCollider} animation={cleanAnimation} footAlignment={cleanFootAlignment}");
 
             if (!roster || !roleDistribution || !faceoffFormation || !spacedRoleTargets || !rolePersistence
-                || !smallerSkaters || !broaderGoalies || !modular || !modularCharacter || !presentation || !arenaPresentation || !puckIndependent || !snapshots
+                || !smallerSkaters || !broaderGoalies || !modular || !modularCharacter || !teamCharacterMaterials || !presentation || !arenaPresentation || !puckIndependent || !snapshots
                 || !humanPossessionAutoControl || !loosePuckAutoControl || !opponentPossessionAutoDefense
                 || !manualOverride || !recommendedPassFlow || !reliablePassTuning || !reliablePassOutcomes || !passReceptionAutoControl
                 || !defensiveControlMode || !heldTransitionCleared || !defensiveChecks || !repeatedControlTransitions
@@ -465,12 +467,64 @@ namespace IceClash.Hockey
             Debug.Log("PHASE1_PVE_SMOKE_PASS skaters=10 modularHumanoids=12 boundSkaters=10 idleGoalies=2 twoHandIK=true roles=C_LW_RW_LD_RD rolePersistence=true spacedRoleTargets=true singlePuckChaser=true centerFaceoff=true postGoalFaceoff=true offsideWarning=true offsideTagUp=true offsideTurnoverClear=true sweptOffsideOrdering=true mirroredOffside=true neutralDotRestart=true offsideFaceoffResume=true smallerSkaters=true goalies=2 broaderGoalies=true mobileArena=true elongatedRink=true layeredBoards=true dimensionalNets=true hockeySizedGoals=true alignedArenaAnchors=true closeCamera=true humanInputs=1 aiSkaters=9 controls=OFFENSE_PASS_DEKE_SHOOT_LOOSE_SWITCH_DEFENSE_SWITCH_CHECK adaptiveControls=true heldTransitionCleared=true repeatedControlTransitions=true hardwareActionContract=true bodyCheck=true pullCheck=true sharedCheckCooldown=true rejectedCheck=true boundedCheckImpulse=true resetClearsImpulse=true looseAfterCheck=true nonHomingCheckRelease=true opponentCornerPuckPursuit=true opponentPressureCheck=true opponentTacticalPass=true opponentShotIntent=true attributeBudget=true attributePresets=true attributeMovement=true attributeStamina=true attributeDeke=true attributePuckControl=true attributeShot=true deterministicShot=true attributePass=true deterministicPass=true attributeReception=true attributeChecks=true attributeSnapshots=true aiAttributeSeparation=true largerActionButtons=true equalActionSizes=true unityUI=true safeArea=true referenceResolution=1920x1080 fixedJoystick=true persistentJoystick=true circularControls=true separateHitVisuals=true nonOverlappingActions=true deadZone=true analog=true independentPointers=true movementClamped=true movementOnly=true recommendedPassTarget=true dottedPassPath=true tapPass=true distanceScaledPass=true configurableReceptionZone=true shortPassReceived=true mediumPassReceived=true longPassReceived=true movingPassReceived=true passReceptionAutoControl=true obstructedPassIntercepted=true missedPassStayedLoose=true genericReleaseVelocity=true ordinaryClaimLimits=true harderShots=true hardChargedShot=true continuousPuckCollision=true possessionAutoControl=true loosePuckAutoControl=true opponentAutoDefense=true touchSwitch=true keyboardSwitchOverride=true cameraRetargetSmooth=true puckIndependent=true smallerPuck=true frontPuckControl=true forgivingPickup=true velocityMatchedPuck=true oneWayGoals=true beforeGoalLineRejected=true bothDirectionsScored=true backSideGoalRejected=true goalReset=true timerResult=true");
         }
 
+        private static bool VerifyCharacterTeamMaterials(PlayerController[] players, HockeyGoalieAI[] goalies)
+        {
+            Material blueTeamMaterial = null;
+            Material redTeamMaterial = null;
+            for (int i = 0; i < players.Length; i++)
+            {
+                HockeyCharacterPresentation presentation = players[i].GetComponent<HockeyCharacterPresentation>();
+                HockeyEquipmentLoadout loadout = players[i].GetComponent<HockeyEquipmentLoadout>();
+                Material teamMaterial = FirstCharacterMaterial(presentation);
+                bool characterApplied = teamMaterial != null && AllCharacterRenderersUse(presentation, teamMaterial);
+                bool wearablesExcluded = teamMaterial != null && WearablesExcludeMaterial(loadout, teamMaterial);
+                if (!characterApplied || !wearablesExcluded)
+                {
+                    Debug.LogWarning($"TEAM_CHARACTER_MATERIAL_FAIL player={players[i].PlayerId} "
+                        + $"material={teamMaterial?.name} characterApplied={characterApplied} wearablesExcluded={wearablesExcluded}");
+                    return false;
+                }
+                if (players[i].Team == TeamId.Blue)
+                {
+                    blueTeamMaterial ??= teamMaterial;
+                    if (teamMaterial != blueTeamMaterial) return false;
+                }
+                else
+                {
+                    redTeamMaterial ??= teamMaterial;
+                    if (teamMaterial != redTeamMaterial) return false;
+                }
+            }
+            for (int i = 0; i < goalies.Length; i++)
+            {
+                HockeyCharacterPresentation presentation = goalies[i].GetComponent<HockeyCharacterPresentation>();
+                HockeyEquipmentLoadout loadout = goalies[i].GetComponent<HockeyEquipmentLoadout>();
+                Material expectedMaterial = goalies[i].Team == TeamId.Blue ? blueTeamMaterial : redTeamMaterial;
+                bool characterApplied = expectedMaterial != null
+                    && AllCharacterRenderersUse(presentation, expectedMaterial);
+                bool wearablesExcluded = expectedMaterial != null
+                    && WearablesExcludeMaterial(loadout, expectedMaterial);
+                if (!characterApplied || !wearablesExcluded)
+                {
+                    Debug.LogWarning($"TEAM_CHARACTER_MATERIAL_FAIL goalie={goalies[i].Team} "
+                        + $"material={expectedMaterial?.name} characterApplied={characterApplied} wearablesExcluded={wearablesExcluded}");
+                    return false;
+                }
+            }
+            bool passed = blueTeamMaterial != null && redTeamMaterial != null
+                && blueTeamMaterial != redTeamMaterial;
+            if (passed) Debug.Log("TEAM_CHARACTER_MATERIAL_PASS teams=Blue,Red wearablesExcluded=true");
+            return passed;
+        }
+
         private static bool VerifyModularCharacters(PlayerController[] players, HockeyGoalieAI[] goalies)
         {
             HockeyCharacterPresentation[] presentations = Object.FindObjectsByType<HockeyCharacterPresentation>();
             HockeyEquipmentLoadout[] loadouts = Object.FindObjectsByType<HockeyEquipmentLoadout>();
             HockeyStickRig[] rigs = Object.FindObjectsByType<HockeyStickRig>();
             if (presentations.Length != 12 || loadouts.Length != 12 || rigs.Length != 12) return false;
+            Material blueTeamMaterial = null;
+            Material redTeamMaterial = null;
             for (int i = 0; i < players.Length; i++)
             {
                 HockeyCharacterPresentation presentation = players[i].GetComponent<HockeyCharacterPresentation>();
@@ -478,10 +532,23 @@ namespace IceClash.Hockey
                 HockeyStickRig rig = players[i].GetComponent<HockeyStickRig>();
                 Transform visualBlade = loadout != null
                     ? loadout.FindEquippedChild(HockeyEquipmentSlot.Stick, "Stick Blade") : null;
+                Material teamMaterial = FirstCharacterMaterial(presentation);
+                if (players[i].Team == TeamId.Blue)
+                {
+                    blueTeamMaterial ??= teamMaterial;
+                    if (teamMaterial != blueTeamMaterial) return false;
+                }
+                else
+                {
+                    redTeamMaterial ??= teamMaterial;
+                    if (teamMaterial != redTeamMaterial) return false;
+                }
                 bool valid = presentation != null && presentation.IsBound && presentation.BoundPlayer == players[i]
                     && presentation.Animator != null && presentation.Animator.avatar != null
                     && presentation.Animator.avatar.isHuman && presentation.Animator.avatar.isValid
                     && !presentation.Animator.applyRootMotion && loadout != null && loadout.IsComplete()
+                    && teamMaterial != null && AllCharacterRenderersUse(presentation, teamMaterial)
+                    && WearablesExcludeMaterial(loadout, teamMaterial)
                     && rig != null && rig.HasValidReferences
                     && rig.LeftHandConstraint.weight >= 0.99f && rig.RightHandConstraint.weight >= 0.99f
                     && visualBlade != null && Vector3.Distance(visualBlade.position, players[i].ControlPoint) <= 0.25f;
@@ -494,8 +561,56 @@ namespace IceClash.Hockey
             for (int i = 0; i < goalies.Length; i++)
             {
                 HockeyCharacterPresentation presentation = goalies[i].GetComponent<HockeyCharacterPresentation>();
+                HockeyEquipmentLoadout loadout = goalies[i].GetComponent<HockeyEquipmentLoadout>();
+                Material expectedMaterial = goalies[i].Team == TeamId.Blue ? blueTeamMaterial : redTeamMaterial;
                 if (presentation == null || presentation.IsBound
-                    || presentation.CurrentPresentationState != HockeyPresentationState.Idle) return false;
+                    || presentation.CurrentPresentationState != HockeyPresentationState.Idle
+                    || expectedMaterial == null || !AllCharacterRenderersUse(presentation, expectedMaterial)
+                    || !WearablesExcludeMaterial(loadout, expectedMaterial)) return false;
+            }
+            return blueTeamMaterial != null && redTeamMaterial != null && blueTeamMaterial != redTeamMaterial;
+        }
+
+        private static Material FirstCharacterMaterial(HockeyCharacterPresentation presentation)
+        {
+            if (presentation == null || presentation.CharacterRenderers.Count == 0
+                || presentation.CharacterRenderers[0] == null) return null;
+            Material[] materials = presentation.CharacterRenderers[0].sharedMaterials;
+            return materials.Length > 0 ? materials[0] : null;
+        }
+
+        private static bool AllCharacterRenderersUse(HockeyCharacterPresentation presentation, Material material)
+        {
+            if (presentation == null || material == null || presentation.CharacterRenderers.Count == 0) return false;
+            for (int i = 0; i < presentation.CharacterRenderers.Count; i++)
+            {
+                Renderer renderer = presentation.CharacterRenderers[i];
+                if (renderer == null || renderer.sharedMaterials.Length == 0) return false;
+                for (int materialIndex = 0; materialIndex < renderer.sharedMaterials.Length; materialIndex++)
+                    if (renderer.sharedMaterials[materialIndex] != material) return false;
+            }
+            return true;
+        }
+
+        private static bool WearablesExcludeMaterial(HockeyEquipmentLoadout loadout, Material material)
+        {
+            if (loadout == null || material == null) return false;
+            HockeyEquipmentSlot[] wearableSlots =
+            {
+                HockeyEquipmentSlot.Helmet,
+                HockeyEquipmentSlot.Visor,
+                HockeyEquipmentSlot.Gloves,
+                HockeyEquipmentSlot.Skates
+            };
+            for (int slotIndex = 0; slotIndex < wearableSlots.Length; slotIndex++)
+            {
+                GameObject equipment = loadout.GetEquipped(wearableSlots[slotIndex]);
+                if (equipment == null) return false;
+                Renderer[] renderers = equipment.GetComponentsInChildren<Renderer>(true);
+                if (renderers.Length == 0) return false;
+                for (int rendererIndex = 0; rendererIndex < renderers.Length; rendererIndex++)
+                    for (int materialIndex = 0; materialIndex < renderers[rendererIndex].sharedMaterials.Length; materialIndex++)
+                        if (renderers[rendererIndex].sharedMaterials[materialIndex] == material) return false;
             }
             return true;
         }

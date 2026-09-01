@@ -2,9 +2,12 @@
  * IceClash clean-humanoid hockey presentation adapter.
  * Drives extensible locomotion parameters from the existing gameplay velocity
  * and input while keeping root motion and all transform authority disabled.
- * Controller-less goalies and editor previews remain safely idle.
+ * Controller-less goalies and editor previews remain safely idle. Team color
+ * is applied only to captured main-character renderers, never wearable gear.
  */
 
+using System;
+using System.Collections.Generic;
 using IceClash.Core;
 using IceClash.Player;
 using UnityEngine;
@@ -29,21 +32,39 @@ namespace IceClash.Hockey.Character
 
         [SerializeField] private Animator animator;
         [SerializeField] private HockeyEquipmentLoadout equipment;
+        [SerializeField] private Renderer[] characterRenderers = Array.Empty<Renderer>();
         private PlayerController player;
         private HockeyPresentationState previewState;
         private bool previewEnabled;
 
         public Animator Animator => animator;
         public HockeyEquipmentLoadout Equipment => equipment;
+        public IReadOnlyList<Renderer> CharacterRenderers => characterRenderers;
         public PlayerController BoundPlayer => player;
         public bool IsBound => player != null;
         public HockeyPresentationState CurrentPresentationState { get; private set; }
 
-        public void Configure(Animator characterAnimator, HockeyEquipmentLoadout loadout)
+        public void Configure(Animator characterAnimator, HockeyEquipmentLoadout loadout,
+            Renderer[] mainCharacterRenderers)
         {
             animator = characterAnimator;
             equipment = loadout;
+            characterRenderers = mainCharacterRenderers ?? Array.Empty<Renderer>();
             if (animator != null) animator.applyRootMotion = false;
+        }
+
+        public void SetTeamMaterial(Material material)
+        {
+            if (material == null || characterRenderers == null) return;
+            for (int i = 0; i < characterRenderers.Length; i++)
+            {
+                Renderer renderer = characterRenderers[i];
+                if (renderer == null) continue;
+                Material[] materials = renderer.sharedMaterials;
+                for (int materialIndex = 0; materialIndex < materials.Length; materialIndex++)
+                    materials[materialIndex] = material;
+                renderer.sharedMaterials = materials;
+            }
         }
 
         public void Bind(PlayerController controller)
