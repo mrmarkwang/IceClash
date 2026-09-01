@@ -10,7 +10,7 @@ Replace the visual shell used by the existing 5v5 skater roster with a reusable 
 
 ## Acceptance Criteria
 
-- [x] The selected `RealisticHumanMale/unity.Fbx` asset is imported with a valid Unity Humanoid avatar.
+- [x] The selected clean `Male_Base_v1_1_Clean.fbx` production asset is imported with a valid Unity Humanoid avatar; the superseded `RealisticHumanMale` asset set is retired.
 - [x] A reusable `HockeyPlayer` prefab contains the selected humanoid character and remains compatible with the existing runtime-added player components.
 - [x] The prefab exposes distinct Helmet, Jersey, Shoulder Pads, Gloves, Pants, Socks, Skates, and Stick equipment slots, each populated with one active item by default.
 - [x] Every equipment slot can replace or clear its equipped object independently without rebuilding the player prefab or affecting the other slots.
@@ -18,7 +18,7 @@ Replace the visual shell used by the existing 5v5 skater roster with a reusable 
 - [x] Placeholder idle/skating and shooting animation states visibly drive the humanoid and respond to current movement and shooting state.
 - [x] The existing `PlayerController` source remains byte-for-byte unchanged.
 - [x] Existing 5v5 skater spawning, team ownership, controls, AI, match flow, and puck interactions continue to work.
-- [x] Character materials are shared; every texture under `RealisticHumanMale` is non-readable, mipmapped, and limited to 1024px ASTC 6x6 on Android and iOS; character renderers disable motion vectors and reflection probes.
+- [x] Character materials are shared, and character renderers disable motion vectors and reflection probes; no generated player depends on the retired `RealisticHumanMale` textures.
 - [x] A test scene contains exactly ten active modular skaters and can validate prefab, equipment, IK, animation, and puck integration without adding extra gameplay skaters.
 
 ## Constraints
@@ -28,7 +28,7 @@ Replace the visual shell used by the existing 5v5 skater roster with a reusable 
 - Use the installed official Unity Animation Rigging package.
 - Keep equipment replaceable at runtime and in the editor through stable slot transforms.
 - Prefer shared materials and low-cost primitive placeholder equipment suitable for ten simultaneous skaters.
-- Treat every imported texture below `RealisticHumanMale` as covered by the mobile policy.
+- Do not restore dependencies on the retired `RealisticHumanMale` asset set.
 - Do not add a networked customization or inventory system.
 
 ## Non-Goals

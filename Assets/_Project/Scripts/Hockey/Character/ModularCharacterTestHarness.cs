@@ -1,8 +1,8 @@
 /*
  * IceClash modular clean-character scene validation harness.
  * Exercises ten Humanoids, Idle/temporary Running playback, all existing gear
- * and professional two-hand IK contracts, including outward elbow bend,
- * paired replacements, and the existing puck system.
+ * and right-hand-authoritative two-hand IK contracts, including live
+ * SecondaryGrip rebinding, outward elbow bend, and the existing puck system.
  */
 
 using System;
@@ -25,7 +25,9 @@ namespace IceClash.Hockey.Character
 
         private IEnumerator Start()
         {
-            yield return null;
+            // Allow the right-hand rig, SecondaryGrip follower, and left-hand rig
+            // to settle across their ordered frame boundaries before measuring.
+            yield return new WaitForSeconds(0.12f);
             IEnumerator validation = RunValidation();
             while (true)
             {
@@ -139,8 +141,9 @@ namespace IceClash.Hockey.Character
                         throw new InvalidOperationException($"Clearing {slot} changed {candidate}.");
                 if (slot == HockeyEquipmentSlot.Stick && (rig == null
                     || rig.LeftHandConstraint.weight > 0f || rig.RightHandConstraint.weight > 0f
-                    || rig.LeftHandTarget != stableLeftTarget || rig.RightHandTarget != stableRightTarget))
-                    throw new InvalidOperationException("Clearing Stick did not safely disable the stable two-hand IK rig.");
+                    || rig.LeftHandTarget != stableLeftTarget || rig.EquippedSecondaryGrip != null
+                    || rig.RightHandTarget != stableRightTarget))
+                    throw new InvalidOperationException("Clearing Stick did not safely disable and unbind the two-hand IK rig.");
                 GameObject replacement = slot == HockeyEquipmentSlot.Gloves || slot == HockeyEquipmentSlot.Socks
                     || slot == HockeyEquipmentSlot.Skates
                     ? CreatePairedReplacement(slot)
@@ -148,14 +151,22 @@ namespace IceClash.Hockey.Character
                 replacement.name = $"Validation {slot}";
                 Collider collider = replacement.GetComponent<Collider>();
                 if (collider != null) Destroy(collider);
+                if (slot == HockeyEquipmentSlot.Stick)
+                {
+                    GameObject secondaryGrip = new("SecondaryGrip");
+                    secondaryGrip.transform.SetParent(replacement.transform, false);
+                    secondaryGrip.transform.localPosition = new Vector3(0f, -0.35f, 0f);
+                }
                 loadout.Equip(slot, replacement);
                 foreach (HockeyEquipmentSlot candidate in Enum.GetValues(typeof(HockeyEquipmentSlot)))
                     if (candidate != slot && loadout.GetEquipped(candidate) != before[candidate])
                         throw new InvalidOperationException($"Replacing {slot} changed {candidate}.");
                 if (slot == HockeyEquipmentSlot.Stick && (rig.LeftHandConstraint.weight < 0.99f
                     || rig.RightHandConstraint.weight < 0.99f || rig.LeftHandTarget != stableLeftTarget
+                    || rig.EquippedSecondaryGrip == null
+                    || !rig.EquippedSecondaryGrip.IsChildOf(loadout.GetEquipped(HockeyEquipmentSlot.Stick).transform)
                     || rig.RightHandTarget != stableRightTarget))
-                    throw new InvalidOperationException("Replacing Stick did not restore the stable two-hand IK rig.");
+                    throw new InvalidOperationException("Replacing Stick did not rebind the SecondaryGrip IK target.");
                 if (slot == HockeyEquipmentSlot.Gloves || slot == HockeyEquipmentSlot.Socks
                     || slot == HockeyEquipmentSlot.Skates)
                 {
@@ -223,21 +234,34 @@ namespace IceClash.Hockey.Character
             HockeyStickRig rig = player.GetComponent<HockeyStickRig>();
             if (rig == null || !rig.HasValidReferences)
                 throw new InvalidOperationException("Two-hand stick rig is missing.");
-            float targetDistance = DistanceToSegment(rig.LeftHandTarget.position, rig.RightHandTarget.position,
-                rig.ShaftEndReference.position);
-            if (targetDistance > 0.03f)
-                throw new InvalidOperationException($"Left-hand target is {targetDistance:F3}m away from the stick shaft.");
+            Transform primaryGrip = player.Equipment.FindEquippedChild(HockeyEquipmentSlot.Stick, "PrimaryGrip");
+            Transform secondaryGrip = player.Equipment.FindEquippedChild(HockeyEquipmentSlot.Stick, "SecondaryGrip");
+            if (primaryGrip == null || secondaryGrip == null || rig.EquippedSecondaryGrip != secondaryGrip
+                || Vector3.Distance(rig.LeftHandTarget.TransformPoint(rig.LeftPalmGripOffset),
+                    secondaryGrip.position) > 0.01f)
+                throw new InvalidOperationException(
+                    $"Two-hand stick rig is not bound to its authored grip markers (secondary="
+                    + $"{rig.EquippedSecondaryGrip?.name}/{secondaryGrip?.name}, proxyDistance="
+                    + $"{(secondaryGrip != null ? Vector3.Distance(rig.LeftHandTarget.TransformPoint(rig.LeftPalmGripOffset), secondaryGrip.position) : -1f):F3}).");
             Transform visibleShaft = player.Equipment.FindEquippedChild(HockeyEquipmentSlot.Stick, "Stick Shaft");
             if (visibleShaft == null || !ContainsCubePoint(visibleShaft, rig.LeftHandTarget.position)
-                || !ContainsCubePoint(visibleShaft, rig.RightHandTarget.position))
+                || !ContainsCubePoint(visibleShaft, primaryGrip.position))
                 throw new InvalidOperationException("Both hand targets are not on the rendered stick shaft.");
             Transform leftHand = player.Animator.GetBoneTransform(HumanBodyBones.LeftHand);
             Transform rightHand = player.Animator.GetBoneTransform(HumanBodyBones.RightHand);
             float leftDistance = leftHand != null ? Vector3.Distance(leftHand.position, rig.LeftHandTarget.position) : float.PositiveInfinity;
             float rightDistance = rightHand != null ? Vector3.Distance(rightHand.position, rig.RightHandTarget.position) : float.PositiveInfinity;
             if (leftDistance > 0.1f || rightDistance > 0.1f)
+            {
+                Transform leftShoulder = player.Animator.GetBoneTransform(HumanBodyBones.LeftUpperArm);
+                Transform rightShoulder = player.Animator.GetBoneTransform(HumanBodyBones.RightUpperArm);
                 throw new InvalidOperationException(
-                    $"Animation Rigging did not place both hands on their stick targets (left={leftDistance:F3} {leftHand?.position}->{rig.LeftHandTarget.position}, right={rightDistance:F3} {rightHand?.position}->{rig.RightHandTarget.position}).");
+                    $"Animation Rigging did not place both hands on their stick targets (left={leftDistance:F3} {leftHand?.position}->{rig.LeftHandTarget.position}, right={rightDistance:F3} {rightHand?.position}->{rig.RightHandTarget.position})."
+                    + $" local leftShoulder={player.transform.InverseTransformPoint(leftShoulder.position)} "
+                    + $"leftTarget={player.transform.InverseTransformPoint(rig.LeftHandTarget.position)} "
+                    + $"rightShoulder={player.transform.InverseTransformPoint(rightShoulder.position)} "
+                    + $"rightTarget={player.transform.InverseTransformPoint(rig.RightHandTarget.position)}");
+            }
             ValidateNaturalArmBend(player.transform, player.Animator, HumanBodyBones.LeftUpperArm,
                 HumanBodyBones.LeftLowerArm, HumanBodyBones.LeftHand, -1f, "left");
             ValidateNaturalArmBend(player.transform, player.Animator, HumanBodyBones.RightUpperArm,

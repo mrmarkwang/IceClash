@@ -2,12 +2,11 @@
  * IceClash modular clean-humanoid asset generator and validator.
  * Consumes the isolated Male_Base_v1_1_Clean production visual/controller,
  * applies the existing mobile presentation policy,
- * builds all eight hockey gear pieces, nests the validated production stick,
- * aligns its explicit grip/contact markers in a professional two-hand hockey carry
- * with the top hand beside the hip and naturally bent, outward-facing elbows,
- * keeps the blade on the established gameplay control point, and creates shared
- * presentation assets, prefabs, IK, the ten-player scene, and gameplay evidence
- * without debug geometry.
+ * builds all eight hockey gear pieces, parents the validated production stick
+ * through RightHand/StickSocket, aligns its explicit grip/contact markers in a
+ * right-handed two-hand hockey stance, binds LeftHand IK to SecondaryGrip, and
+ * creates shared presentation assets, prefabs, IK, validation, and evidence
+ * without changing gameplay systems or shipping debug geometry.
  */
 
 #if UNITY_EDITOR
@@ -32,13 +31,10 @@ namespace IceClash.Tests.Editor
     public static class HockeyCharacterAssetSetup
     {
         private const string ModelPath = MaleBaseV11GameplayIntegrationSetup.CleanModelPath;
-        private const string CharacterDirectory = "Assets/_Project/Art/Characters/RealisticHumanMale";
         private const string StickDirectory = "Assets/Equipment/Sticks/Hockey_Stick_Base_v1";
         private const string StickModelPath = StickDirectory + "/Meshy_Hockey_Stick_Base_v1.fbx";
         private const string StickPrefabPath = StickDirectory + "/Hockey_Stick_Base_v1.prefab";
         private const string StickMaterialPath = StickDirectory + "/Hockey_Stick_Base_v1.mat";
-        private const string LegacyStickModelPath = "Assets/_Project/Art/HockeyGear/LowPolyStick/hockey_stick_002.fbx";
-        private const string LegacyStickMaterialPath = "Assets/_Project/Art/HockeyPrototype/LowPolyHockeyStick.mat";
         private const string GeneratedDirectory = "Assets/_Project/Art/HockeyPrototype";
         private const string PrefabPath = "Assets/_Project/Prefabs/HockeyPlayer.prefab";
         private const string ResourcePrefabPath = "Assets/_Project/Prefabs/Resources/Skater.prefab";
@@ -53,13 +49,13 @@ namespace IceClash.Tests.Editor
         private const float GameplayIceY = 0.2f;
         private const float GameplaySpawnY = 1f;
         private const float ProductionShaftExtension = 3.05f;
-        private const float LowerHandGripFraction = 0.90f;
-        // Professional carry: top hand beside the hip and slightly behind the lower hand.
-        private static readonly Vector3 PrimaryGripPose = new(0.40f, 1.18f, -0.14f);
-        private static readonly Vector3 SecondaryGripPoseHint = new(0.30f, 1.10f, 0.30f);
-        private static readonly Vector3 LeftElbowHintPose = new(-0.45f, 1.05f, 0.15f);
-        private static readonly Vector3 RightElbowHintPose = new(0.72f, 1.18f, -0.05f);
-        private static readonly Vector3 BladePose = new(0f, 0.25f, 1.55f);
+        // Right-handed ready stance in StickPresentationRoot space.
+        private static readonly Vector3 PrimaryGripPose = new(0.15f, 0.72f, 0.15f);
+        private static readonly Vector3 LeftElbowHintPose = new(-0.55f, 0.70f, 0.25f);
+        private static readonly Vector3 RightElbowHintPose = new(0.50f, 0.78f, 0.15f);
+        private static readonly Vector3 BladePose = new(0.18f, 0.25f, 1.55f);
+        private static readonly Vector3 RightPalmSocketOffset = new(0.09f, 0f, 0f);
+        private static readonly Vector3 LeftPalmGripOffset = new(0.07f, 0f, 0f);
 
         static HockeyCharacterAssetSetup()
         {
@@ -71,7 +67,6 @@ namespace IceClash.Tests.Editor
         {
             EnsureFolder(GeneratedDirectory);
             MaleBaseV11GameplayIntegrationSetup.GenerateProductionAssets();
-            ConfigureMobileTextures();
             ConfigureStickAssets();
             Material skinMaterial = CreateOrUpdateMaterial("CharacterMobile", new Color(0.72f, 0.52f, 0.4f));
             Material equipmentMaterial = CreateOrUpdateMaterial("EquipmentDark", new Color(0.035f, 0.055f, 0.085f));
@@ -184,10 +179,12 @@ namespace IceClash.Tests.Editor
                 throw new InvalidOperationException("HockeyPlayer does not contain all eight equipment slots.");
             if (!HasActiveEquipment(loadout))
                 throw new InvalidOperationException("HockeyPlayer does not have one active item in every equipment slot.");
-            if (stickRig == null || !stickRig.HasValidReferences || rigBuilder == null || rigBuilder.layers.Count != 1)
+            if (stickRig == null || !stickRig.HasValidReferences || rigBuilder == null || rigBuilder.layers.Count != 2)
                 throw new InvalidOperationException("HockeyPlayer two-hand IK rig is incomplete.");
             if (stickRig.LeftHandConstraint.transform == stickRig.RightHandConstraint.transform
-                || stickRig.LeftHandTarget == stickRig.RightHandTarget)
+                || stickRig.LeftHandTarget == stickRig.RightHandTarget
+                || stickRig.LeftHandConstraint.data.target != stickRig.LeftHandTarget
+                || stickRig.RightHandConstraint.data.target != stickRig.RightHandTarget)
                 throw new InvalidOperationException("Left and right hand IK constraints are not independent.");
             if (!MatchesProfessionalPose(loadout, stickRig))
                 throw new InvalidOperationException("HockeyPlayer professional grip targets or elbow hints are stale.");
@@ -207,8 +204,9 @@ namespace IceClash.Tests.Editor
             Transform debugBlade = loadout.FindEquippedChild(HockeyEquipmentSlot.Stick, "Stick Blade Visibility");
             if (shaftMarker == null || gripMarker == null || shaftMarker.GetComponent<Renderer>() != null || debugBlade != null)
                 throw new InvalidOperationException("Hockey stick must render only the imported mesh, not debug primitives.");
-            Transform importedStick = loadout.FindEquippedChild(HockeyEquipmentSlot.Stick, "Production Hockey Stick");
-            Transform productionRoot = importedStick != null ? importedStick.Find("Hockey_Stick_Base_v1") : null;
+            GameObject equippedStick = loadout.GetEquipped(HockeyEquipmentSlot.Stick);
+            Transform productionRoot = equippedStick != null ? equippedStick.transform : null;
+            Transform importedStick = productionRoot;
             Transform primaryGrip = productionRoot != null ? productionRoot.Find("PrimaryGrip") : null;
             Transform secondaryGrip = productionRoot != null ? productionRoot.Find("SecondaryGrip") : null;
             Transform bladeContact = productionRoot != null ? productionRoot.Find("BladeContact") : null;
@@ -239,9 +237,7 @@ namespace IceClash.Tests.Editor
                 || stickMaterial.GetTexture("_MetallicGlossMap") == null
                 || sourceStick == null || stickImporter == null || stickImporter.isReadable
                 || stickImporter.animationType != ModelImporterAnimationType.None || stickImporter.importAnimation
-                || !prefabDependencies.Contains(StickPrefabPath) || !resourceDependencies.Contains(StickPrefabPath)
-                || prefabDependencies.Contains(LegacyStickModelPath) || resourceDependencies.Contains(LegacyStickModelPath)
-                || prefabDependencies.Contains(LegacyStickMaterialPath) || resourceDependencies.Contains(LegacyStickMaterialPath))
+                || !prefabDependencies.Contains(StickPrefabPath) || !resourceDependencies.Contains(StickPrefabPath))
                 throw new InvalidOperationException("Production hockey stick integration or arena renderer policy is invalid.");
             Bounds stickBounds = stickRenderers[0].bounds;
             for (int i = 1; i < stickRenderers.Length; i++) stickBounds.Encapsulate(stickRenderers[i].bounds);
@@ -249,27 +245,32 @@ namespace IceClash.Tests.Editor
             if (Vector3.Distance(stickBounds.ClosestPoint(gripMarker.position), gripMarker.position) > fittedLength * 0.15f
                 || Vector3.Distance(stickBounds.ClosestPoint(visualBlade.position), visualBlade.position) > fittedLength * 0.15f)
                 throw new InvalidOperationException("Production hockey stick no longer reaches its grip and blade markers.");
-            Vector3 lowerHandGrip = Vector3.Lerp(primaryGrip.position, secondaryGrip.position, LowerHandGripFraction);
-            if (Vector3.Distance(primaryGrip.position, stickRig.RightHandTarget.position) > 0.001f
-                || Vector3.Distance(lowerHandGrip, stickRig.LeftHandTarget.position) > 0.001f
-                || Vector3.Distance(bladeContact.position, visualBlade.position) > 0.001f
-                || DistanceToSegment(stickRig.LeftHandTarget.position, primaryGrip.position, secondaryGrip.position) > 0.001f
-                || Vector3.Distance(stickBounds.ClosestPoint(stickRig.LeftHandTarget.position),
-                    stickRig.LeftHandTarget.position) > fittedLength * 0.05f)
+            Transform socket = productionRoot != null ? productionRoot.parent : null;
+            Transform rightHand = animator.GetBoneTransform(HumanBodyBones.RightHand);
+            float handSeparation = Vector3.Distance(primaryGrip.localPosition, secondaryGrip.localPosition)
+                * productionRoot.localScale.x;
+            Vector3 expectedTargetPrimary = stickRig.RightHandTarget.localPosition
+                + stickRig.RightHandTarget.localRotation * RightPalmSocketOffset;
+            if (socket == null || socket.name != "StickSocket" || socket.parent != rightHand
+                || socket.childCount != 1 || socket.GetChild(0) != productionRoot
+                || Vector3.Distance(expectedTargetPrimary, PrimaryGripPose) > 0.001f
+                || stickRig.EquippedSecondaryGrip != secondaryGrip
+                || stickRig.LeftHandTarget == null || stickRig.LeftHandTarget.IsChildOf(productionRoot)
+                || Vector3.Distance(bladeContact.localPosition, visualBlade.localPosition) > 0.001f
+                || handSeparation < 0.30f || handSeparation > 0.45f
+                || !secondaryGrip.IsChildOf(productionRoot))
                 throw new InvalidOperationException("Production stick shaft grips are not aligned to the two-hand IK targets.");
-            Vector3 gripToBlade = visualBlade.position - gripMarker.position;
-            if (gripMarker.position.y - visualBlade.position.y < 0.8f
-                || Mathf.Abs(gripToBlade.x) < 0.30f || gripToBlade.z < 1f
-                || primaryGrip.position.y - lowerHandGrip.y < 0.18f
-                || lowerHandGrip.z - primaryGrip.position.z < 0.25f
-                || Vector3.Distance(primaryGrip.position, lowerHandGrip) < 0.50f
-                || stickRig.RightHandTarget.localPosition.x < 0.30f
-                || stickRig.RightHandTarget.localPosition.y < 0.95f
-                || stickRig.RightHandTarget.localPosition.y > 1.25f)
+            Vector3 gripToBlade = BladePose - PrimaryGripPose;
+            if (PrimaryGripPose.y - BladePose.y < 0.8f
+                || gripToBlade.z < 0.9f
+                || BladePose.x <= 0f
+                || stickRig.LeftHandConstraint.data.hint == null
+                || stickRig.LeftHandConstraint.data.hintWeight < 0.99f
+                || stickRig.LeftHandConstraint.data.maintainTargetRotationOffset
+                || stickRig.RightHandConstraint.data.maintainTargetRotationOffset)
                 throw new InvalidOperationException("Production stick no longer forms the required professional two-hand carry.");
 
             ValidateEditorEquipmentPersistence();
-            ValidateTexturePolicy();
             ValidateRendererPolicy(canonical);
             if (AssetDatabase.LoadAssetAtPath<SceneAsset>(ScenePath) == null)
                 throw new InvalidOperationException("ModularCharacterTest scene is missing.");
@@ -286,7 +287,7 @@ namespace IceClash.Tests.Editor
             HockeyStickRig stickRig = canonical != null ? canonical.GetComponent<HockeyStickRig>() : null;
             if (loadout != null && loadout.IsComplete() && loadout.SlotCount == ExpectedEquipmentSlotCount
                 && HasActiveEquipment(loadout)
-                && loadout.FindEquippedChild(HockeyEquipmentSlot.Stick, "Production Hockey Stick") != null
+                && loadout.GetEquipped(HockeyEquipmentSlot.Stick)?.name == "Hockey_Stick_Base_v1"
                 && MatchesProfessionalPose(loadout, stickRig)
                 && importer != null && importer.animationType == ModelImporterAnimationType.Human
                 && stickImporter != null && !stickImporter.isReadable) return;
@@ -311,7 +312,7 @@ namespace IceClash.Tests.Editor
             if (changed) importer.SaveAndReimport();
             Avatar avatar = LoadHumanoidAvatar();
             if (avatar == null || !avatar.isHuman || !avatar.isValid)
-                throw new InvalidOperationException("Humanoid auto-mapping failed for RealisticHumanMale/unity.Fbx.");
+                throw new InvalidOperationException("Humanoid auto-mapping failed for the clean production model.");
         }
 
         private static Avatar LoadHumanoidAvatar()
@@ -320,23 +321,6 @@ namespace IceClash.Tests.Editor
             Animator animator = model != null ? model.GetComponent<Animator>() : null;
             if (animator != null && animator.avatar != null) return animator.avatar;
             return AssetDatabase.LoadAllAssetsAtPath(ModelPath).OfType<Avatar>().FirstOrDefault();
-        }
-
-        private static void ConfigureMobileTextures()
-        {
-            string[] guids = AssetDatabase.FindAssets("t:Texture2D", new[] { CharacterDirectory });
-            for (int i = 0; i < guids.Length; i++)
-            {
-                string path = AssetDatabase.GUIDToAssetPath(guids[i]);
-                TextureImporter importer = AssetImporter.GetAtPath(path) as TextureImporter;
-                if (importer == null) continue;
-                importer.isReadable = false;
-                importer.mipmapEnabled = true;
-                ApplyMobilePlatform(importer, "Android");
-                ApplyMobilePlatform(importer, "iPhone");
-                importer.SaveAndReimport();
-            }
-            Debug.Log($"MODULAR_CHARACTER_TEXTURE_POLICY count={guids.Length} max=1024 format=ASTC_6x6");
         }
 
         private static void ConfigureStickAssets()
@@ -368,46 +352,44 @@ namespace IceClash.Tests.Editor
             if (loadout == null || stickRig == null || !stickRig.HasValidReferences) return false;
             Transform primaryGrip = loadout.FindEquippedChild(HockeyEquipmentSlot.Stick, "PrimaryGrip");
             Transform secondaryGrip = loadout.FindEquippedChild(HockeyEquipmentSlot.Stick, "SecondaryGrip");
+            Transform bladeContact = loadout.FindEquippedChild(HockeyEquipmentSlot.Stick, "BladeContact");
+            Transform equippedStick = loadout.GetEquipped(HockeyEquipmentSlot.Stick)?.transform;
+            Transform socket = equippedStick != null ? equippedStick.parent : null;
             Transform leftHint = stickRig.LeftHandConstraint.data.hint;
             Transform rightHint = stickRig.RightHandConstraint.data.hint;
             Transform targetSpace = stickRig.RightHandTarget.parent;
-            Vector3 expectedShaftEnd = stickRig.RightHandTarget.localPosition
-                + (stickRig.LeftHandTarget.localPosition - stickRig.RightHandTarget.localPosition)
-                * ProductionShaftExtension;
-            Vector3 expectedLowerHand = primaryGrip != null && secondaryGrip != null
-                ? Vector3.Lerp(primaryGrip.position, secondaryGrip.position, LowerHandGripFraction)
-                : Vector3.zero;
-            Vector3 expectedShaftDirection = BladePose - PrimaryGripPose;
-            Vector3 expectedSecondaryDirection = Vector3.ProjectOnPlane(
-                SecondaryGripPoseHint - PrimaryGripPose, expectedShaftDirection).normalized;
-            Vector3 generatedPrimary = primaryGrip != null && targetSpace != null
-                ? targetSpace.InverseTransformPoint(primaryGrip.position) : Vector3.zero;
-            Vector3 generatedSecondary = secondaryGrip != null && targetSpace != null
-                ? targetSpace.InverseTransformPoint(secondaryGrip.position) : Vector3.zero;
-            Vector3 generatedSecondaryDirection = Vector3.ProjectOnPlane(
-                generatedSecondary - generatedPrimary, expectedShaftDirection).normalized;
-            return primaryGrip != null && secondaryGrip != null && leftHint != null && rightHint != null
-                && targetSpace != null && expectedSecondaryDirection.sqrMagnitude > 0.99f
-                && generatedSecondaryDirection.sqrMagnitude > 0.99f
-                && Vector3.Angle(generatedSecondaryDirection, expectedSecondaryDirection) <= 0.1f
-                && Vector3.Distance(stickRig.RightHandTarget.localPosition, PrimaryGripPose) <= 0.001f
+            Vector3 generatedTargetPrimary = stickRig.RightHandTarget.localPosition
+                + stickRig.RightHandTarget.localRotation * RightPalmSocketOffset;
+            float lowerGripDistance = primaryGrip != null && secondaryGrip != null && equippedStick != null
+                ? Vector3.Distance(primaryGrip.localPosition, secondaryGrip.localPosition) * equippedStick.localScale.x
+                : 0f;
+            Vector3 expectedSecondary = PrimaryGripPose
+                + (BladePose - PrimaryGripPose).normalized * lowerGripDistance;
+            Vector3 expectedShaftEnd = PrimaryGripPose
+                + (expectedSecondary - PrimaryGripPose) * ProductionShaftExtension;
+            bool matches = primaryGrip != null && secondaryGrip != null && bladeContact != null
+                && leftHint != null && rightHint != null && targetSpace != null
+                && socket != null && socket.name == "StickSocket"
+                && socket.parent == loadout.RightHand
+                && stickRig.EquippedSecondaryGrip == secondaryGrip
+                && !stickRig.LeftHandTarget.IsChildOf(equippedStick)
+                && !stickRig.RightHandTarget.IsChildOf(equippedStick)
+                && Vector3.Distance(generatedTargetPrimary, PrimaryGripPose) <= 0.001f
                 && Vector3.Distance(stickRig.BladeReference.localPosition, BladePose) <= 0.001f
                 && Vector3.Distance(leftHint.localPosition, LeftElbowHintPose) <= 0.001f
                 && Vector3.Distance(rightHint.localPosition, RightElbowHintPose) <= 0.001f
                 && Vector3.Distance(stickRig.ShaftEndReference.localPosition, expectedShaftEnd) <= 0.001f
-                && Vector3.Distance(primaryGrip.position, stickRig.RightHandTarget.position) <= 0.001f
-                && Vector3.Distance(expectedLowerHand, stickRig.LeftHandTarget.position) <= 0.001f;
-        }
-
-        private static void ApplyMobilePlatform(TextureImporter importer, string platform)
-        {
-            TextureImporterPlatformSettings settings = importer.GetPlatformTextureSettings(platform);
-            settings.name = platform;
-            settings.overridden = true;
-            settings.maxTextureSize = 1024;
-            settings.format = TextureImporterFormat.ASTC_6x6;
-            settings.textureCompression = TextureImporterCompression.Compressed;
-            importer.SetPlatformTextureSettings(settings);
+                && loadout.FindEquippedChild(HockeyEquipmentSlot.Stick, "Stick Blade") != null;
+            if (!matches)
+                Debug.LogWarning($"HOCKEY_GRIP_POSE_DIAGNOSTIC socket={socket?.name} socketParent={socket?.parent?.name} "
+                    + $"rightHand={loadout.RightHand?.name} leftTarget={stickRig.LeftHandTarget?.name} secondary={stickRig.EquippedSecondaryGrip?.name} "
+                    + $"leftChild={stickRig.LeftHandTarget != null && equippedStick != null && stickRig.LeftHandTarget.IsChildOf(equippedStick)} "
+                    + $"rightChild={stickRig.RightHandTarget != null && equippedStick != null && stickRig.RightHandTarget.IsChildOf(equippedStick)} "
+                    + $"targetPrimary={generatedTargetPrimary:F4} expectedPrimary={PrimaryGripPose:F4} "
+                    + $"bladeLocal={stickRig.BladeReference?.localPosition:F4} leftHint={leftHint?.localPosition:F4} "
+                    + $"rightHint={rightHint?.localPosition:F4} shaftEnd={stickRig.ShaftEndReference?.localPosition:F4} "
+                    + $"expectedShaftEnd={expectedShaftEnd:F4}");
+            return matches;
         }
 
         private static GameObject BuildPlayer(Material skinMaterial, Material equipmentMaterial, Material jerseyMaterial)
@@ -446,48 +428,63 @@ namespace IceClash.Tests.Editor
             // Keep gameplay presentation helpers outside the animated FBX root. Humanoid evaluation can
             // apply a body-position offset to that root even when root motion is disabled, which would
             // otherwise pull the blade reference away from StickPuckInteraction's control point.
+            Transform head = animator.GetBoneTransform(HumanBodyBones.Head) ?? root.transform;
+            Transform chest = animator.GetBoneTransform(HumanBodyBones.Chest) ?? root.transform;
+            Transform hips = animator.GetBoneTransform(HumanBodyBones.Hips) ?? root.transform;
+            Transform leftHand = animator.GetBoneTransform(HumanBodyBones.LeftHand)
+                ?? throw new InvalidOperationException("Humanoid LeftHand mapping is unavailable.");
+            Transform rightHand = animator.GetBoneTransform(HumanBodyBones.RightHand)
+                ?? throw new InvalidOperationException("Humanoid RightHand mapping is unavailable.");
+            Transform leftFoot = animator.GetBoneTransform(HumanBodyBones.LeftFoot) ?? visual.transform;
+            Transform rightFoot = animator.GetBoneTransform(HumanBodyBones.RightFoot) ?? visual.transform;
+
             GameObject presentationRoot = NewChild("StickPresentationRoot", visualRoot.transform);
             GameObject targetsRoot = NewChild("StickRigTargets", presentationRoot.transform);
-            Transform leftTarget = NewTarget("LeftHandTarget", targetsRoot.transform, Vector3.zero);
-            Transform rightTarget = NewTarget("RightHandTarget", targetsRoot.transform, PrimaryGripPose);
+            Quaternion rightTargetRotation = Quaternion.Inverse(targetsRoot.transform.rotation) * rightHand.rotation;
+            Vector3 rightTargetPosition = PrimaryGripPose - rightTargetRotation * RightPalmSocketOffset;
+            Transform rightTarget = NewTarget("RightHandGripTarget", targetsRoot.transform,
+                rightTargetPosition, rightTargetRotation);
             Transform leftHint = NewTarget("LeftElbowHint", targetsRoot.transform, LeftElbowHintPose);
             Transform rightHint = NewTarget("RightElbowHint", targetsRoot.transform, RightElbowHintPose);
             Transform shaftEndReference = NewTarget("ShaftEndReference", targetsRoot.transform, Vector3.zero);
             Transform bladeReference = NewTarget("BladeReference", targetsRoot.transform, BladePose);
-            GameObject productionStick = BuildStick(rightTarget.localPosition, bladeReference.localPosition);
-            Transform productionPrimaryGrip = productionStick.transform.Find(
-                "Production Hockey Stick/Hockey_Stick_Base_v1/PrimaryGrip");
-            Transform productionSecondaryGrip = productionStick.transform.Find(
-                "Production Hockey Stick/Hockey_Stick_Base_v1/SecondaryGrip");
+            Vector3 inverseHandScale = new(1f / rightHand.lossyScale.x,
+                1f / rightHand.lossyScale.y, 1f / rightHand.lossyScale.z);
+            Transform stickSocket = NewTarget("StickSocket", rightHand,
+                Vector3.Scale(RightPalmSocketOffset, inverseHandScale));
+            stickSocket.localScale = inverseHandScale;
+            GameObject productionStick = BuildStick(stickSocket, presentationRoot.transform,
+                rightTarget, leftHand.rotation, PrimaryGripPose, BladePose);
+            Transform productionPrimaryGrip = productionStick.transform.Find("PrimaryGrip");
+            Transform productionSecondaryGrip = productionStick.transform.Find("SecondaryGrip");
             if (productionPrimaryGrip == null || productionSecondaryGrip == null)
                 throw new InvalidOperationException("Production stick is missing its authored grip markers.");
-            // Keep the blade on the established gameplay control point and place the
-            // presentation-only hand targets on the authored grips.
-            Vector3 primaryLocal = productionStick.transform.InverseTransformPoint(productionPrimaryGrip.position);
-            Vector3 secondaryLocal = productionStick.transform.InverseTransformPoint(productionSecondaryGrip.position);
-            leftTarget.localPosition = Vector3.Lerp(primaryLocal, secondaryLocal, LowerHandGripFraction);
-            shaftEndReference.localPosition = primaryLocal
-                + (leftTarget.localPosition - primaryLocal) * ProductionShaftExtension;
+            float lowerGripDistance = Vector3.Distance(productionPrimaryGrip.localPosition,
+                productionSecondaryGrip.localPosition) * productionStick.transform.localScale.x;
+            Vector3 designedSecondary = PrimaryGripPose
+                + (BladePose - PrimaryGripPose).normalized * lowerGripDistance;
+            Quaternion leftTargetRotation = Quaternion.Inverse(targetsRoot.transform.rotation) * leftHand.rotation;
+            Transform leftTarget = NewTarget("LeftHandIKTarget", targetsRoot.transform,
+                designedSecondary - leftTargetRotation * LeftPalmGripOffset, leftTargetRotation);
+            shaftEndReference.localPosition = PrimaryGripPose
+                + (designedSecondary - PrimaryGripPose) * ProductionShaftExtension;
 
             GameObject rigObject = NewChild("HockeyStickRigConstraints", visual.transform);
-            Rig rig = rigObject.AddComponent<Rig>();
-            TwoBoneIKConstraint leftConstraint = CreateArmConstraint("LeftHandIK", rigObject.transform, animator,
-                HumanBodyBones.LeftUpperArm, HumanBodyBones.LeftLowerArm, HumanBodyBones.LeftHand, leftTarget, leftHint);
-            TwoBoneIKConstraint rightConstraint = CreateArmConstraint("RightHandIK", rigObject.transform, animator,
+            Rig rightRig = NewChild("RightHandRig", rigObject.transform).AddComponent<Rig>();
+            Rig leftRig = NewChild("LeftHandRig", rigObject.transform).AddComponent<Rig>();
+            TwoBoneIKConstraint rightConstraint = CreateArmConstraint("RightHandIK", rightRig.transform, animator,
                 HumanBodyBones.RightUpperArm, HumanBodyBones.RightLowerArm, HumanBodyBones.RightHand, rightTarget, rightHint);
-            rigBuilder.layers.Add(new RigLayer(rig));
+            TwoBoneIKConstraint leftConstraint = CreateArmConstraint("LeftHandIK", leftRig.transform, animator,
+                HumanBodyBones.LeftUpperArm, HumanBodyBones.LeftLowerArm, HumanBodyBones.LeftHand, leftTarget, leftHint);
+            // Rig-layer order is intentional: the right hand moves StickSocket first,
+            // then the left layer resolves SecondaryGrip from the updated stick pose.
+            rigBuilder.layers.Add(new RigLayer(rightRig));
+            rigBuilder.layers.Add(new RigLayer(leftRig));
 
             HockeyStickRig stickRig = root.AddComponent<HockeyStickRig>();
             stickRig.Configure(leftConstraint, rightConstraint, leftTarget, rightTarget, leftHint, rightHint,
                 shaftEndReference, bladeReference);
 
-            Transform head = animator.GetBoneTransform(HumanBodyBones.Head) ?? root.transform;
-            Transform chest = animator.GetBoneTransform(HumanBodyBones.Chest) ?? root.transform;
-            Transform hips = animator.GetBoneTransform(HumanBodyBones.Hips) ?? root.transform;
-            Transform leftHand = animator.GetBoneTransform(HumanBodyBones.LeftHand) ?? visual.transform;
-            Transform rightHand = animator.GetBoneTransform(HumanBodyBones.RightHand) ?? visual.transform;
-            Transform leftFoot = animator.GetBoneTransform(HumanBodyBones.LeftFoot) ?? visual.transform;
-            Transform rightFoot = animator.GetBoneTransform(HumanBodyBones.RightFoot) ?? visual.transform;
             Vector3 leftSkatePosition = visualRoot.transform.InverseTransformPoint(leftFoot.position);
             Vector3 rightSkatePosition = visualRoot.transform.InverseTransformPoint(rightFoot.position);
             float skateCenterY = (GameplayIceY - GameplaySpawnY) / GameplaySkaterScale
@@ -512,8 +509,9 @@ namespace IceClash.Tests.Editor
             bindings[6] = CreateBinding(HockeyEquipmentSlot.Skates, visualRoot.transform, "SkatesSlot",
                 BuildFollowedPair("Skates", PrimitiveType.Cube, equipmentMaterial, leftSkatePosition,
                     rightSkatePosition, new Vector3(0.11f, 0.07f, 0.27f)));
-            bindings[7] = CreateBinding(HockeyEquipmentSlot.Stick, presentationRoot.transform, "StickSlot",
-                productionStick);
+            HockeyEquipmentBinding stickBinding = new();
+            stickBinding.Configure(HockeyEquipmentSlot.Stick, stickSocket, productionStick);
+            bindings[7] = stickBinding;
             AlignStickPresentationToGameplayControl(root.transform, presentationRoot.transform, bladeReference);
             HockeyEquipmentLoadout loadout = root.AddComponent<HockeyEquipmentLoadout>();
             loadout.Configure(bindings, stickRig, leftHand, rightHand, leftFoot, rightFoot);
@@ -530,7 +528,9 @@ namespace IceClash.Tests.Editor
             Vector3 gameplayControlPoint = gameplayRoot.TransformPoint(
                 (Vector3.forward * GameplayControlForwardOffset + Vector3.up * GameplayControlVerticalOffset)
                 / GameplaySkaterScale);
-            presentationRoot.position += gameplayControlPoint - bladeReference.position;
+            Vector3 correction = gameplayControlPoint - bladeReference.position;
+            correction.x = 0f;
+            presentationRoot.position += correction;
         }
 
         private static TwoBoneIKConstraint CreateArmConstraint(string name, Transform parent, Animator animator,
@@ -550,9 +550,9 @@ namespace IceClash.Tests.Editor
             data.hint = hint;
             data.targetPositionWeight = 1f;
             data.targetRotationWeight = 1f;
-            data.hintWeight = 0.75f;
+            data.hintWeight = 1f;
             data.maintainTargetPositionOffset = false;
-            data.maintainTargetRotationOffset = true;
+            data.maintainTargetRotationOffset = false;
             constraint.data = data;
             constraint.weight = 1f;
             return constraint;
@@ -607,34 +607,52 @@ namespace IceClash.Tests.Editor
             return item;
         }
 
-        private static GameObject BuildStick(Vector3 grip, Vector3 blade)
+        private static GameObject BuildStick(Transform socket, Transform poseSpace, Transform rightTarget,
+            Quaternion leftHandWorldRotation, Vector3 targetGrip, Vector3 targetBlade)
         {
-            GameObject item = new("Stick");
-            Transform shaftMarker = NewTarget("Stick Shaft", item.transform, Vector3.zero);
-
-            NewTarget("Stick Grip", item.transform, grip);
-            NewTarget("Stick Blade", item.transform, blade);
-
             GameObject modelAsset = AssetDatabase.LoadAssetAtPath<GameObject>(StickPrefabPath);
             if (modelAsset == null) throw new InvalidOperationException("Unable to load the production hockey stick prefab.");
-            GameObject modelFit = NewChild("Production Hockey Stick", item.transform);
             GameObject model = PrefabUtility.InstantiatePrefab(modelAsset) as GameObject;
             if (model == null) throw new InvalidOperationException("Unable to instantiate the production hockey stick prefab.");
             model.name = "Hockey_Stick_Base_v1";
-            model.transform.SetParent(modelFit.transform, false);
-            FitProductionStick(modelFit.transform, model.transform, grip, blade);
+            model.transform.SetParent(socket, false);
             Transform primaryGrip = model.transform.Find("PrimaryGrip");
             Transform secondaryGrip = model.transform.Find("SecondaryGrip");
-            if (primaryGrip == null || secondaryGrip == null)
+            Transform bladeContact = model.transform.Find("BladeContact");
+            if (primaryGrip == null || secondaryGrip == null || bladeContact == null)
                 throw new InvalidOperationException("Production stick is missing its authored grip markers.");
-            Vector3 primaryLocal = item.transform.InverseTransformPoint(primaryGrip.position);
-            Vector3 secondaryLocal = item.transform.InverseTransformPoint(secondaryGrip.position);
-            Vector3 shaftEnd = primaryLocal + (secondaryLocal - primaryLocal) * ProductionShaftExtension;
-            Vector3 direction = shaftEnd - primaryLocal;
-            shaftMarker.localPosition = (primaryLocal + shaftEnd) * 0.5f;
-            shaftMarker.localScale = new Vector3(0.035f, direction.magnitude, 0.035f);
-            shaftMarker.localRotation = Quaternion.FromToRotation(Vector3.up, direction.normalized);
-            Renderer[] renderers = modelFit.GetComponentsInChildren<Renderer>(true);
+
+            Vector3 sourceGrip = primaryGrip.localPosition;
+            Vector3 sourceBlade = bladeContact.localPosition;
+            Vector3 sourceDirection = sourceBlade - sourceGrip;
+            Vector3 targetDirection = targetBlade - targetGrip;
+            if (sourceDirection.sqrMagnitude < 0.000001f || targetDirection.sqrMagnitude < 0.000001f)
+                throw new InvalidOperationException("Production stick alignment endpoints are invalid.");
+            Vector3 sourceFace = Vector3.ProjectOnPlane(Vector3.forward, sourceDirection).normalized;
+            Vector3 targetDirectionWorld = poseSpace.TransformDirection(targetDirection.normalized);
+            Vector3 targetFaceWorld = Vector3.ProjectOnPlane(
+                poseSpace.TransformDirection(Vector3.right), targetDirectionWorld).normalized;
+            Quaternion sourceBasis = Quaternion.LookRotation(sourceDirection.normalized, sourceFace);
+            Quaternion targetBasis = Quaternion.LookRotation(targetDirectionWorld, targetFaceWorld);
+            Quaternion desiredStickWorldRotation = targetBasis * Quaternion.Inverse(sourceBasis);
+            float scale = targetDirection.magnitude / sourceDirection.magnitude;
+
+            socket.localRotation = Quaternion.Inverse(rightTarget.rotation) * desiredStickWorldRotation;
+            model.transform.localScale = Vector3.one * scale;
+            model.transform.localRotation = Quaternion.identity;
+            model.transform.localPosition = -sourceGrip * scale;
+            secondaryGrip.rotation = leftHandWorldRotation;
+
+            Transform gripMarker = NewTarget("Stick Grip", model.transform, sourceGrip);
+            Transform bladeMarker = NewTarget("Stick Blade", model.transform, sourceBlade);
+            Vector3 shaftEnd = sourceGrip + (secondaryGrip.localPosition - sourceGrip) * ProductionShaftExtension;
+            Transform shaftMarker = NewTarget("Stick Shaft", model.transform, (sourceGrip + shaftEnd) * 0.5f);
+            shaftMarker.localScale = new Vector3(0.035f, Vector3.Distance(sourceGrip, shaftEnd), 0.035f);
+            shaftMarker.localRotation = Quaternion.FromToRotation(Vector3.up, shaftEnd - sourceGrip);
+            gripMarker.localRotation = primaryGrip.localRotation;
+            bladeMarker.localRotation = bladeContact.localRotation;
+
+            Renderer[] renderers = model.GetComponentsInChildren<Renderer>(true);
             if (renderers.Length == 0) throw new InvalidOperationException("Production hockey stick prefab has no renderers.");
             Bounds renderedBounds = renderers[0].bounds;
             for (int i = 0; i < renderers.Length; i++)
@@ -642,45 +660,11 @@ namespace IceClash.Tests.Editor
                 ApplyArenaStickRendererPolicy(renderers[i]);
                 if (i > 0) renderedBounds.Encapsulate(renderers[i].bounds);
             }
-            float expectedLength = Vector3.Distance(grip, blade);
+            float expectedLength = Vector3.Distance(targetGrip, targetBlade);
             if (renderedBounds.size.magnitude < expectedLength * 0.75f
                 || renderedBounds.size.magnitude > expectedLength * 2f)
                 throw new InvalidOperationException($"Production stick rendered bounds are invalid: {renderedBounds.size}.");
-            return item;
-        }
-
-        private static void FitProductionStick(Transform fittedRoot, Transform productionRoot,
-            Vector3 targetGrip, Vector3 targetBlade)
-        {
-            Transform primaryGrip = productionRoot.Find("PrimaryGrip");
-            Transform bladeContact = productionRoot.Find("BladeContact");
-            if (primaryGrip == null || bladeContact == null)
-                throw new InvalidOperationException("Production stick is missing PrimaryGrip or BladeContact.");
-
-            Vector3 sourceGrip = fittedRoot.InverseTransformPoint(primaryGrip.position);
-            Vector3 sourceBlade = fittedRoot.InverseTransformPoint(bladeContact.position);
-            Vector3 sourceDirection = sourceBlade - sourceGrip;
-            Vector3 targetDirection = targetBlade - targetGrip;
-            if (sourceDirection.sqrMagnitude < 0.000001f || targetDirection.sqrMagnitude < 0.000001f)
-                throw new InvalidOperationException("Production stick alignment endpoints are invalid.");
-
-            Transform secondaryGrip = productionRoot.Find("SecondaryGrip");
-            if (secondaryGrip == null)
-                throw new InvalidOperationException("Production stick is missing SecondaryGrip.");
-            Vector3 sourceSecondary = fittedRoot.InverseTransformPoint(secondaryGrip.position);
-            Vector3 sourceFace = Vector3.ProjectOnPlane(sourceSecondary - sourceGrip, sourceDirection).normalized;
-            Vector3 targetFace = Vector3.ProjectOnPlane(
-                SecondaryGripPoseHint - targetGrip, targetDirection).normalized;
-            if (sourceFace.sqrMagnitude < 0.000001f || targetFace.sqrMagnitude < 0.000001f)
-                throw new InvalidOperationException("Production stick secondary-grip orientation is invalid.");
-
-            float scale = targetDirection.magnitude / sourceDirection.magnitude;
-            Quaternion sourceBasis = Quaternion.LookRotation(sourceDirection.normalized, sourceFace);
-            Quaternion targetBasis = Quaternion.LookRotation(targetDirection.normalized, targetFace);
-            Quaternion rotation = targetBasis * Quaternion.Inverse(sourceBasis);
-            fittedRoot.localScale = Vector3.one * scale;
-            fittedRoot.localRotation = rotation;
-            fittedRoot.localPosition = targetGrip - rotation * (sourceGrip * scale);
+            return model;
         }
 
         private static void ApplyArenaStickRendererPolicy(Renderer renderer)
@@ -891,14 +875,18 @@ namespace IceClash.Tests.Editor
                         if (other != slot && loadout.GetEquipped(other) != before[other])
                             throw new InvalidOperationException($"Edit Mode clear of {slot} changed {other}.");
                     GameObject replacement = new("EditorReplacement_" + slot);
+                    if (slot == HockeyEquipmentSlot.Stick)
+                        NewTarget("SecondaryGrip", replacement.transform, new Vector3(0f, -0.35f, 0f));
                     loadout.Equip(slot, replacement);
                     foreach (HockeyEquipmentSlot other in Enum.GetValues(typeof(HockeyEquipmentSlot)))
                         if (other != slot && loadout.GetEquipped(other) != before[other])
                             throw new InvalidOperationException($"Edit Mode replacement of {slot} changed {other}.");
                 }
                 if (!rig.HasValidReferences || rig.LeftHandTarget.IsChildOf(loadout.GetEquipped(HockeyEquipmentSlot.Stick).transform)
+                    || rig.EquippedSecondaryGrip == null
+                    || !rig.EquippedSecondaryGrip.IsChildOf(loadout.GetEquipped(HockeyEquipmentSlot.Stick).transform)
                     || rig.RightHandTarget.IsChildOf(loadout.GetEquipped(HockeyEquipmentSlot.Stick).transform))
-                    throw new InvalidOperationException("Stick replacement invalidated stable IK references.");
+                    throw new InvalidOperationException("Stick replacement did not rebind the live SecondaryGrip target.");
                 PrefabUtility.SaveAsPrefabAsset(contents, tempPath);
             }
             finally { PrefabUtility.UnloadPrefabContents(contents); }
@@ -921,27 +909,6 @@ namespace IceClash.Tests.Editor
                 if (equipped == null || !equipped.activeSelf) return false;
             }
             return true;
-        }
-
-        private static void ValidateTexturePolicy()
-        {
-            string[] guids = AssetDatabase.FindAssets("t:Texture2D", new[] { CharacterDirectory });
-            for (int i = 0; i < guids.Length; i++)
-            {
-                string path = AssetDatabase.GUIDToAssetPath(guids[i]);
-                TextureImporter importer = AssetImporter.GetAtPath(path) as TextureImporter;
-                if (importer == null || importer.isReadable || !importer.mipmapEnabled)
-                    throw new InvalidOperationException("Texture policy failed for " + path);
-                ValidatePlatform(importer, path, "Android");
-                ValidatePlatform(importer, path, "iPhone");
-            }
-        }
-
-        private static void ValidatePlatform(TextureImporter importer, string path, string platform)
-        {
-            TextureImporterPlatformSettings settings = importer.GetPlatformTextureSettings(platform);
-            if (!settings.overridden || settings.maxTextureSize != 1024 || settings.format != TextureImporterFormat.ASTC_6x6)
-                throw new InvalidOperationException($"{platform} texture policy failed for {path}.");
         }
 
         private static void ValidateRendererPolicy(GameObject canonical)
@@ -975,6 +942,14 @@ namespace IceClash.Tests.Editor
         {
             Transform target = NewChild(name, parent).transform;
             target.localPosition = localPosition;
+            return target;
+        }
+
+        private static Transform NewTarget(string name, Transform parent, Vector3 localPosition,
+            Quaternion localRotation)
+        {
+            Transform target = NewTarget(name, parent, localPosition);
+            target.localRotation = localRotation;
             return target;
         }
 

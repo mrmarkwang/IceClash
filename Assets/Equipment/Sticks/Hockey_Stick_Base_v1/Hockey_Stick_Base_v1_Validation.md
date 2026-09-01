@@ -39,7 +39,7 @@
 ## Grip Setup
 
 - `PrimaryGrip` local position: (0.133594, 0.640000, 0.000000)
-- `SecondaryGrip` local position: (0.133594, 0.200000, 0.000000)
+- `SecondaryGrip` local position: (0.133594, 0.340000, 0.000000)
 - `BladeContact` local position: (-0.080000, -0.790000, 0.000000)
 - `StickSocket` local position: (0.000000, 0.000000, 0.000000)
 - `StickSocket` local rotation: (352.028800, 273.608400, 84.391750)°

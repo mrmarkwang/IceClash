@@ -39,9 +39,10 @@ Expected: both hands remain posed on the stick while placeholder locomotion and 
 
 Expected: all prior gameplay smoke assertions pass with ten modular skaters plus two controller-less goalie visuals, and puck behavior remains governed by the existing puck system.
 
-## Scenario 5 - Mobile asset budget settings
+## Scenario 5 - Mobile presentation budget settings
 
-1. Run the editor validation for the selected character and HockeyPlayer prefab.
-2. Inspect material identity across ten test players and source texture import settings.
+1. Run the editor validation for the clean production character and HockeyPlayer prefab.
+2. Inspect material identity and renderer settings across ten test players.
+3. Confirm neither generated player prefab depends on the retired `RealisticHumanMale` asset set.
 
-Expected: all textures below `RealisticHumanMale` are non-readable and mipmapped with explicit Android/iOS 1024px ASTC 6x6 overrides; character renderers disable motion vectors and reflection probes; all ten test and twelve gameplay humanoids share material assets without per-player clones.
+Expected: character renderers disable motion vectors and reflection probes; all ten test and twelve gameplay humanoids share material assets without per-player clones; no retired humanoid dependency remains.

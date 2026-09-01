@@ -1,7 +1,8 @@
 /*
  * IceClash modular hockey equipment registry.
  * Owns eight stable hockey-gear anchors and replaces one equipped child at a
- * time while preserving unrelated slots and non-replaceable stick IK targets.
+ * time while preserving unrelated slots and rebinding the left-hand IK target
+ * to the equipped stick's SecondaryGrip.
  */
 
 using System;
@@ -63,6 +64,8 @@ namespace IceClash.Hockey.Character
 
         public IReadOnlyList<HockeyEquipmentBinding> Slots => slots;
         public int SlotCount => slots != null ? slots.Length : 0;
+        public Transform LeftHand => leftHand;
+        public Transform RightHand => rightHand;
 
         public void Configure(HockeyEquipmentBinding[] bindings, HockeyStickRig rig,
             Transform handA, Transform handB, Transform footA, Transform footB)
@@ -236,7 +239,10 @@ namespace IceClash.Hockey.Character
 
         private void NotifyStickState()
         {
-            if (stickRig != null) stickRig.SetStickEquipped(GetEquipped(HockeyEquipmentSlot.Stick) != null);
+            if (stickRig == null) return;
+            GameObject stick = GetEquipped(HockeyEquipmentSlot.Stick);
+            Transform secondaryGrip = stick != null ? FindDescendant(stick.transform, "SecondaryGrip") : null;
+            stickRig.SetStickEquipped(stick != null, secondaryGrip);
         }
 
         private static void DestroyEquipmentObject(UnityEngine.Object target)

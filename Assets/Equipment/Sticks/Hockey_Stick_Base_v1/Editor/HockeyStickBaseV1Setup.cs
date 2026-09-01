@@ -2,6 +2,7 @@
  * Deterministically imports, normalizes, structures, attaches, renders, and
  * validates the first production hockey-stick asset. All generated content is
  * additive; the validated humanoid and gameplay assets are only referenced.
+ * SecondaryGrip is authored 0.30 m below PrimaryGrip for the ready stance.
  */
 
 #if UNITY_EDITOR
@@ -52,7 +53,7 @@ namespace IceClash.EquipmentValidation.Editor
             Root + "/Editor/HockeyStickBaseV1Setup.cs", Root + "/Editor/HockeyStickBaseV1Setup.cs.meta"
         };
         private static readonly Vector3 PrimaryGripPosition = new Vector3(0.133594f, 0.64f, 0f);
-        private static readonly Vector3 SecondaryGripPosition = new Vector3(0.133594f, 0.20f, 0f);
+        private static readonly Vector3 SecondaryGripPosition = new Vector3(0.133594f, 0.34f, 0f);
         private static readonly Vector3 BladeContactPosition = new Vector3(-0.08f, -0.79f, 0f);
 
         private static readonly IReadOnlyDictionary<string, string> ProtectedHashes = new Dictionary<string, string>

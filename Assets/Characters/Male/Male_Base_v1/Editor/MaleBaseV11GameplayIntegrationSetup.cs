@@ -1,6 +1,6 @@
 /*
  * IceClash production integration for the validated clean male Humanoid.
- * Generates an isolated visual prefab and Idle/temporary Running controller,
+ * Generates an isolated visual prefab and hockey-ready Idle/temporary Running controller,
  * validates gameplay-root/collider/Avatar/attachment contracts, and captures
  * deterministic prototype-arena evidence without modifying validation assets.
  */
@@ -229,14 +229,34 @@ namespace IceClash.CharacterValidation.Editor
                 AnimationUtility.SetEditorCurve(clip, binding, null);
             clip.name = "MaleSkater_Idle";
             clip.frameRate = 30f;
-            AnimationUtility.SetEditorCurve(clip,
-                EditorCurveBinding.FloatCurve(string.Empty, typeof(Animator), "Spine Front-Back"),
-                new AnimationCurve(new Keyframe(0f, -0.02f), new Keyframe(0.5f, 0.02f), new Keyframe(1f, -0.02f)));
+            SetStaticHumanoidMuscle(clip, "Spine Front-Back", -0.12f);
+            SetStaticHumanoidMuscle(clip, "Chest Front-Back", -0.08f);
+            SetStaticHumanoidMuscle(clip, "Left Upper Leg Front-Back", 0.08f);
+            SetStaticHumanoidMuscle(clip, "Right Upper Leg Front-Back", 0.08f);
+            SetStaticHumanoidMuscle(clip, "Left Lower Leg Stretch", -0.18f);
+            SetStaticHumanoidMuscle(clip, "Right Lower Leg Stretch", -0.18f);
+            SetStaticHumanoidMuscle(clip, "Left Foot Up-Down", -0.05f);
+            SetStaticHumanoidMuscle(clip, "Right Foot Up-Down", -0.05f);
+            string[] digits = { "Thumb", "Index", "Middle", "Ring", "Little" };
+            string[] sides = { "Left", "Right" };
+            foreach (string side in sides)
+            foreach (string digit in digits)
+            for (int joint = 1; joint <= 3; joint++)
+                SetStaticHumanoidMuscle(clip, $"{side} {digit} {joint} Stretched",
+                    digit == "Thumb" ? -0.82f : -1f);
             AnimationClipSettings settings = AnimationUtility.GetAnimationClipSettings(clip);
             settings.loopTime = true;
             AnimationUtility.SetAnimationClipSettings(clip, settings);
             EditorUtility.SetDirty(clip);
             return clip;
+        }
+
+        private static void SetStaticHumanoidMuscle(AnimationClip clip, string muscleName, float value)
+        {
+            if (!HumanTrait.MuscleName.Contains(muscleName)) return;
+            AnimationUtility.SetEditorCurve(clip,
+                EditorCurveBinding.FloatCurve(string.Empty, typeof(Animator), muscleName),
+                new AnimationCurve(new Keyframe(0f, value), new Keyframe(1f, value)));
         }
 
         private static AnimatorController CreateController(AnimationClip idle, AnimationClip running)
