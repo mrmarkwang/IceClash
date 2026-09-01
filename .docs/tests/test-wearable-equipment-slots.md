@@ -17,7 +17,7 @@
 3. Verify changing one binding does not change any other binding.
 4. Verify gloves track both animated hands and skates track both animated feet.
 5. Verify clearing and re-equipping Stick disables and restores two-hand IK without replacing the stable targets.
-6. Verify the puck can still be claimed, carried, and released by the generated player.
+6. Confirm the scoped diff does not modify the production puck controller, interaction, or gameplay-control implementation; existing puck-gameplay behavior remains outside this wearable-slot change.
 
 ## Scenario: Team coloring uses the main character visual
 
