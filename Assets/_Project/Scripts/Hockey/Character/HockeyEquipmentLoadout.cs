@@ -2,7 +2,9 @@
  * IceClash modular hockey equipment registry.
  * Owns four independently replaceable wearables plus the gameplay stick.
  * Preserves retained serialized slot IDs, paired glove/skate following, and
- * left-hand IK rebinding to the equipped stick's SecondaryGrip.
+ * left-hand IK rebinding to the equipped stick's SecondaryGrip. Skate position
+ * and rigid position/rotation offsets are captured from the evaluated
+ * reference pose in each Humanoid Foot's local space.
  */
 
 using System;
@@ -54,6 +56,9 @@ namespace IceClash.Hockey.Character
         [SerializeField] private Vector3 rightSkatePositionOffset;
         [SerializeField] private Quaternion leftSkateRotationOffset = Quaternion.identity;
         [SerializeField] private Quaternion rightSkateRotationOffset = Quaternion.identity;
+        [SerializeField] private SkinnedMeshRenderer skateMaskedSkin;
+        [SerializeField] private Mesh unmaskedCharacterMesh;
+        [SerializeField] private Mesh maskedCharacterMesh;
 
         public IReadOnlyList<HockeyEquipmentBinding> Slots => slots;
         public int SlotCount => slots != null ? slots.Length : 0;
@@ -110,11 +115,20 @@ namespace IceClash.Hockey.Character
 
             binding.SetEquipped(equipped);
             BindPairedEquipment(slot, equipped);
+            if (slot == HockeyEquipmentSlot.Skates) ApplySkateMask(equipped != null);
             if (slot == HockeyEquipmentSlot.Stick) NotifyStickState();
             return equipped;
         }
 
         public void Clear(HockeyEquipmentSlot slot) => Equip(slot, null);
+
+        public void ConfigureSkateMask(SkinnedMeshRenderer skin, Mesh unmasked, Mesh masked)
+        {
+            skateMaskedSkin = skin;
+            unmaskedCharacterMesh = unmasked;
+            maskedCharacterMesh = masked;
+            ApplySkateMask(GetEquipped(HockeyEquipmentSlot.Skates) != null);
+        }
 
         public bool IsComplete()
         {
@@ -128,7 +142,11 @@ namespace IceClash.Hockey.Character
             return true;
         }
 
-        private void OnEnable() => BindAllPairedEquipment();
+        private void OnEnable()
+        {
+            BindAllPairedEquipment();
+            ApplySkateMask(GetEquipped(HockeyEquipmentSlot.Skates) != null);
+        }
 
         private void BindAllPairedEquipment()
         {
@@ -146,7 +164,7 @@ namespace IceClash.Hockey.Character
                     Quaternion.identity, Quaternion.identity);
             else if (slot == HockeyEquipmentSlot.Skates)
                 follower.BindBones(leftFoot, rightFoot, leftSkatePositionOffset, rightSkatePositionOffset,
-                    leftSkateRotationOffset, rightSkateRotationOffset, true, transform);
+                    leftSkateRotationOffset, rightSkateRotationOffset);
         }
 
         private void CaptureSkateContract()
@@ -158,8 +176,15 @@ namespace IceClash.Hockey.Character
                 || leftFoot == null || rightFoot == null) return;
             leftSkatePositionOffset = leftFoot.InverseTransformPoint(follower.FirstVisual.position);
             rightSkatePositionOffset = rightFoot.InverseTransformPoint(follower.SecondVisual.position);
-            leftSkateRotationOffset = Quaternion.Inverse(transform.rotation) * follower.FirstVisual.rotation;
-            rightSkateRotationOffset = Quaternion.Inverse(transform.rotation) * follower.SecondVisual.rotation;
+            leftSkateRotationOffset = Quaternion.Inverse(leftFoot.rotation) * follower.FirstVisual.rotation;
+            rightSkateRotationOffset = Quaternion.Inverse(rightFoot.rotation) * follower.SecondVisual.rotation;
+        }
+
+        private void ApplySkateMask(bool skatesEquipped)
+        {
+            if (skateMaskedSkin == null) return;
+            Mesh target = skatesEquipped ? maskedCharacterMesh : unmaskedCharacterMesh;
+            if (target != null) skateMaskedSkin.sharedMesh = target;
         }
 
         private HockeyEquipmentBinding Find(HockeyEquipmentSlot slot)

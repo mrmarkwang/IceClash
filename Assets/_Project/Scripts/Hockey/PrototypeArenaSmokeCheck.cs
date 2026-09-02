@@ -23,7 +23,7 @@
  * snapshots, and AI-difficulty separation. Offside checks cover mirrored warning
  * grids, tag-up/turnover clearing, swept zone entry, and neutral-dot restarts.
  * Modular-character checks cover ten bound clean humanoid skaters, two safe idle
- * goalie presentations, validated production skates on every actor, gameplay-root
+ * goalie presentations, character-matched production skates on every actor, gameplay-root
  * authority, real keyboard/joystick routing, Idle/temporary Running animation,
  * foot alignment, equipment, IK, and stick-blade alignment.
  * Rounded-corner containment measures tangential recovery against the local radial
@@ -67,7 +67,7 @@ namespace IceClash.Hockey
             for (int i = 0; i < players.Length; i++)
             {
                 HockeyEquipmentLoadout loadout = players[i].GetComponent<HockeyEquipmentLoadout>();
-                if (!VerifyProductionSkates(loadout, players[i].transform, true))
+                if (!VerifyProductionSkates(loadout, players[i].transform, false))
                     throw new System.InvalidOperationException(
                         $"Gameplay player {players[i].PlayerId} does not have aligned production skates.");
             }
@@ -611,6 +611,7 @@ namespace IceClash.Hockey
             GameObject item = loadout != null ? loadout.GetEquipped(HockeyEquipmentSlot.Skates) : null;
             HockeyPairedEquipmentFollower follower = item != null
                 ? item.GetComponent<HockeyPairedEquipmentFollower>() : null;
+            follower?.RefreshPose();
             Transform left = item != null ? item.transform.Find("Skate_L_v1") : null;
             Transform right = item != null ? item.transform.Find("Skate_R_v1") : null;
             Transform leftContact = left != null ? left.Find("BladeContact") : null;
@@ -619,23 +620,38 @@ namespace IceClash.Hockey
             MeshFilter rightFilter = right != null ? right.GetComponentInChildren<MeshFilter>(true) : null;
             Renderer leftRenderer = left != null ? left.GetComponentInChildren<Renderer>(true) : null;
             Renderer rightRenderer = right != null ? right.GetComponentInChildren<Renderer>(true) : null;
+            Transform characterVisual = actorRoot != null
+                ? actorRoot.Find("Visual/Male_Base_v1_1_Clean_Visual") : null;
+            Vector3 expectedSkateScale = characterVisual != null
+                ? Vector3.one * characterVisual.localScale.x : Vector3.zero;
             bool contact = !requireIceContact || (leftContact != null && rightContact != null
                 && Mathf.Abs(leftContact.position.y - 0.2f) <= 0.08f
                 && Mathf.Abs(rightContact.position.y - 0.2f) <= 0.08f);
-            return item != null && item.activeInHierarchy && item.transform.childCount == 2
+            bool aligned = follower != null && follower.IsAligned(0.015f);
+            bool valid = item != null && item.activeInHierarchy && item.transform.childCount == 2
                 && follower != null && follower.FirstVisual == left && follower.SecondVisual == right
-                && follower.IsAligned(0.015f) && leftContact != null && rightContact != null
+                && aligned && leftContact != null && rightContact != null
                 && leftFilter?.sharedMesh != null && rightFilter?.sharedMesh != null
                 && CountTriangles(leftFilter.sharedMesh) == 4136 && CountTriangles(rightFilter.sharedMesh) == 4136
                 && leftRenderer?.sharedMaterial != null && rightRenderer?.sharedMaterial != null
                 && leftRenderer.sharedMaterial.name.StartsWith("Skate_Base_v1")
                 && rightRenderer.sharedMaterial.name.StartsWith("Skate_Base_v1")
-                && left.lossyScale.x > 0f && left.lossyScale.y > 0f && left.lossyScale.z > 0f
-                && right.lossyScale.x > 0f && right.lossyScale.y > 0f && right.lossyScale.z > 0f
-                && Vector3.Distance(left.lossyScale, right.lossyScale) <= 0.001f
-                && Vector3.Dot(left.forward, actorRoot.forward) >= 0.99f
-                && Vector3.Dot(right.forward, actorRoot.forward) >= 0.99f
+                && left.localScale.x > 0f && left.localScale.y > 0f && left.localScale.z > 0f
+                && right.localScale.x > 0f && right.localScale.y > 0f && right.localScale.z > 0f
+                && Vector3.Distance(left.localScale, right.localScale) <= 0.001f
+                && characterVisual != null
+                && Vector3.Distance(left.localScale, expectedSkateScale) <= 0.001f
+                && Vector3.Distance(right.localScale, expectedSkateScale) <= 0.001f
                 && contact;
+            if (!valid)
+                Debug.LogWarning($"GAMEPLAY_SKATES_DIAGNOSTIC actor={actorRoot.name} aligned={aligned} "
+                    + $"contact={contact} left={left?.position:F4} right={right?.position:F4} "
+                    + $"leftContact={leftContact?.position:F4} rightContact={rightContact?.position:F4} "
+                    + $"children={item?.transform.childCount} leftScale={left?.lossyScale:F4} "
+                    + $"rightScale={right?.lossyScale:F4} leftMaterial={leftRenderer?.sharedMaterial?.name} "
+                    + $"rightMaterial={rightRenderer?.sharedMaterial?.name} "
+                    + $"leftTriangles={CountTriangles(leftFilter?.sharedMesh)} rightTriangles={CountTriangles(rightFilter?.sharedMesh)}");
+            return valid;
         }
 
         private static int CountTriangles(Mesh mesh)

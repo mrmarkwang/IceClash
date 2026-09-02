@@ -18,12 +18,12 @@ Preserve the supplied source and reusable rigid skate prefabs; attach matching l
 - [x] In the neutral validation pose, both `BladeContact` markers meet one ice plane without visible floating or deep penetration, and their world-Y difference is negligible and recorded.
 - [x] The validated running animation is sampled through at least two complete cycles and both skates remain attached with finite, stable transforms, correct orientation, and no severe visible sock penetration.
 - [x] Evidence includes neutral front, rear, both sides, both skate close-ups; running front, side, rear; and a low gameplay-camera-style view, with the requested fit/orientation/symmetry observations recorded.
-- [ ] The canonical and clean humanoid Avatar remains valid and human, protected humanoid/source hashes match before and after generation, and no movement/controller/camera/input/puck/stick logic or validated animation source is modified.
+- [x] The canonical and clean humanoid Avatar remains valid and human, protected humanoid/source hashes match before and after generation, and no movement/controller/camera/input/puck/stick logic or validated animation source is modified.
 - [x] The completion report lists every created or modified asset and identifies any remaining source-geometry limitations without performing optional topology changes before evidence review.
-- [ ] `HockeyPlayer.prefab` equips `Skate_L_v1` and `Skate_R_v1` through the existing `Skates` loadout slot and `HockeyPairedEquipmentFollower`, with no primitive skate placeholder remaining.
-- [ ] `Resources/Skater.prefab` remains a connected variant of `HockeyPlayer.prefab` and inherits both production skates, so all ten red/blue skaters spawned by `PrototypeArenaBootstrap` wear the same validated pair.
-- [ ] Gameplay skates retain positive equal scale, correct handedness/forward orientation, rigid mesh/material references, foot following, and blade/ice alignment in idle and running presentation states.
-- [ ] Automated gameplay validation proves all ten runtime skaters have exactly two production skate visuals and visual evidence shows the equipped skates on an actual gameplay player.
+- [x] `HockeyPlayer.prefab` equips `Skate_L_v1` and `Skate_R_v1` through the existing `Skates` loadout slot and `HockeyPairedEquipmentFollower`, with no primitive skate placeholder remaining.
+- [x] `Resources/Skater.prefab` remains a connected variant of `HockeyPlayer.prefab` and inherits both production skates, so all ten red/blue skaters spawned by `PrototypeArenaBootstrap` wear the same validated pair.
+- [x] Gameplay skates retain positive equal scale, correct handedness/forward orientation, rigid mesh/material references, foot following, and blade/ice alignment in idle and running presentation states.
+- [x] Automated gameplay validation proves all ten runtime skaters have exactly two production skate visuals and visual evidence shows the equipped skates on an actual gameplay player.
 
 ## Constraints
 

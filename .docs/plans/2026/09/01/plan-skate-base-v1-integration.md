@@ -64,12 +64,19 @@ Create and visually validate a preserved, reusable rigid hockey-skate asset fitt
 
 ### Phase 6 - Equip all gameplay skaters
 
-- [ ] Update `HockeyCharacterAssetSetup` to load the validated left/right skate prefabs, replace the primitive `Skates` pair, place both `BladeContact` roots on the gameplay ice plane, and preserve the existing paired-equipment follower/loadout contract.
-- [ ] Extend generated-asset validation to require both production skate prefab dependencies, exact rigid mesh/material structure, positive equal scale, correct left/right orientation, absence of cube placeholders, and connected `Resources/Skater` inheritance.
-- [ ] Extend `PrototypeArenaSmokeCheck` to assert each of the ten runtime players has one active `Skates` slot containing exactly the validated left/right production visuals and an aligned follower.
-- [ ] Regenerate `HockeyPlayer.prefab`, `Resources/Skater.prefab`, and `ModularCharacterTest.unity`, then run the existing modular-character batch validation and PrototypeArena smoke check.
-- [ ] Capture and inspect gameplay evidence showing production skates on an actual spawned player in idle and running presentation states; record the new files and results in the validation report.
-- [ ] Verify the clean/source hashes remain unchanged and the final change set contains no movement/controller/camera/input/puck/stick logic modifications.
+- [x] Update `HockeyCharacterAssetSetup` to load the validated left/right skate prefabs, replace the primitive `Skates` pair, evaluate Idle, align each rear cuff from its Humanoid Foot and `BladeContact`, and capture the resulting position/rotation in Foot-local space. Generate a gameplay-only derived skin mesh that masks the broad placeholder feet below the boot cuffs without changing the protected FBX, and switch that mask with the replaceable `Skates` slot so clearing/replacing equipment remains valid.
+- [x] Extend generated-asset validation to require both production skate prefab dependencies, exact rigid mesh/material structure, positive equal scale, correct left/right orientation, absence of cube placeholders, and connected `Resources/Skater` inheritance.
+- [x] Extend `PrototypeArenaSmokeCheck` to assert each of the ten runtime players and both goalies has one active `Skates` slot containing exactly the validated left/right production visuals and an aligned follower; capture isolated paired-foot close-ups in deterministic Idle and Running states.
+- [x] Regenerate `HockeyPlayer.prefab`, `Resources/Skater.prefab`, and `ModularCharacterTest.unity`, then run the scoped modular-character production-skates validation and PrototypeArena production-skates smoke check.
+- [x] Capture and inspect gameplay evidence showing production skates on an actual spawned player in idle and running presentation states; record the new files and results in the validation report.
+- [x] Verify the clean/source hashes remain unchanged and the final change set contains no movement/controller/camera/input/puck/stick logic modifications.
+
+### Phase 7 - Correct gameplay-scale regression
+
+- [x] Reproduce the oversized-skate failure in the interactive `PrototypeArena` Game view and trace it to the `1.90` multiplier being compounded with the clean visual's `1.65` scale.
+- [x] Match each gameplay skate's local scale exactly once to `Male_Base_v1_1_Clean_Visual.localScale`, restore the validated `0.07 m` forward fit, and lower the derived foot-mask cutoff so ankles remain inside the boot cuffs.
+- [x] Add generator and runtime smoke assertions that reject any skate scale differing from the character visual scale.
+- [x] Regenerate assets, rerun batch Idle/Running validation, and inspect a fresh interactive full-rink Game view with all spawned players at normal camera distance.
 
 ## Validation
 
@@ -78,8 +85,9 @@ Create and visually validate a preserved, reusable rigid hockey-skate asset fitt
 - Compile/tests: detect available Unity test assemblies after import; run the narrowest EditMode suite when present, otherwise use the successful batch editor load/execute as the compilation check and state that no matching automated test assembly exists.
 - Visual evidence: inspect every PNG in `.docs/evidence/skate-base-v1/` at full resolution against `.docs/tests/test-skate-base-v1-integration.md`.
 - Integrity: `shasum -a 256` on every protected path before and after; exact equality is required. `git diff --name-only` must contain no prohibited path.
-- Gameplay generation/validation: run `IceClash.Tests.Editor.HockeyCharacterAssetSetup.GenerateAndValidateBatch`; expect `MODULAR_CHARACTER_ASSETS_PASS` and production-skate validation for the canonical and resource prefabs.
-- Runtime E2E: run the existing PrototypeArena play-mode smoke entry point and require all ten red/blue skaters to pass the production-skate assertion; capture idle/running gameplay evidence under `.docs/evidence/skate-base-v1/`.
+- Gameplay generation/validation: run `IceClash.Tests.Editor.HockeyCharacterAssetSetup.GenerateAndValidateProductionSkatesBatch`; expect `GAMEPLAY_SKATES_ASSETS_PASS canonical=true resourceVariant=true generatedPlayers=10 productionPairs=10`.
+- Runtime E2E: run `IceClash.Tests.Editor.GameplaySkatesSmokeRunner.Run`; require `GAMEPLAY_SKATES_RUNTIME_PASS productionSkates=10/10 goalieSkates=2/2` and `GAMEPLAY_SKATES_EVIDENCE_PASS images=2 states=Idle,Running`.
+- Interactive full-rink evidence: restart Play Mode in the open `PrototypeArena` editor after asset import and inspect `.docs/evidence/skate-base-v1/gameplay-full-rink-skates.jpeg`; every visible skate must be proportionate to the player and no boot may approach torso/waist scale.
 
 ## Rollback / Risk
 

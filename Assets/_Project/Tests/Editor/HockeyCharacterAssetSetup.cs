@@ -6,7 +6,8 @@
  * Skate_Base_v1 left/right prefabs for every generated gameplay skater, parents the production stick
  * through RightHand/StickSocket, aligns its explicit grip/contact markers in a
  * right-handed two-hand hockey stance, binds LeftHand IK to SecondaryGrip, and
- * creates shared presentation assets, prefabs, IK, validation, and evidence
+ * matches skate scale once to the clean character visual in gameplay, and creates shared
+ * presentation assets, prefabs, IK, validation, and evidence
  * without changing gameplay systems or shipping debug geometry.
  */
 
@@ -42,6 +43,7 @@ namespace IceClash.Tests.Editor
         private const string RightSkatePrefabPath = SkateDirectory + "/Prefabs/Skate_R_v1.prefab";
         private const string SkateMaterialPath = SkateDirectory + "/Materials/Skate_Base_v1.mat";
         private const string GeneratedDirectory = "Assets/_Project/Art/HockeyPrototype";
+        private const string FootMaskedMeshPath = GeneratedDirectory + "/Male_Base_v1_1_Clean_SkateMasked.asset";
         private const string PrefabPath = "Assets/_Project/Prefabs/HockeyPlayer.prefab";
         private const string ResourcePrefabPath = "Assets/_Project/Prefabs/Resources/Skater.prefab";
         private const string ScenePath = "Assets/_Project/Scenes/ModularCharacterTest.unity";
@@ -53,7 +55,9 @@ namespace IceClash.Tests.Editor
         private const float GameplayControlVerticalOffset = 0.28f;
         private const float GameplaySkaterScale = 0.68f;
         private const float GameplayIceY = 0.2f;
-        private const float GameplaySpawnY = 1f;
+        // CharacterController settles the prototype actor 0.04 m below its requested
+        // spawn transform before presentation verification.
+        private const float GameplaySpawnY = 0.96f;
         private const float ProductionShaftExtension = 3.05f;
         // Right-handed ready stance in StickPresentationRoot space.
         private static readonly Vector3 PrimaryGripPose = new(0.15f, 0.72f, 0.15f);
@@ -176,6 +180,7 @@ namespace IceClash.Tests.Editor
                 ValidateSupportedEquipmentStructure(resource, "Resources/Skater.prefab");
                 ValidateProductionSkates(canonical, "HockeyPlayer.prefab");
                 ValidateProductionSkates(resource, "Resources/Skater.prefab");
+                ValidateSkateMaskRoundTrip(canonical);
                 ValidateGeneratedSceneEquipment();
                 Debug.Log("GAMEPLAY_SKATES_ASSETS_PASS canonical=true resourceVariant=true generatedPlayers=10 productionPairs=10");
             }
@@ -512,6 +517,9 @@ namespace IceClash.Tests.Editor
                 ?? throw new InvalidOperationException("Humanoid RightHand mapping is unavailable.");
             Transform leftFoot = animator.GetBoneTransform(HumanBodyBones.LeftFoot) ?? visual.transform;
             Transform rightFoot = animator.GetBoneTransform(HumanBodyBones.RightFoot) ?? visual.transform;
+            SkinnedMeshRenderer characterSkin = characterRenderers.OfType<SkinnedMeshRenderer>().Single();
+            Mesh unmaskedCharacterMesh = characterSkin.sharedMesh;
+            MaskCharacterFeetForSkates(characterRenderers, leftFoot, rightFoot);
 
             GameObject presentationRoot = NewChild("StickPresentationRoot", visualRoot.transform);
             GameObject targetsRoot = NewChild("StickRigTargets", presentationRoot.transform);
@@ -564,6 +572,8 @@ namespace IceClash.Tests.Editor
             Vector3 rightSkatePosition = visualRoot.transform.InverseTransformPoint(rightFoot.position);
             float skateContactY = (GameplayIceY - GameplaySpawnY) / GameplaySkaterScale
                 - visualRoot.transform.localPosition.y;
+            // Match the clean character visual exactly once. The prior 1.90 fitting
+            // multiplier compounded this 1.65 scale into 3.135-sized gameplay boots.
             float skateScale = visual.transform.localScale.x;
             float skateForwardFit = 0.07f * skateScale;
             leftSkatePosition = new Vector3(leftSkatePosition.x, skateContactY,
@@ -586,11 +596,112 @@ namespace IceClash.Tests.Editor
             bindings[4] = stickBinding;
             AlignStickPresentationToGameplayControl(root.transform, presentationRoot.transform, bladeReference);
             HockeyEquipmentLoadout loadout = root.AddComponent<HockeyEquipmentLoadout>();
+            animator.Play("Idle", 0, 0f);
+            animator.Update(0f);
+            HockeyPairedEquipmentFollower skateFollower = bindings[3].Equipped
+                .GetComponent<HockeyPairedEquipmentFollower>()
+                ?? throw new InvalidOperationException("Generated skate follower is missing.");
+            AlignGameplaySkateToFoot(skateFollower.FirstVisual, leftFoot, root.transform);
+            AlignGameplaySkateToFoot(skateFollower.SecondVisual, rightFoot, root.transform);
             loadout.Configure(bindings, stickRig, leftHand, rightHand, leftFoot, rightFoot);
+            loadout.ConfigureSkateMask(characterSkin, unmaskedCharacterMesh, characterSkin.sharedMesh);
+            animator.Rebind();
             HockeyCharacterPresentation presentation = root.AddComponent<HockeyCharacterPresentation>();
             presentation.Configure(animator, loadout, characterRenderers);
             presentation.SetTeamMaterial(jerseyMaterial);
             return root;
+        }
+
+        private static void AlignGameplaySkateToFoot(Transform skate, Transform foot, Transform actorRoot)
+        {
+            Transform contact = skate != null ? skate.Find("BladeContact") : null;
+            if (skate == null || foot == null || contact == null)
+                throw new InvalidOperationException("Gameplay skate alignment requires a foot and BladeContact.");
+
+            skate.rotation = actorRoot.rotation;
+            // The validated fitting places the skate pivot slightly ahead of the
+            // ankle so the rear cuff, rather than the mesh center, seats under it.
+            Vector3 position = foot.position + actorRoot.forward * 0.07f;
+            position.y = skate.position.y;
+            skate.position = position;
+            float localContactY = (GameplayIceY - GameplaySpawnY) / GameplaySkaterScale;
+            float targetContactY = actorRoot.TransformPoint(Vector3.up * localContactY).y;
+            skate.position += actorRoot.up * (targetContactY - contact.position.y);
+        }
+
+        private static void MaskCharacterFeetForSkates(Renderer[] renderers,
+            Transform leftFoot, Transform rightFoot)
+        {
+            SkinnedMeshRenderer skin = renderers.OfType<SkinnedMeshRenderer>().SingleOrDefault()
+                ?? throw new InvalidOperationException("Skate foot masking requires one character skin renderer.");
+            Mesh source = skin.sharedMesh
+                ?? throw new InvalidOperationException("Skate foot masking requires a source character mesh.");
+            Transform[] bones = skin.bones;
+            HashSet<int> footBones = new();
+            for (int index = 0; index < bones.Length; index++)
+                if (bones[index] == leftFoot || bones[index] == rightFoot
+                    || bones[index].IsChildOf(leftFoot) || bones[index].IsChildOf(rightFoot))
+                    footBones.Add(index);
+            if (footBones.Count == 0)
+                throw new InvalidOperationException("Character mesh has no mapped foot bones to mask.");
+
+            BoneWeight[] weights = source.boneWeights;
+            Vector3[] vertices = source.vertices;
+            bool[] maskedVertex = new bool[weights.Length];
+            for (int vertex = 0; vertex < weights.Length; vertex++)
+            {
+                BoneWeight weight = weights[vertex];
+                float footWeight = 0f;
+                if (footBones.Contains(weight.boneIndex0)) footWeight += weight.weight0;
+                if (footBones.Contains(weight.boneIndex1)) footWeight += weight.weight1;
+                if (footBones.Contains(weight.boneIndex2)) footWeight += weight.weight2;
+                if (footBones.Contains(weight.boneIndex3)) footWeight += weight.weight3;
+                // Also clip the bind-pose foot volume below the production boot
+                // opening. The broad placeholder feet include lower-leg-weighted
+                // triangles that a bone-only mask cannot catch.
+                maskedVertex[vertex] = footWeight >= 0.15f || vertices[vertex].y <= 0.18f;
+            }
+
+            Mesh masked = UnityEngine.Object.Instantiate(source);
+            masked.name = "Male_Base_v1_1_Clean_SkateMasked";
+            int removedTriangles = 0;
+            for (int subMesh = 0; subMesh < source.subMeshCount; subMesh++)
+            {
+                int[] triangles = source.GetTriangles(subMesh);
+                List<int> kept = new(triangles.Length);
+                for (int triangle = 0; triangle < triangles.Length; triangle += 3)
+                {
+                    bool remove = maskedVertex[triangles[triangle]]
+                        || maskedVertex[triangles[triangle + 1]]
+                        || maskedVertex[triangles[triangle + 2]];
+                    if (remove) removedTriangles++;
+                    else
+                    {
+                        kept.Add(triangles[triangle]);
+                        kept.Add(triangles[triangle + 1]);
+                        kept.Add(triangles[triangle + 2]);
+                    }
+                }
+                masked.SetTriangles(kept, subMesh, true);
+            }
+            if (removedTriangles < 20)
+                throw new InvalidOperationException(
+                    $"Character skate mask removed too little foot geometry ({removedTriangles} triangles).");
+
+            Mesh asset = AssetDatabase.LoadAssetAtPath<Mesh>(FootMaskedMeshPath);
+            if (asset == null)
+            {
+                AssetDatabase.CreateAsset(masked, FootMaskedMeshPath);
+                asset = masked;
+            }
+            else
+            {
+                EditorUtility.CopySerialized(masked, asset);
+                UnityEngine.Object.DestroyImmediate(masked);
+                EditorUtility.SetDirty(asset);
+            }
+            skin.sharedMesh = asset;
+            Debug.Log($"GAMEPLAY_SKATES_FOOT_MASK_PASS removedTriangles={removedTriangles}");
         }
 
         private static void AlignStickPresentationToGameplayControl(Transform gameplayRoot,
@@ -691,6 +802,17 @@ namespace IceClash.Tests.Editor
             HockeyPairedEquipmentFollower follower = item.AddComponent<HockeyPairedEquipmentFollower>();
             follower.ConfigureVisuals(left.transform, right.transform);
             return item;
+        }
+
+        private static Transform FindChildRecursive(Transform root, string childName)
+        {
+            if (root.name == childName) return root;
+            for (int index = 0; index < root.childCount; index++)
+            {
+                Transform found = FindChildRecursive(root.GetChild(index), childName);
+                if (found != null) return found;
+            }
+            return null;
         }
 
         private static GameObject BuildStick(Transform socket, Transform poseSpace, Transform rightTarget,
@@ -1089,6 +1211,8 @@ namespace IceClash.Tests.Editor
             MeshFilter rightFilter = right != null ? right.GetComponentInChildren<MeshFilter>(true) : null;
             Renderer[] renderers = item != null
                 ? item.GetComponentsInChildren<Renderer>(true) : Array.Empty<Renderer>();
+            SkinnedMeshRenderer characterSkin = root != null
+                ? root.GetComponentInChildren<SkinnedMeshRenderer>(true) : null;
             float expectedContactY = (GameplayIceY - GameplaySpawnY) / GameplaySkaterScale;
             float leftY = leftContact != null ? root.transform.InverseTransformPoint(leftContact.position).y : float.NaN;
             float rightY = rightContact != null ? root.transform.InverseTransformPoint(rightContact.position).y : float.NaN;
@@ -1101,19 +1225,30 @@ namespace IceClash.Tests.Editor
                 && left.lossyScale.x > 0f && left.lossyScale.y > 0f && left.lossyScale.z > 0f
                 && right.lossyScale.x > 0f && right.lossyScale.y > 0f && right.lossyScale.z > 0f
                 && Vector3.Distance(left.lossyScale, right.lossyScale) <= 0.0001f;
+            Transform characterVisual = root != null
+                ? root.transform.Find("Visual/Male_Base_v1_1_Clean_Visual") : null;
+            Vector3 expectedSkateScale = characterVisual != null
+                ? Vector3.one * characterVisual.localScale.x : Vector3.zero;
+            bool productionLocalScale = left != null && right != null && characterVisual != null
+                && Vector3.Distance(left.localScale, expectedSkateScale) <= 0.0001f
+                && Vector3.Distance(right.localScale, expectedSkateScale) <= 0.0001f;
             if (item == null || item.name != "Skates" || item.transform.childCount != 2
                 || follower == null || follower.FirstVisual != left || follower.SecondVisual != right
-                || !follower.IsAligned(0.001f)
                 || leftContact == null || rightContact == null || leftFilter?.sharedMesh != leftMesh
                 || rightFilter?.sharedMesh != rightMesh || leftMesh == null || rightMesh == null
                 || CountMeshTriangles(leftMesh) != 4136 || CountMeshTriangles(rightMesh) != 4136
                 || renderers.Length != 2 || renderers.Any(renderer => renderer.sharedMaterial != skateMaterial)
                 || item.GetComponentsInChildren<SkinnedMeshRenderer>(true).Length != 0
                 || item.GetComponentsInChildren<Animator>(true).Length != 0
-                || !positiveEqualScale || Vector3.Dot(left.forward, root.transform.forward) < 0.99f
-                || Vector3.Dot(right.forward, root.transform.forward) < 0.99f
+                || characterSkin == null
+                || AssetDatabase.GetAssetPath(characterSkin.sharedMesh) != FootMaskedMeshPath
+                || !positiveEqualScale || !productionLocalScale
                 || Mathf.Abs(leftY - expectedContactY) > 0.001f
                 || Mathf.Abs(rightY - expectedContactY) > 0.001f
+                || Vector3.Dot(left.up, root.transform.up) < 0.999f
+                || Vector3.Dot(right.up, root.transform.up) < 0.999f
+                || Vector3.Dot(left.forward, root.transform.forward) < 0.999f
+                || Vector3.Dot(right.forward, root.transform.forward) < 0.999f
                 || (!string.IsNullOrEmpty(assetPath)
                     && (!dependencies.Contains(LeftSkatePrefabPath) || !dependencies.Contains(RightSkatePrefabPath))))
                 throw new InvalidOperationException(
@@ -1128,6 +1263,33 @@ namespace IceClash.Tests.Editor
                 if (renderers[i].motionVectorGenerationMode != MotionVectorGenerationMode.ForceNoMotion
                     || renderers[i].reflectionProbeUsage != ReflectionProbeUsage.Off)
                     throw new InvalidOperationException("Renderer mobile policy failed on " + renderers[i].name);
+        }
+
+        private static void ValidateSkateMaskRoundTrip(GameObject prefab)
+        {
+            GameObject instance = PrefabUtility.InstantiatePrefab(prefab) as GameObject
+                ?? throw new InvalidOperationException("Unable to instantiate HockeyPlayer for skate-mask validation.");
+            try
+            {
+                HockeyEquipmentLoadout loadout = instance.GetComponent<HockeyEquipmentLoadout>()
+                    ?? throw new InvalidOperationException("Skate-mask validation loadout is missing.");
+                SkinnedMeshRenderer skin = instance.GetComponentInChildren<SkinnedMeshRenderer>(true)
+                    ?? throw new InvalidOperationException("Skate-mask validation skin is missing.");
+                GameObject equipped = loadout.GetEquipped(HockeyEquipmentSlot.Skates)
+                    ?? throw new InvalidOperationException("Skate-mask validation equipment is missing.");
+                GameObject replacement = UnityEngine.Object.Instantiate(equipped);
+                loadout.Clear(HockeyEquipmentSlot.Skates);
+                if (AssetDatabase.GetAssetPath(skin.sharedMesh) == FootMaskedMeshPath)
+                    throw new InvalidOperationException("Clearing skates did not restore the unmasked character mesh.");
+                loadout.Equip(HockeyEquipmentSlot.Skates, replacement);
+                if (AssetDatabase.GetAssetPath(skin.sharedMesh) != FootMaskedMeshPath)
+                    throw new InvalidOperationException("Re-equipping skates did not restore the masked character mesh.");
+                Debug.Log("GAMEPLAY_SKATES_MASK_ROUNDTRIP_PASS clear=unmasked reEquip=masked");
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(instance);
+            }
         }
 
         private static Material CreateOrUpdateMaterial(string name, Color color)

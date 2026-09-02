@@ -74,8 +74,23 @@
 - Visual review result: left/right holders and blades are symmetric, toes face character-forward, and both `BladeContact` points meet the same ice plane
 - Visual review result: four distinct running phases show both rigid skates following their respective feet without detachment or severe sock penetration; the full 2.25-cycle transform and toe-relative assertions provide the temporal check
 
-## Created / Modified File Inventory
+## Gameplay Integration
 
+- `HockeyPlayer.prefab` now equips `Skate_L_v1` and `Skate_R_v1` in the existing `Skates` slot; both visuals use `HockeyPairedEquipmentFollower`, the validated 4,136-triangle rigid meshes, and `Skate_Base_v1.mat`.
+- `Resources/Skater.prefab` remains a connected variant of `HockeyPlayer.prefab`, so `PrototypeArenaBootstrap` propagates the same pair to all five red and five blue players and both goalies.
+- Gameplay generation evaluates Idle, aligns each production skate's rear cuff from its Humanoid Foot and `BladeContact`, and captures Foot-local position/rotation offsets. Runtime follows the complete animated Foot transform, so raised skates move as rigid worn footwear; Running is attachment stress evidence and is not clamped to the ice.
+- The protected clean FBX remains unchanged. Gameplay uses the generated `Male_Base_v1_1_Clean_SkateMasked.asset`, which removes 1,794 foot/sole triangles while preserving the ankles inside the boot cuffs. `HockeyEquipmentLoadout` swaps between the original and masked meshes with the `Skates` slot, restoring the original mesh when skates are cleared.
+- Gameplay skate local scale equals the clean character visual scale (`1.65`) exactly once. The rejected `1.90` fitting multiplier compounded that value to `3.135`, producing torso-sized boots in the real Game view; generator and runtime smoke checks now fail if skate and character-visual scales differ.
+- Generated-asset validation: `GAMEPLAY_SKATES_ASSETS_PASS canonical=true resourceVariant=true generatedPlayers=10 productionPairs=10` and `GAMEPLAY_SKATES_MASK_ROUNDTRIP_PASS clear=unmasked reEquip=masked`.
+- Runtime validation: `GAMEPLAY_SKATES_RUNTIME_PASS productionSkates=10/10 goalieSkates=2/2` and `GAMEPLAY_SKATES_EVIDENCE_PASS images=2 states=Idle,Running`; Idle `BladeContact` Y is `0.2000`, and Running skate-to-foot distances are `0.2255 m` / `0.2336 m` (limit `0.32 m`).
+- Gameplay-distance evidence: [idle](../../../../.docs/evidence/skate-base-v1/gameplay-runtime-idle-skates.png), [running](../../../../.docs/evidence/skate-base-v1/gameplay-runtime-running-skates.png), and [interactive full rink](../../../../.docs/evidence/skate-base-v1/gameplay-full-rink-skates.jpeg). The Running frame is attachment stress evidence for the supplied locomotion clip, not a final skating animation.
+- Protected humanoid/source hashes remain byte-identical to the baseline listed above. No movement, `PlayerController`, camera, input, puck, stick gameplay, or validated animation source was modified.
+
+## Created / Modified File Inventory
+- `.docs/evidence/skate-base-v1/gameplay-full-rink-skates.jpeg`
+
+- `.docs/evidence/skate-base-v1/gameplay-runtime-idle-skates.png`
+- `.docs/evidence/skate-base-v1/gameplay-runtime-running-skates.png`
 - `.docs/evidence/skate-base-v1/gameplay-low.png`
 - `.docs/evidence/skate-base-v1/neutral-front.png`
 - `.docs/evidence/skate-base-v1/neutral-left-close.png`
@@ -105,6 +120,15 @@
 - `.docs/plans/2026/09/01/plan-skate-base-v1-integration.md`
 - `.docs/reqs/2026/09/01/req-skate-base-v1-integration.md`
 - `.docs/tests/test-skate-base-v1-integration.md`
+- `Assets/_Project/Prefabs/HockeyPlayer.prefab`
+- `Assets/_Project/Art/HockeyPrototype/Male_Base_v1_1_Clean_SkateMasked.asset`
+- `Assets/_Project/Art/HockeyPrototype/Male_Base_v1_1_Clean_SkateMasked.asset.meta`
+- `Assets/_Project/Scenes/ModularCharacterTest.unity`
+- `Assets/_Project/Scripts/Hockey/Character/HockeyEquipmentLoadout.cs`
+- `Assets/_Project/Scripts/Hockey/Character/HockeyPairedEquipmentFollower.cs`
+- `Assets/_Project/Scripts/Hockey/PrototypeArenaSmokeCheck.cs`
+- `Assets/_Project/Tests/Editor/GameplaySkatesSmokeRunner.cs`
+- `Assets/_Project/Tests/Editor/HockeyCharacterAssetSetup.cs`
 - `Assets/Equipment/Skates.meta`
 - `Assets/Equipment/Skates/Skate_Base_v1.meta`
 - `Assets/Equipment/Skates/Skate_Base_v1/Editor.meta`
@@ -149,5 +173,5 @@
 
 ## Regression / Limitations
 
-- The generator writes only within the new skate asset and `.docs/evidence/skate-base-v1`; it never writes humanoid, animation, gameplay/controller/camera/input/puck/stick, or existing gameplay-prefab paths
+- The standalone skate generator writes only within the skate asset and `.docs/evidence/skate-base-v1`; the scoped gameplay generator intentionally regenerates only the canonical player/resource variant/test scene while leaving humanoid, animation, movement/controller/camera/input/puck/stick gameplay paths unchanged
 - Minor hidden AI topology fragmentation and broad proportions remain; no remodeling, collider, gameplay, VFX, IK, skeleton, skin, animation-source, camera, input, puck, or stick change was made
