@@ -2,7 +2,8 @@
  * IceClash modular clean-humanoid asset generator and validator.
  * Consumes the isolated Male_Base_v1_1_Clean production visual/controller,
  * applies the existing mobile presentation policy,
- * builds four replaceable wearables plus the gameplay stick, parents the validated production stick
+ * builds four replaceable wearables plus the gameplay stick, uses the validated
+ * Skate_Base_v1 left/right prefabs for every generated gameplay skater, parents the production stick
  * through RightHand/StickSocket, aligns its explicit grip/contact markers in a
  * right-handed two-hand hockey stance, binds LeftHand IK to SecondaryGrip, and
  * creates shared presentation assets, prefabs, IK, validation, and evidence
@@ -36,6 +37,10 @@ namespace IceClash.Tests.Editor
         private const string StickModelPath = StickDirectory + "/Meshy_Hockey_Stick_Base_v1.fbx";
         private const string StickPrefabPath = StickDirectory + "/Hockey_Stick_Base_v1.prefab";
         private const string StickMaterialPath = StickDirectory + "/Hockey_Stick_Base_v1.mat";
+        private const string SkateDirectory = "Assets/Equipment/Skates/Skate_Base_v1";
+        private const string LeftSkatePrefabPath = SkateDirectory + "/Prefabs/Skate_L_v1.prefab";
+        private const string RightSkatePrefabPath = SkateDirectory + "/Prefabs/Skate_R_v1.prefab";
+        private const string SkateMaterialPath = SkateDirectory + "/Materials/Skate_Base_v1.mat";
         private const string GeneratedDirectory = "Assets/_Project/Art/HockeyPrototype";
         private const string PrefabPath = "Assets/_Project/Prefabs/HockeyPlayer.prefab";
         private const string ResourcePrefabPath = "Assets/_Project/Prefabs/Resources/Skater.prefab";
@@ -69,6 +74,7 @@ namespace IceClash.Tests.Editor
             EnsureFolder(GeneratedDirectory);
             MaleBaseV11GameplayIntegrationSetup.GenerateProductionAssets();
             ConfigureStickAssets();
+            ConfigureSkateAssets();
             Material skinMaterial = CreateOrUpdateMaterial("CharacterMobile", new Color(0.72f, 0.52f, 0.4f));
             Material equipmentMaterial = CreateOrUpdateMaterial("EquipmentDark", new Color(0.035f, 0.055f, 0.085f));
             Material jerseyMaterial = CreateOrUpdateMaterial("JerseyNeutral", new Color(0.22f, 0.42f, 0.78f));
@@ -154,6 +160,33 @@ namespace IceClash.Tests.Editor
             }
         }
 
+        public static void GenerateAndValidateProductionSkatesBatch()
+        {
+            try
+            {
+                GenerateAll();
+                GameObject canonical = AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath)
+                    ?? throw new InvalidOperationException("Generated HockeyPlayer prefab is missing.");
+                GameObject resource = AssetDatabase.LoadAssetAtPath<GameObject>(ResourcePrefabPath)
+                    ?? throw new InvalidOperationException("Generated Resources/Skater prefab is missing.");
+                if (PrefabUtility.GetPrefabAssetType(resource) != PrefabAssetType.Variant
+                    || PrefabUtility.GetCorrespondingObjectFromOriginalSource(resource) != canonical)
+                    throw new InvalidOperationException("Resources/Skater is not connected to HockeyPlayer.prefab.");
+                ValidateSupportedEquipmentStructure(canonical, "HockeyPlayer.prefab");
+                ValidateSupportedEquipmentStructure(resource, "Resources/Skater.prefab");
+                ValidateProductionSkates(canonical, "HockeyPlayer.prefab");
+                ValidateProductionSkates(resource, "Resources/Skater.prefab");
+                ValidateGeneratedSceneEquipment();
+                Debug.Log("GAMEPLAY_SKATES_ASSETS_PASS canonical=true resourceVariant=true generatedPlayers=10 productionPairs=10");
+            }
+            catch (Exception exception)
+            {
+                Debug.LogException(exception);
+                if (Application.isBatchMode) EditorApplication.Exit(1);
+                throw;
+            }
+        }
+
         [MenuItem("IceClash/Validate Modular Hockey Character Assets")]
         public static void ValidateGeneratedAssets()
         {
@@ -183,8 +216,10 @@ namespace IceClash.Tests.Editor
                 throw new InvalidOperationException("HockeyPlayer does not have one active item in every equipment slot.");
             ValidateSupportedEquipmentStructure(canonical, "HockeyPlayer.prefab");
             ValidateSupportedEquipmentStructure(resource, "Resources/Skater.prefab");
+            ValidateProductionSkates(canonical, "HockeyPlayer.prefab");
+            ValidateProductionSkates(resource, "Resources/Skater.prefab");
             ValidateGeneratedSceneEquipment();
-            Debug.Log("SUPPORTED_EQUIPMENT_STRUCTURE_PASS slots=Helmet,Visor,Gloves,Skates,Stick players=10");
+            Debug.Log("SUPPORTED_EQUIPMENT_STRUCTURE_PASS slots=Helmet,Visor,Gloves,Skates,Stick productionSkates=true players=10");
             if (stickRig == null || !stickRig.HasValidReferences || rigBuilder == null || rigBuilder.layers.Count != 2)
                 throw new InvalidOperationException("HockeyPlayer two-hand IK rig is incomplete.");
             if (stickRig.LeftHandConstraint.transform == stickRig.RightHandConstraint.transform
@@ -293,6 +328,8 @@ namespace IceClash.Tests.Editor
             ValidateEquipmentEnumValues();
             ValidateSupportedEquipmentStructure(canonical, "HockeyPlayer.prefab");
             ValidateSupportedEquipmentStructure(resource, "Resources/Skater.prefab");
+            ValidateProductionSkates(canonical, "HockeyPlayer.prefab");
+            ValidateProductionSkates(resource, "Resources/Skater.prefab");
             ValidateGeneratedSceneEquipment();
             ValidateEditorEquipmentPersistence();
             Debug.Log("SUPPORTED_EQUIPMENT_CONTRACT_PASS slots=Helmet,Visor,Gloves,Skates,Stick persistence=true players=10");
@@ -358,6 +395,22 @@ namespace IceClash.Tests.Editor
             if (AssetDatabase.LoadAssetAtPath<GameObject>(StickPrefabPath) == null
                 || AssetDatabase.LoadAssetAtPath<Material>(StickMaterialPath) == null)
                 throw new FileNotFoundException("Validated production hockey stick prefab or material is missing.", StickDirectory);
+        }
+
+        private static void ConfigureSkateAssets()
+        {
+            GameObject left = AssetDatabase.LoadAssetAtPath<GameObject>(LeftSkatePrefabPath);
+            GameObject right = AssetDatabase.LoadAssetAtPath<GameObject>(RightSkatePrefabPath);
+            Material material = AssetDatabase.LoadAssetAtPath<Material>(SkateMaterialPath);
+            if (left == null || right == null || material == null)
+                throw new FileNotFoundException("Validated production skate prefabs or material are missing.", SkateDirectory);
+            foreach (GameObject skate in new[] { left, right })
+            {
+                if (skate.transform.Find("Visual") == null || skate.transform.Find("BladeContact") == null
+                    || skate.GetComponentsInChildren<Animator>(true).Length != 0
+                    || skate.GetComponentsInChildren<SkinnedMeshRenderer>(true).Length != 0)
+                    throw new InvalidOperationException($"Production skate prefab is not rigid equipment: {skate.name}.");
+            }
         }
 
         private static int CountMeshTriangles(Mesh mesh)
@@ -509,10 +562,14 @@ namespace IceClash.Tests.Editor
 
             Vector3 leftSkatePosition = visualRoot.transform.InverseTransformPoint(leftFoot.position);
             Vector3 rightSkatePosition = visualRoot.transform.InverseTransformPoint(rightFoot.position);
-            float skateCenterY = (GameplayIceY - GameplaySpawnY) / GameplaySkaterScale
-                - visualRoot.transform.localPosition.y + 0.035f;
-            leftSkatePosition.y = skateCenterY;
-            rightSkatePosition.y = skateCenterY;
+            float skateContactY = (GameplayIceY - GameplaySpawnY) / GameplaySkaterScale
+                - visualRoot.transform.localPosition.y;
+            float skateScale = visual.transform.localScale.x;
+            float skateForwardFit = 0.07f * skateScale;
+            leftSkatePosition = new Vector3(leftSkatePosition.x, skateContactY,
+                leftSkatePosition.z + skateForwardFit);
+            rightSkatePosition = new Vector3(rightSkatePosition.x, skateContactY,
+                rightSkatePosition.z + skateForwardFit);
             HockeyEquipmentBinding[] bindings = new HockeyEquipmentBinding[ExpectedEquipmentSlotCount];
             bindings[0] = CreateBinding(HockeyEquipmentSlot.Helmet, head, "HelmetSlot",
                 BuildSinglePrimitive("Helmet", PrimitiveType.Sphere, equipmentMaterial, new Vector3(0f, 0.1f, 0f), new Vector3(0.25f, 0.19f, 0.28f)));
@@ -523,8 +580,7 @@ namespace IceClash.Tests.Editor
                 BuildFollowedPair("Gloves", PrimitiveType.Sphere, equipmentMaterial, leftTarget.localPosition,
                     rightTarget.localPosition, new Vector3(0.13f, 0.11f, 0.14f)));
             bindings[3] = CreateBinding(HockeyEquipmentSlot.Skates, visualRoot.transform, "SkatesSlot",
-                BuildFollowedPair("Skates", PrimitiveType.Cube, equipmentMaterial, leftSkatePosition,
-                    rightSkatePosition, new Vector3(0.11f, 0.07f, 0.27f)));
+                BuildProductionSkatePair(leftSkatePosition, rightSkatePosition, skateScale));
             HockeyEquipmentBinding stickBinding = new();
             stickBinding.Configure(HockeyEquipmentSlot.Stick, stickSocket, productionStick);
             bindings[4] = stickBinding;
@@ -607,6 +663,33 @@ namespace IceClash.Tests.Editor
             second.transform.localScale = scale;
             HockeyPairedEquipmentFollower follower = item.AddComponent<HockeyPairedEquipmentFollower>();
             follower.ConfigureVisuals(first.transform, second.transform);
+            return item;
+        }
+
+        private static GameObject BuildProductionSkatePair(Vector3 leftPosition,
+            Vector3 rightPosition, float uniformScale)
+        {
+            GameObject leftAsset = AssetDatabase.LoadAssetAtPath<GameObject>(LeftSkatePrefabPath)
+                ?? throw new FileNotFoundException("Validated left skate prefab is missing.", LeftSkatePrefabPath);
+            GameObject rightAsset = AssetDatabase.LoadAssetAtPath<GameObject>(RightSkatePrefabPath)
+                ?? throw new FileNotFoundException("Validated right skate prefab is missing.", RightSkatePrefabPath);
+            if (uniformScale <= 0f) throw new InvalidOperationException("Gameplay skate scale must be positive.");
+
+            GameObject item = new("Skates");
+            GameObject left = PrefabUtility.InstantiatePrefab(leftAsset) as GameObject
+                ?? throw new InvalidOperationException("Unable to instantiate the validated left skate prefab.");
+            GameObject right = PrefabUtility.InstantiatePrefab(rightAsset) as GameObject
+                ?? throw new InvalidOperationException("Unable to instantiate the validated right skate prefab.");
+            left.name = "Skate_L_v1";
+            right.name = "Skate_R_v1";
+            left.transform.SetParent(item.transform, false);
+            right.transform.SetParent(item.transform, false);
+            left.transform.SetLocalPositionAndRotation(leftPosition, Quaternion.identity);
+            right.transform.SetLocalPositionAndRotation(rightPosition, Quaternion.identity);
+            left.transform.localScale = Vector3.one * uniformScale;
+            right.transform.localScale = Vector3.one * uniformScale;
+            HockeyPairedEquipmentFollower follower = item.AddComponent<HockeyPairedEquipmentFollower>();
+            follower.ConfigureVisuals(left.transform, right.transform);
             return item;
         }
 
@@ -974,13 +1057,67 @@ namespace IceClash.Tests.Editor
                     throw new InvalidOperationException(
                         $"ModularCharacterTest must contain 10 generated players, found {loadouts.Length}.");
                 for (int i = 0; i < loadouts.Length; i++)
+                {
                     ValidateSupportedEquipmentStructure(loadouts[i].gameObject,
                         $"ModularCharacterTest player {i + 1}");
+                    ValidateProductionSkates(loadouts[i].gameObject,
+                        $"ModularCharacterTest player {i + 1}");
+                }
             }
             finally
             {
                 if (openedForValidation && scene.IsValid()) EditorSceneManager.CloseScene(scene, true);
             }
+        }
+
+        private static void ValidateProductionSkates(GameObject root, string artifactName)
+        {
+            HockeyEquipmentLoadout loadout = root != null ? root.GetComponent<HockeyEquipmentLoadout>() : null;
+            GameObject item = loadout != null ? loadout.GetEquipped(HockeyEquipmentSlot.Skates) : null;
+            HockeyPairedEquipmentFollower follower = item != null
+                ? item.GetComponent<HockeyPairedEquipmentFollower>() : null;
+            Transform left = item != null ? item.transform.Find("Skate_L_v1") : null;
+            Transform right = item != null ? item.transform.Find("Skate_R_v1") : null;
+            Transform leftContact = left != null ? left.Find("BladeContact") : null;
+            Transform rightContact = right != null ? right.Find("BladeContact") : null;
+            Mesh leftMesh = AssetDatabase.LoadAssetAtPath<Mesh>(
+                SkateDirectory + "/Prefabs/Skate_Base_v1_Canonical.asset");
+            Mesh rightMesh = AssetDatabase.LoadAssetAtPath<Mesh>(
+                SkateDirectory + "/Prefabs/Skate_Base_v1_Mirrored.asset");
+            Material skateMaterial = AssetDatabase.LoadAssetAtPath<Material>(SkateMaterialPath);
+            MeshFilter leftFilter = left != null ? left.GetComponentInChildren<MeshFilter>(true) : null;
+            MeshFilter rightFilter = right != null ? right.GetComponentInChildren<MeshFilter>(true) : null;
+            Renderer[] renderers = item != null
+                ? item.GetComponentsInChildren<Renderer>(true) : Array.Empty<Renderer>();
+            float expectedContactY = (GameplayIceY - GameplaySpawnY) / GameplaySkaterScale;
+            float leftY = leftContact != null ? root.transform.InverseTransformPoint(leftContact.position).y : float.NaN;
+            float rightY = rightContact != null ? root.transform.InverseTransformPoint(rightContact.position).y : float.NaN;
+            string assetPath = AssetDatabase.GetAssetPath(root);
+            if (string.IsNullOrEmpty(assetPath))
+                assetPath = PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(root);
+            string[] dependencies = string.IsNullOrEmpty(assetPath)
+                ? Array.Empty<string>() : AssetDatabase.GetDependencies(assetPath, true);
+            bool positiveEqualScale = left != null && right != null
+                && left.lossyScale.x > 0f && left.lossyScale.y > 0f && left.lossyScale.z > 0f
+                && right.lossyScale.x > 0f && right.lossyScale.y > 0f && right.lossyScale.z > 0f
+                && Vector3.Distance(left.lossyScale, right.lossyScale) <= 0.0001f;
+            if (item == null || item.name != "Skates" || item.transform.childCount != 2
+                || follower == null || follower.FirstVisual != left || follower.SecondVisual != right
+                || !follower.IsAligned(0.001f)
+                || leftContact == null || rightContact == null || leftFilter?.sharedMesh != leftMesh
+                || rightFilter?.sharedMesh != rightMesh || leftMesh == null || rightMesh == null
+                || CountMeshTriangles(leftMesh) != 4136 || CountMeshTriangles(rightMesh) != 4136
+                || renderers.Length != 2 || renderers.Any(renderer => renderer.sharedMaterial != skateMaterial)
+                || item.GetComponentsInChildren<SkinnedMeshRenderer>(true).Length != 0
+                || item.GetComponentsInChildren<Animator>(true).Length != 0
+                || !positiveEqualScale || Vector3.Dot(left.forward, root.transform.forward) < 0.99f
+                || Vector3.Dot(right.forward, root.transform.forward) < 0.99f
+                || Mathf.Abs(leftY - expectedContactY) > 0.001f
+                || Mathf.Abs(rightY - expectedContactY) > 0.001f
+                || (!string.IsNullOrEmpty(assetPath)
+                    && (!dependencies.Contains(LeftSkatePrefabPath) || !dependencies.Contains(RightSkatePrefabPath))))
+                throw new InvalidOperationException(
+                    $"{artifactName} production skates are invalid: leftY={leftY:F4} rightY={rightY:F4} expected={expectedContactY:F4}.");
         }
 
         private static void ValidateRendererPolicy(GameObject canonical)

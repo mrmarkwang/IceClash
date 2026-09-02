@@ -23,8 +23,9 @@
  * snapshots, and AI-difficulty separation. Offside checks cover mirrored warning
  * grids, tag-up/turnover clearing, swept zone entry, and neutral-dot restarts.
  * Modular-character checks cover ten bound clean humanoid skaters, two safe idle
- * goalie presentations, gameplay-root authority, real keyboard/joystick routing,
- * Idle/temporary Running animation, foot alignment, equipment, IK, and blade alignment.
+ * goalie presentations, validated production skates on every actor, gameplay-root
+ * authority, real keyboard/joystick routing, Idle/temporary Running animation,
+ * foot alignment, equipment, IK, and stick-blade alignment.
  * Rounded-corner containment measures tangential recovery against the local radial
  * board normal instead of an inaccurate fixed diagonal.
  */
@@ -52,6 +53,34 @@ namespace IceClash.Hockey
 {
     public static class PrototypeArenaSmokeCheck
     {
+        public static void RunProductionSkatesOnly()
+        {
+            PrototypeArenaBootstrap bootstrap = Object.FindAnyObjectByType<PrototypeArenaBootstrap>();
+            if (bootstrap == null)
+                bootstrap = new GameObject("Gameplay Skates Smoke Arena").AddComponent<PrototypeArenaBootstrap>();
+            bootstrap.BuildForValidation();
+            PlayerController[] players = Object.FindObjectsByType<PlayerController>();
+            HockeyGoalieAI[] goalies = Object.FindObjectsByType<HockeyGoalieAI>();
+            if (players.Length != 10 || goalies.Length != 2)
+                throw new System.InvalidOperationException(
+                    $"Gameplay skates smoke expected 10 skaters and 2 goalies, found {players.Length} and {goalies.Length}.");
+            for (int i = 0; i < players.Length; i++)
+            {
+                HockeyEquipmentLoadout loadout = players[i].GetComponent<HockeyEquipmentLoadout>();
+                if (!VerifyProductionSkates(loadout, players[i].transform, true))
+                    throw new System.InvalidOperationException(
+                        $"Gameplay player {players[i].PlayerId} does not have aligned production skates.");
+            }
+            for (int i = 0; i < goalies.Length; i++)
+            {
+                HockeyEquipmentLoadout loadout = goalies[i].GetComponent<HockeyEquipmentLoadout>();
+                if (!VerifyProductionSkates(loadout, goalies[i].transform, false))
+                    throw new System.InvalidOperationException(
+                        $"Gameplay goalie {goalies[i].Team} does not have production skates.");
+            }
+            Debug.Log("GAMEPLAY_SKATES_RUNTIME_PASS productionSkates=10/10 goalieSkates=2/2");
+        }
+
         public static void Run()
         {
             PrototypeArenaBootstrap bootstrap = Object.FindAnyObjectByType<PrototypeArenaBootstrap>();
@@ -533,6 +562,7 @@ namespace IceClash.Hockey
                 Transform visualBlade = loadout != null
                     ? loadout.FindEquippedChild(HockeyEquipmentSlot.Stick, "Stick Blade") : null;
                 Material teamMaterial = FirstCharacterMaterial(presentation);
+                bool productionSkates = VerifyProductionSkates(loadout, players[i].transform, true);
                 if (players[i].Team == TeamId.Blue)
                 {
                     blueTeamMaterial ??= teamMaterial;
@@ -549,12 +579,13 @@ namespace IceClash.Hockey
                     && !presentation.Animator.applyRootMotion && loadout != null && loadout.IsComplete()
                     && teamMaterial != null && AllCharacterRenderersUse(presentation, teamMaterial)
                     && WearablesExcludeMaterial(loadout, teamMaterial)
+                    && productionSkates
                     && rig != null && rig.HasValidReferences
                     && rig.LeftHandConstraint.weight >= 0.99f && rig.RightHandConstraint.weight >= 0.99f
                     && visualBlade != null && Vector3.Distance(visualBlade.position, players[i].ControlPoint) <= 0.25f;
                 if (!valid)
                 {
-                    Debug.LogWarning($"MODULAR_CHARACTER_PLAYER_FAIL player={players[i].PlayerId} bound={presentation?.IsBound} animator={presentation?.Animator != null} avatarHuman={presentation?.Animator?.avatar?.isHuman} avatarValid={presentation?.Animator?.avatar?.isValid} rootMotion={presentation?.Animator?.applyRootMotion} loadout={loadout?.IsComplete()} rig={rig?.HasValidReferences} leftWeight={rig?.LeftHandConstraint?.weight} rightWeight={rig?.RightHandConstraint?.weight} bladeDistance={(visualBlade != null ? Vector3.Distance(visualBlade.position, players[i].ControlPoint) : -1f):F4} blade={visualBlade?.position} control={players[i].ControlPoint}");
+                    Debug.LogWarning($"MODULAR_CHARACTER_PLAYER_FAIL player={players[i].PlayerId} bound={presentation?.IsBound} animator={presentation?.Animator != null} avatarHuman={presentation?.Animator?.avatar?.isHuman} avatarValid={presentation?.Animator?.avatar?.isValid} rootMotion={presentation?.Animator?.applyRootMotion} loadout={loadout?.IsComplete()} productionSkates={productionSkates} rig={rig?.HasValidReferences} leftWeight={rig?.LeftHandConstraint?.weight} rightWeight={rig?.RightHandConstraint?.weight} bladeDistance={(visualBlade != null ? Vector3.Distance(visualBlade.position, players[i].ControlPoint) : -1f):F4} blade={visualBlade?.position} control={players[i].ControlPoint}");
                     return false;
                 }
             }
@@ -566,9 +597,53 @@ namespace IceClash.Hockey
                 if (presentation == null || presentation.IsBound
                     || presentation.CurrentPresentationState != HockeyPresentationState.Idle
                     || expectedMaterial == null || !AllCharacterRenderersUse(presentation, expectedMaterial)
-                    || !WearablesExcludeMaterial(loadout, expectedMaterial)) return false;
+                    || !WearablesExcludeMaterial(loadout, expectedMaterial)
+                    || !VerifyProductionSkates(loadout, goalies[i].transform, false)) return false;
             }
-            return blueTeamMaterial != null && redTeamMaterial != null && blueTeamMaterial != redTeamMaterial;
+            bool passed = blueTeamMaterial != null && redTeamMaterial != null && blueTeamMaterial != redTeamMaterial;
+            if (passed) Debug.Log("PRODUCTION_SKATES_RUNTIME_PASS productionSkates=10/10 goalieSkates=2/2");
+            return passed;
+        }
+
+        private static bool VerifyProductionSkates(HockeyEquipmentLoadout loadout,
+            Transform actorRoot, bool requireIceContact)
+        {
+            GameObject item = loadout != null ? loadout.GetEquipped(HockeyEquipmentSlot.Skates) : null;
+            HockeyPairedEquipmentFollower follower = item != null
+                ? item.GetComponent<HockeyPairedEquipmentFollower>() : null;
+            Transform left = item != null ? item.transform.Find("Skate_L_v1") : null;
+            Transform right = item != null ? item.transform.Find("Skate_R_v1") : null;
+            Transform leftContact = left != null ? left.Find("BladeContact") : null;
+            Transform rightContact = right != null ? right.Find("BladeContact") : null;
+            MeshFilter leftFilter = left != null ? left.GetComponentInChildren<MeshFilter>(true) : null;
+            MeshFilter rightFilter = right != null ? right.GetComponentInChildren<MeshFilter>(true) : null;
+            Renderer leftRenderer = left != null ? left.GetComponentInChildren<Renderer>(true) : null;
+            Renderer rightRenderer = right != null ? right.GetComponentInChildren<Renderer>(true) : null;
+            bool contact = !requireIceContact || (leftContact != null && rightContact != null
+                && Mathf.Abs(leftContact.position.y - 0.2f) <= 0.08f
+                && Mathf.Abs(rightContact.position.y - 0.2f) <= 0.08f);
+            return item != null && item.activeInHierarchy && item.transform.childCount == 2
+                && follower != null && follower.FirstVisual == left && follower.SecondVisual == right
+                && follower.IsAligned(0.015f) && leftContact != null && rightContact != null
+                && leftFilter?.sharedMesh != null && rightFilter?.sharedMesh != null
+                && CountTriangles(leftFilter.sharedMesh) == 4136 && CountTriangles(rightFilter.sharedMesh) == 4136
+                && leftRenderer?.sharedMaterial != null && rightRenderer?.sharedMaterial != null
+                && leftRenderer.sharedMaterial.name.StartsWith("Skate_Base_v1")
+                && rightRenderer.sharedMaterial.name.StartsWith("Skate_Base_v1")
+                && left.lossyScale.x > 0f && left.lossyScale.y > 0f && left.lossyScale.z > 0f
+                && right.lossyScale.x > 0f && right.lossyScale.y > 0f && right.lossyScale.z > 0f
+                && Vector3.Distance(left.lossyScale, right.lossyScale) <= 0.001f
+                && Vector3.Dot(left.forward, actorRoot.forward) >= 0.99f
+                && Vector3.Dot(right.forward, actorRoot.forward) >= 0.99f
+                && contact;
+        }
+
+        private static int CountTriangles(Mesh mesh)
+        {
+            long indices = 0;
+            for (int subMesh = 0; subMesh < mesh.subMeshCount; subMesh++)
+                indices += (long)mesh.GetIndexCount(subMesh);
+            return (int)(indices / 3);
         }
 
         private static Material FirstCharacterMaterial(HockeyCharacterPresentation presentation)
