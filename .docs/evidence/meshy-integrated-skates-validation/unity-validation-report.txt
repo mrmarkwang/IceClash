@@ -1,6 +1,6 @@
 MESHY V2 INTEGRATED SKATES UNITY VALIDATION
-model=Assets/Characters/Male/Male_Base_v2_IntegratedSkates/Models/Meshy_AI_Hockey_Player_Charact_biped_Character_output.fbx
-animation=Assets/Characters/Male/Male_Base_v2_IntegratedSkates/Animations/Meshy_AI_Hockey_Player_Charact_biped_Animation_air_squat_withSkin.fbx
+model=Assets/Characters/Male/Male_Base_v1/Models/Meshy_AI_Hockey_Player_Charact_biped_Character_output.fbx
+animation=Assets/Characters/Male/Male_Base_v1/Animations/Meshy_AI_Hockey_Player_Charact_biped_Animation_air_squat_withSkin.fbx
 avatar.valid=true
 avatar.human=true
 model.importScale=1.000000

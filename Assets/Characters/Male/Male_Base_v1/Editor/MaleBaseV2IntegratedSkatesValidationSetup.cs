@@ -21,7 +21,7 @@ namespace IceClash.CharacterValidation.Editor
 {
     public static class MaleBaseV2IntegratedSkatesValidationSetup
     {
-        private const string Root = "Assets/Characters/Male/Male_Base_v2_IntegratedSkates";
+        private const string Root = "Assets/Characters/Male/Male_Base_v1";
         private const string ModelPath = Root + "/Models/Meshy_AI_Hockey_Player_Charact_biped_Character_output.fbx";
         private const string AnimationPath = Root + "/Animations/Meshy_AI_Hockey_Player_Charact_biped_Animation_air_squat_withSkin.fbx";
         private const string ColorTexturePath = Root + "/Textures/Meshy_AI_Hockey_Player_Charact_biped_texture_0.png";
@@ -48,6 +48,7 @@ namespace IceClash.CharacterValidation.Editor
             HumanBodyBones.LeftFoot, HumanBodyBones.RightFoot
         };
 
+        [MenuItem("IceClash/Character Validation/Generate and Validate Integrated Skates in Male Base v1")]
         public static void GenerateAndValidateBatch()
         {
             ConfigureTextureImporters();
