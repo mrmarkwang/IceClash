@@ -1,0 +1,156 @@
+MESHY V2 INTEGRATED SKATES UNITY VALIDATION
+model=Assets/Characters/Male/Male_Base_v2_IntegratedSkates/Models/Meshy_AI_Hockey_Player_Charact_biped_Character_output.fbx
+animation=Assets/Characters/Male/Male_Base_v2_IntegratedSkates/Animations/Meshy_AI_Hockey_Player_Charact_biped_Animation_air_squat_withSkin.fbx
+avatar.valid=true
+avatar.human=true
+model.importScale=1.000000
+model.materialSubassets=1
+model.textureSubassets=0
+model.clips=Armature|Armature|clip0|baselayer
+animation.clips=Armature|Armature|air_squat|baselayer
+model.clip0.name=Armature|Armature|clip0|baselayer
+model.clip0.duration=1.000000
+model.clip0.fps=30.000000
+model.clip0.frames=31
+model.clip0.rootMotionCurves=false
+model.clip0.loop=false
+animation.clip0.name=Armature|Armature|air_squat|baselayer
+animation.clip0.duration=1.900000
+animation.clip0.fps=30.000000
+animation.clip0.frames=58
+animation.clip0.rootMotionCurves=true
+animation.clip0.loop=false
+character.bounds=min:-0.731710,-0.165868,-0.507851 max:0.791769,1.959837,0.503535 size:1.523479,2.125705,1.011386
+character.height=2.125705
+skeleton.transformCount=27
+skeleton.boneCount=24
+skeleton.hierarchy:
+Male_Base_v2_IntegratedSkates_Test(Clone)
+  Armature
+    Hips
+      LeftUpLeg
+        LeftLeg
+          LeftFoot
+            LeftToeBase
+      RightUpLeg
+        RightLeg
+          RightFoot
+            RightToeBase
+      Spine02
+        Spine01
+          Spine
+            LeftShoulder
+              LeftArm
+                LeftForeArm
+                  LeftHand
+            neck
+              Head
+                head_end
+                headfront
+            RightShoulder
+              RightArm
+                RightForeArm
+                  RightHand
+  char1
+humanoid.Hips=Hips
+humanoid.Spine=Spine02
+humanoid.Chest=Spine01
+humanoid.Neck=neck
+humanoid.Head=Head
+humanoid.LeftShoulder=LeftShoulder
+humanoid.RightShoulder=RightShoulder
+humanoid.LeftUpperArm=LeftArm
+humanoid.RightUpperArm=RightArm
+humanoid.LeftLowerArm=LeftForeArm
+humanoid.RightLowerArm=RightForeArm
+humanoid.LeftHand=LeftHand
+humanoid.RightHand=RightHand
+humanoid.LeftUpperLeg=LeftUpLeg
+humanoid.RightUpperLeg=RightUpLeg
+humanoid.LeftLowerLeg=LeftLeg
+humanoid.RightLowerLeg=RightLeg
+humanoid.LeftFoot=LeftFoot
+humanoid.RightFoot=RightFoot
+skeleton.toeBones=LeftToeBase,RightToeBase
+mesh.count=1
+mesh.vertices=24003
+mesh.triangles=30694
+mesh.materials=1
+skinnedMesh.char1.rootBone=Hips
+skates.left.bottomVertexCount=309
+skates.right.bottomVertexCount=288
+skates.left.influences=LeftFoot:177.490000,LeftToeBase:131.510100
+skates.right.influences=RightFoot:205.326800,RightToeBase:79.704910,RightLeg:2.968328
+animation.clip=Armature|Armature|air_squat|baselayer
+animation.duration=1.900000
+animation.fps=30.000000
+animation.frames=58
+animation.humanMotion=true
+animation.rootMotionCurves=true
+animation.loop=false
+animation.deepestNormalizedTime=0.425000
+phase.standing.normalized=0.000000
+pose.standing.Hips=0.003155,0.773951,0.058447|357.903400,0.477616,3.777019
+pose.standing.LeftUpperLeg=-0.090554,0.730049,0.060437|4.971582,165.612900,193.803000
+pose.standing.RightUpperLeg=0.093181,0.734065,0.049118|5.926756,200.829500,166.484300
+pose.standing.LeftLowerLeg=-0.134965,0.559556,0.064356|341.826300,172.270600,184.092300
+pose.standing.RightLowerLeg=0.136272,0.570082,0.050938|346.184100,191.814000,177.213400
+pose.standing.LeftFoot=-0.145587,0.210950,-0.052573|29.618160,164.078200,174.814200
+pose.standing.RightFoot=0.135809,0.209981,-0.039437|30.272500,201.310500,186.529900
+pose.standing.LeftHand=-0.387919,1.053080,0.094968|10.693900,159.253800,191.115500
+pose.standing.RightHand=0.366977,1.064918,0.071694|9.006629,175.014200,154.790800
+blade.standing.rootRelativeContactHeight=-0.014633
+blade.standing.left=count:393 bounds:min:-0.202714,-0.011897,-0.132290 max:-0.076485,0.048608,0.147056 size:0.126229,0.060505,0.279346
+blade.standing.right=count:398 bounds:min:0.066591,-0.014633,-0.116436 max:0.204611,0.048653,0.158769 size:0.138020,0.063286,0.275205
+phase.bend.normalized=0.212500
+pose.bend.Hips=0.000159,0.637953,-0.014935|356.141800,359.612600,6.518529
+pose.bend.LeftUpperLeg=-0.091373,0.589687,-0.012698|50.224070,162.450200,182.081900
+pose.bend.RightUpperLeg=0.092097,0.602167,-0.021954|51.830220,200.523700,177.475200
+pose.bend.LeftLowerLeg=-0.138290,0.477014,0.114422|320.486500,168.915600,187.605400
+pose.bend.RightLowerLeg=0.145783,0.497482,0.100149|325.021700,192.512700,176.377500
+pose.bend.LeftFoot=-0.141465,0.195726,-0.122599|32.336350,163.867400,174.088200
+pose.bend.RightFoot=0.122664,0.193883,-0.112299|32.888730,201.614000,187.179300
+pose.bend.LeftHand=-0.368309,1.225312,0.477094|69.294350,219.399700,222.616200
+pose.bend.RightHand=0.275372,1.277004,0.459729|28.337680,94.667690,91.359820
+blade.bend.rootRelativeContactHeight=-0.026033
+blade.bend.left=count:372 bounds:min:-0.198329,-0.021734,-0.194027 max:-0.073051,0.033019,0.086050 size:0.125278,0.054752,0.280077
+blade.bend.right=count:394 bounds:min:0.054321,-0.026033,-0.183820 max:0.192392,0.032794,0.094391 size:0.138070,0.058828,0.278210
+phase.deepest.normalized=0.425000
+pose.deepest.Hips=0.000775,0.384818,-0.042959|353.642800,358.897000,8.063598
+pose.deepest.LeftUpperLeg=-0.089487,0.334288,-0.039467|81.587050,53.404050,68.217770
+pose.deepest.RightUpperLeg=0.093684,0.351208,-0.047521|83.049060,324.582900,309.216400
+pose.deepest.LeftLowerLeg=-0.135109,0.343856,0.130482|306.114300,166.423000,190.443900
+pose.deepest.RightLowerLeg=0.139073,0.364182,0.115335|310.839800,190.941500,174.327200
+pose.deepest.LeftFoot=-0.131323,0.130639,-0.169245|34.456890,163.743700,173.972200
+pose.deepest.RightFoot=0.122053,0.122581,-0.166054|35.686940,201.973300,188.197400
+pose.deepest.LeftHand=-0.354644,1.157484,0.476869|51.430890,257.732900,264.380200
+pose.deepest.RightHand=0.227940,1.194054,0.455482|9.210404,86.424290,75.025160
+blade.deepest.rootRelativeContactHeight=-0.092496
+blade.deepest.left=count:272 bounds:min:-0.184919,-0.083950,-0.234288 max:-0.064414,-0.040344,0.043463 size:0.120505,0.043606,0.277750
+blade.deepest.right=count:350 bounds:min:0.054909,-0.092496,-0.230155 max:0.186394,-0.040358,0.049844 size:0.131485,0.052138,0.279998
+phase.recovery.normalized=0.712500
+pose.recovery.Hips=-0.008107,0.741221,0.028958|359.354600,358.098900,5.933734
+pose.recovery.LeftUpperLeg=-0.100064,0.693808,0.026041|24.885920,162.837200,188.573000
+pose.recovery.RightUpperLeg=0.083687,0.704984,0.022375|25.701210,197.686900,170.281300
+pose.recovery.LeftLowerLeg=-0.146803,0.535731,0.088354|330.963000,169.712100,184.329300
+pose.recovery.RightLowerLeg=0.132977,0.554391,0.082732|335.080700,192.431500,175.579600
+pose.recovery.LeftFoot=-0.142329,0.215037,-0.091777|30.810080,164.071300,174.574700
+pose.recovery.RightFoot=0.127347,0.218689,-0.075737|30.689250,201.353000,186.530500
+pose.recovery.LeftHand=-0.423970,1.049198,0.266218|18.720600,186.890000,196.086900
+pose.recovery.RightHand=0.327933,1.088995,0.316387|8.874247,121.197300,141.602000
+blade.recovery.rootRelativeContactHeight=-0.005541
+blade.recovery.left=count:403 bounds:min:-0.199393,-0.005541,-0.167969 max:-0.073770,0.055593,0.111832 size:0.125623,0.061134,0.279801
+blade.recovery.right=count:391 bounds:min:0.058419,-0.005223,-0.152871 max:0.196660,0.055898,0.123719 size:0.138241,0.061120,0.276590
+phase.end.normalized=1.000000
+pose.end.Hips=0.003070,0.772349,0.055939|358.098100,0.413655,3.825473
+pose.end.LeftUpperLeg=-0.090606,0.728364,0.057677|1.828169,165.618800,194.048000
+pose.end.RightUpperLeg=0.093138,0.732568,0.046572|3.825474,201.428000,166.188000
+pose.end.LeftLowerLeg=-0.133396,0.557496,0.052336|338.197400,172.568200,184.144300
+pose.end.RightLowerLeg=0.134833,0.568278,0.042010|342.615100,192.194000,177.245700
+pose.end.LeftFoot=-0.142131,0.216854,-0.086223|29.620160,164.089500,174.815700
+pose.end.RightFoot=0.128867,0.214379,-0.070062|30.289090,201.304100,186.533600
+pose.end.LeftHand=-0.387419,1.052154,0.091045|9.629511,160.215700,191.291100
+pose.end.RightHand=0.366597,1.063539,0.069196|8.791677,174.654100,155.151000
+blade.end.rootRelativeContactHeight=-0.010205
+blade.end.left=count:383 bounds:min:-0.199229,-0.005991,-0.165944 max:-0.073048,0.053323,0.113423 size:0.126181,0.059314,0.279366
+blade.end.right=count:398 bounds:min:0.059536,-0.010205,-0.147438 max:0.197649,0.053045,0.128209 size:0.138113,0.063250,0.275647
