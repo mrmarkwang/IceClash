@@ -35,32 +35,32 @@ Make the validated Meshy integrated-skates character the reproducible production
 
 ### Phase 2 - Production generation foundation
 
-- [ ] Replace `MaleBaseV1ReplacementCompatibility.cs` with `MaleBaseIntegratedSkatesGameplayIntegrationSetup.cs`, update callers, and implement idempotent controller creation plus bounds-based scale/blade-plane alignment without legacy exceptions.
-- [ ] Generate the production controller at `Assets/Characters/Male/Male_Base_v1/Animations/MaleSkater.controller` with the established parameters/transitions, procedural `Idle.anim`, procedural `Skate.anim` as `Running`, and no Air Squat or deleted FBX reference.
-- [ ] Update `HockeyCharacterAssetSetup.cs` to instantiate the replacement model directly, assign the valid Avatar/controller, and retain root-motion-off renderer optimization.
+- [x] Replace `MaleBaseV1ReplacementCompatibility.cs` with `MaleBaseIntegratedSkatesGameplayIntegrationSetup.cs`, update callers, and implement idempotent controller creation plus bounds-based scale/blade-plane alignment without legacy exceptions.
+- [x] Generate the production controller at `Assets/Characters/Male/Male_Base_v1/Animations/MaleSkater.controller` with the established parameters/transitions, procedural `Idle.anim`, procedural `Skate.anim` as `Running`, and no Air Squat or deleted FBX reference.
+- [x] Update `HockeyCharacterAssetSetup.cs` to instantiate the replacement model directly, assign the valid Avatar/controller, and retain root-motion-off renderer optimization.
 
 ### Phase 3 - Integrated equipment and IK migration
 
-- [ ] Remove detachable-skate importer, prefab, material, masking, follower, fitting, and alignment calls from `HockeyCharacterAssetSetup.cs` while leaving unrelated equipment and stick behavior intact.
-- [ ] Generate an active non-rendering `Integrated Skates` item under the stable `SkatesSlot`, bind the slot to the replacement Humanoid feet, and prevent mesh masking from changing the integrated body/skates renderer.
-- [ ] Rebuild `StickSocket`, grip targets, elbow hints, two `TwoBoneIKConstraint` objects, `RigBuilder` layers, and `HockeyStickRig` references from the replacement Avatar's mapped arm and hand bones.
-- [ ] Calibrate uniform character scale and `Visual` translation from renderer bounds, then align stick presentation after the final visual transform so the blade/control-point contract remains valid.
-- [ ] Regenerate `HockeyPlayer.prefab`, its connected `Resources/Skater.prefab` variant, and `ModularCharacterTest.unity` without missing serialized bone or equipment references.
+- [x] Remove detachable-skate importer, prefab, material, masking, follower, fitting, and alignment calls from `HockeyCharacterAssetSetup.cs` while leaving unrelated equipment and stick behavior intact.
+- [x] Generate an active non-rendering `Integrated Skates` item under the stable `SkatesSlot`, bind the slot to the replacement Humanoid feet, and prevent mesh masking from changing the integrated body/skates renderer.
+- [x] Rebuild `StickSocket`, grip targets, elbow hints, two `TwoBoneIKConstraint` objects, `RigBuilder` layers, and `HockeyStickRig` references from the replacement Avatar's mapped arm and hand bones.
+- [x] Calibrate uniform character scale and `Visual` translation from renderer bounds, then align stick presentation after the final visual transform so the blade/control-point contract remains valid.
+- [x] Regenerate `HockeyPlayer.prefab`, its connected `Resources/Skater.prefab` variant, and `ModularCharacterTest.unity` without missing serialized bone or equipment references.
 
 ### Phase 4 - Validation and regression coverage
 
-- [ ] Update `HockeyCharacterAssetSetup` validators to require the integrated marker, replacement Avatar/controller, target height/contact tolerances, no detachable skate instances, no retired GUID/path dependencies, complete equipment slots, valid IK, and stable GUIDs across regeneration.
-- [ ] Update `ModularCharacterTestHarness.cs`, `PrototypeArenaSmokeCheck.cs`, and relevant editor runners so integrated skates satisfy runtime equipment checks without weakening animation, stick, roster, or puck assertions.
-- [ ] Run the Unity batch asset generator/validator and require `MODULAR_CHARACTER_ASSETS_PASS` with no compiler, missing-reference, Avatar, or idempotence failure.
-- [ ] Run the modular ten-player smoke scene and require `MODULAR_CHARACTER_SMOKE_PASS players=10` with visible Humanoid Running movement and no duplicate skates.
-- [ ] Run the PrototypeArena smoke runner and require its existing gameplay pass marker, ten skaters, two goalies, bound presentation, correct scale, two-hand IK, and puck behavior.
-- [ ] Inspect generated prefab/controller YAML and `git grep` results to confirm production assets contain no retired model/animation GUIDs, Air Squat motion, or standalone skate-prefab GUIDs.
+- [x] Update `HockeyCharacterAssetSetup` validators to require the integrated marker, replacement Avatar/controller, target height/contact tolerances, no detachable skate instances, no retired GUID/path dependencies, complete equipment slots, valid IK, and stable GUIDs across regeneration.
+- [x] Update `ModularCharacterTestHarness.cs`, `PrototypeArenaSmokeCheck.cs`, and relevant editor runners so integrated skates satisfy runtime equipment checks without weakening animation, stick, roster, or puck assertions.
+- [x] Run the Unity asset generator/validator and require `MODULAR_CHARACTER_ASSETS_VALID` with no compiler, missing-reference, Avatar, or idempotence failure.
+- [x] Run the modular ten-player smoke scene and require `MODULAR_CHARACTER_SMOKE_PASS players=10` with visible Humanoid Running movement and no duplicate skates.
+- [x] Run the PrototypeArena smoke runner and require its existing gameplay pass marker, ten skaters, two goalies, bound presentation, correct scale, two-hand IK, and puck behavior.
+- [x] Inspect generated prefab/controller YAML and `git grep` results to confirm production assets contain no retired model/animation GUIDs, Air Squat motion, or standalone skate-prefab GUIDs.
 
 ### Phase 5 - Review and completion evidence
 
-- [ ] Review the scoped Git diff against the requirement, preserving any unrelated changes that appear during implementation and avoiding changes to `PlayerController`, input, puck, AI, or balance code.
-- [ ] Inspect the generated test scene and PrototypeArena visually for height, blade contact, duplicate skates, deformation, stick grip, and animation behavior.
-- [ ] Record exact verification commands, pass markers, limitations, and final acceptance status in the RPD documents.
+- [x] Review the scoped Git diff against the requirement, preserving any unrelated changes that appear during implementation and avoiding changes to `PlayerController`, input, puck, AI, or balance code.
+- [x] Inspect the generated test scene and PrototypeArena visually for height, blade contact, duplicate skates, deformation, stick grip, and animation behavior.
+- [x] Record exact verification commands, pass markers, limitations, and final acceptance status in the RPD documents.
 
 ## Validation
 

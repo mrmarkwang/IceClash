@@ -10,16 +10,16 @@ Reconnect the production hockey-player prefab and resource variant to the valida
 
 ## Acceptance Criteria
 
-- [ ] `Assets/_Project/Prefabs/HockeyPlayer.prefab` contains the validated Meshy integrated-skates visual and no dependency on the retired clean visual prefab or deleted character FBX.
-- [ ] The production Animator uses the replacement model's valid Humanoid Avatar, has root motion disabled, and uses a production controller with working `Idle` and `Running` states.
-- [ ] The `Running` state uses the committed Humanoid skating placeholder rather than the retired v1 animation FBX or the Air Squat validation clip.
-- [ ] The production visual is uniformly calibrated so a runtime skater at the retained `0.68` actor scale is approximately `1.90 m` tall and both integrated skate blades meet the gameplay ice plane.
-- [ ] The stick socket, left/right hand targets, arm constraints, and `HockeyStickRig` are regenerated from the replacement Avatar's mapped Humanoid bones and retain the established two-hand grip contract.
-- [ ] No detachable `Skate_L_v1` or `Skate_R_v1` renderers are instantiated; the stable `Skates` equipment slot remains present and active through a non-rendering integrated-skates marker.
-- [ ] The loadout does not mask or replace the replacement character mesh when the integrated-skates slot is active.
-- [ ] `Resources/Skater.prefab` remains a connected variant of `HockeyPlayer.prefab`, and existing ten-skater/two-goalie spawning and runtime presentation binding remain unchanged.
-- [ ] The modular-character asset validator, ten-player scene smoke test, and PrototypeArena gameplay smoke test pass without missing references, compiler errors, duplicate skates, or retired animation dependencies.
-- [ ] The legacy compatibility boundary is removed, the supported integrated-skates production setup regenerates assets without throwing, and regeneration is idempotent.
+- [x] `Assets/_Project/Prefabs/HockeyPlayer.prefab` contains the validated Meshy integrated-skates visual and no dependency on the retired clean visual prefab or deleted character FBX.
+- [x] The production Animator uses the replacement model's valid Humanoid Avatar, has root motion disabled, and uses a production controller with working `Idle` and `Running` states.
+- [x] The `Running` state uses the committed Humanoid skating placeholder rather than the retired v1 animation FBX or the Air Squat validation clip.
+- [x] The production visual is uniformly calibrated so a runtime skater at the retained `0.68` actor scale is approximately `1.90 m` tall and both integrated skate blades meet the gameplay ice plane.
+- [x] The stick socket, left/right hand targets, arm constraints, and `HockeyStickRig` are regenerated from the replacement Avatar's mapped Humanoid bones and retain the established two-hand grip contract.
+- [x] No detachable `Skate_L_v1` or `Skate_R_v1` renderers are instantiated; the stable `Skates` equipment slot remains present and active through a non-rendering integrated-skates marker.
+- [x] The loadout does not mask or replace the replacement character mesh when the integrated-skates slot is active.
+- [x] `Resources/Skater.prefab` remains a connected variant of `HockeyPlayer.prefab`, and existing ten-skater/two-goalie spawning and runtime presentation binding remain unchanged.
+- [x] The modular-character asset validator, ten-player scene smoke test, and PrototypeArena gameplay smoke test pass without missing references, compiler errors, duplicate skates, or retired animation dependencies.
+- [x] The legacy compatibility boundary is removed, the supported integrated-skates production setup regenerates assets without throwing, and regeneration is idempotent.
 
 ## Constraints
 

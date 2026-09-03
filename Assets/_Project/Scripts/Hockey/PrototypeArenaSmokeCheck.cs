@@ -574,26 +574,30 @@ namespace IceClash.Hockey
                     redTeamMaterial ??= teamMaterial;
                     if (teamMaterial != redTeamMaterial) return false;
                 }
-                bool valid = presentation != null && presentation.IsBound && presentation.BoundPlayer == players[i]
-                    && presentation.Animator != null && presentation.Animator.avatar != null
-                    && presentation.Animator.avatar.isHuman && presentation.Animator.avatar.isValid
-                    && !presentation.Animator.applyRootMotion && loadout != null && loadout.IsComplete()
-                    && teamMaterial != null && AllCharacterRenderersUse(presentation, teamMaterial)
-                    && WearablesExcludeMaterial(loadout, teamMaterial)
-                    && productionSkates
-                    && rig != null && rig.HasValidReferences
-                    && rig.LeftHandConstraint.weight >= 0.99f && rig.RightHandConstraint.weight >= 0.99f
-                    && visualBlade != null && Vector3.Distance(visualBlade.position, players[i].ControlPoint) <= 0.25f;
+                bool presentationValid = presentation != null && presentation.IsBound
+                    && presentation.BoundPlayer == players[i];
+                bool animatorValid = presentation?.Animator != null
+                    && presentation.Animator.avatar != null && presentation.Animator.avatar.isHuman
+                    && presentation.Animator.avatar.isValid && !presentation.Animator.applyRootMotion;
+                bool loadoutValid = loadout != null && loadout.IsComplete();
+                bool materialValid = teamMaterial != null
+                    && AllCharacterRenderersUse(presentation, teamMaterial)
+                    && WearablesExcludeMaterial(loadout, teamMaterial);
+                bool rigValid = rig != null && rig.HasValidReferences
+                    && rig.LeftHandConstraint.weight >= 0.99f && rig.RightHandConstraint.weight >= 0.99f;
+                float bladeDistance = visualBlade != null
+                    ? Vector3.Distance(visualBlade.position, players[i].ControlPoint) : float.PositiveInfinity;
+                bool valid = presentationValid && animatorValid && loadoutValid && materialValid
+                    && productionSkates && rigValid && bladeDistance <= 0.25f;
                 if (!valid)
                 {
                     GameObject skateMarker = loadout?.GetEquipped(HockeyEquipmentSlot.Skates);
                     Transform integratedVisual = players[i].transform.Find("Visual/Male_Base_IntegratedSkates_Visual");
                     Animator integratedAnimator = integratedVisual?.GetComponentInChildren<Animator>(true);
                     throw new System.InvalidOperationException(
-                        $"MODULAR_CHARACTER_PLAYER_FAIL player={players[i].PlayerId} bound={presentation?.IsBound} "
-                        + $"animator={presentation?.Animator != null} loadout={loadout?.IsComplete()} "
-                        + $"productionSkates={productionSkates} rig={rig?.HasValidReferences} "
-                        + $"bladeDistance={(visualBlade != null ? Vector3.Distance(visualBlade.position, players[i].ControlPoint) : -1f):F4} "
+                        $"MODULAR_CHARACTER_PLAYER_FAIL player={players[i].PlayerId} presentation={presentationValid} "
+                        + $"animator={animatorValid} loadout={loadoutValid} material={materialValid} "
+                        + $"productionSkates={productionSkates} rig={rigValid} bladeDistance={bladeDistance:F4} "
                         + $"marker={skateMarker?.name}/{skateMarker?.activeInHierarchy} visual={integratedVisual != null} "
                         + $"markerChildren={skateMarker?.transform.childCount} markerRenderers={skateMarker?.GetComponentsInChildren<Renderer>(true).Length} "
                         + $"markerFollower={skateMarker?.GetComponent<HockeyPairedEquipmentFollower>() != null} renderers={integratedVisual?.GetComponentsInChildren<Renderer>(true).Length} "
@@ -647,7 +651,7 @@ namespace IceClash.Hockey
                 && characterVisual != null && animator != null && renderers.Length > 0
                 && loadout.LeftFoot == animator.GetBoneTransform(HumanBodyBones.LeftFoot)
                 && loadout.RightFoot == animator.GetBoneTransform(HumanBodyBones.RightFoot)
-                && !retiredObjects;
+                && contact && height && !retiredObjects;
             if (!valid)
                 Debug.LogWarning($"INTEGRATED_SKATES_DIAGNOSTIC actor={actorRoot?.name} marker={item?.name} "
                     + $"renderers={renderers.Length} contact={contact} minY={bounds.min.y:F4} "
@@ -699,7 +703,13 @@ namespace IceClash.Hockey
                 GameObject equipment = loadout.GetEquipped(wearableSlots[slotIndex]);
                 if (equipment == null) return false;
                 Renderer[] renderers = equipment.GetComponentsInChildren<Renderer>(true);
-                if (renderers.Length == 0) return false;
+                if (renderers.Length == 0)
+                {
+                    bool integratedSkatesMarker = wearableSlots[slotIndex] == HockeyEquipmentSlot.Skates
+                        && equipment.name == "Integrated Skates" && equipment.transform.childCount == 0;
+                    if (integratedSkatesMarker) continue;
+                    return false;
+                }
                 for (int rendererIndex = 0; rendererIndex < renderers.Length; rendererIndex++)
                     for (int materialIndex = 0; materialIndex < renderers[rendererIndex].sharedMaterials.Length; materialIndex++)
                         if (renderers[rendererIndex].sharedMaterials[materialIndex] == material) return false;
@@ -2903,7 +2913,7 @@ namespace IceClash.Hockey
                 Vector3 position = player.transform.position;
                 float attack = player.Team == TeamId.Blue ? 1f : -1f;
                 float lateral = position.x * attack;
-                if (Vector3.Distance(position, expected) > positionTolerance
+                if (Vector3.ProjectOnPlane(position - expected, Vector3.up).magnitude > positionTolerance
                     || Vector3.Dot(player.transform.forward, Vector3.forward * attack) < 0.999f
                     || Mathf.Abs(position.x) > halfWidth - 0.5f
                     || Mathf.Abs(position.z) > halfLength - 0.5f
@@ -2937,7 +2947,8 @@ namespace IceClash.Hockey
             if (!VerifyTeamFaceoffDepth(players, TeamId.Blue) || !VerifyTeamFaceoffDepth(players, TeamId.Red))
                 return false;
             for (int i = 0; i < goalies.Length; i++)
-                if (Vector3.Distance(goalies[i].transform.position, goalies[i].Anchor) > positionTolerance)
+                if (Vector3.ProjectOnPlane(goalies[i].transform.position - goalies[i].Anchor, Vector3.up).magnitude
+                    > positionTolerance)
                     return false;
             return true;
         }

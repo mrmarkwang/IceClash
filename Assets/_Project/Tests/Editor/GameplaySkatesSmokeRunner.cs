@@ -39,6 +39,7 @@ namespace IceClash.Tests.Editor
             }
         }
 
+        [MenuItem("IceClash/Run Integrated Skates Gameplay Smoke Check")]
         public static void Run()
         {
             SessionState.SetBool(PendingKey, true);
