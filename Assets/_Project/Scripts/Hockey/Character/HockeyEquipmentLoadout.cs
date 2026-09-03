@@ -1,10 +1,10 @@
 /*
  * IceClash modular hockey equipment registry.
  * Owns four independently replaceable wearables plus the gameplay stick.
- * Preserves retained serialized slot IDs, paired glove/skate following, and
- * left-hand IK rebinding to the equipped stick's SecondaryGrip. Skate position
- * and rigid position/rotation offsets are captured from the evaluated
- * reference pose in each Humanoid Foot's local space.
+ * Preserves retained serialized slot IDs, paired-equipment support, exposed
+ * Humanoid hand/foot bindings, and left-hand IK rebinding to the equipped
+ * stick's SecondaryGrip. Integrated skates use the stable skate slot without
+ * swapping or masking the character's combined mesh.
  */
 
 using System;
@@ -64,6 +64,8 @@ namespace IceClash.Hockey.Character
         public int SlotCount => slots != null ? slots.Length : 0;
         public Transform LeftHand => leftHand;
         public Transform RightHand => rightHand;
+        public Transform LeftFoot => leftFoot;
+        public Transform RightFoot => rightFoot;
 
         public void Configure(HockeyEquipmentBinding[] bindings, HockeyStickRig rig,
             Transform handA, Transform handB, Transform footA, Transform footB)

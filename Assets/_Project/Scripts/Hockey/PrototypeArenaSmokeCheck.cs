@@ -7,7 +7,8 @@
  * and SWITCH/CHECK defense controls,
  * contextual body/pull checks, smooth camera retargeting, modular systems, safe multi-touch Unity UI controls,
  * circular visual/hit separation, main-character team coloring that excludes
- * replaceable wearables, responsive puck possession, charge-speed-only
+ * replaceable wearables, integrated-skates marker/ice-contact/height contracts,
+ * responsive puck possession, charge-speed-only
  * low/high airborne shots with Shooting-skilled open-lane aim, snapshots, and one-way goals.
  * Recent changes: validates the elongated rink,
  * compact physical hockey nets, rounded-rink puck containment, stationary-carrier and board-pressure turnovers,
@@ -22,8 +23,8 @@
  * constrained builds, physical mappings, fatigue, dekes, actions, contests,
  * snapshots, and AI-difficulty separation. Offside checks cover mirrored warning
  * grids, tag-up/turnover clearing, swept zone entry, and neutral-dot restarts.
- * Modular-character checks cover ten bound clean humanoid skaters, two safe idle
- * goalie presentations, character-matched production skates on every actor, gameplay-root
+ * Modular-character checks cover ten bound integrated-skates humanoid skaters,
+ * two safe idle goalie presentations, one integrated-skates marker per actor, gameplay-root
  * authority, real keyboard/joystick routing, Idle/temporary Running animation,
  * foot alignment, equipment, IK, and stick-blade alignment.
  * Rounded-corner containment measures tangential recovery against the local radial
@@ -53,7 +54,7 @@ namespace IceClash.Hockey
 {
     public static class PrototypeArenaSmokeCheck
     {
-        public static void RunProductionSkatesOnly()
+        public static void RunIntegratedSkatesOnly()
         {
             PrototypeArenaBootstrap bootstrap = Object.FindAnyObjectByType<PrototypeArenaBootstrap>();
             if (bootstrap == null)
@@ -67,18 +68,18 @@ namespace IceClash.Hockey
             for (int i = 0; i < players.Length; i++)
             {
                 HockeyEquipmentLoadout loadout = players[i].GetComponent<HockeyEquipmentLoadout>();
-                if (!VerifyProductionSkates(loadout, players[i].transform, false))
+                if (!VerifyIntegratedSkates(loadout, players[i].transform, false))
                     throw new System.InvalidOperationException(
-                        $"Gameplay player {players[i].PlayerId} does not have aligned production skates.");
+                        $"Gameplay player {players[i].PlayerId} does not have integrated skates.");
             }
             for (int i = 0; i < goalies.Length; i++)
             {
                 HockeyEquipmentLoadout loadout = goalies[i].GetComponent<HockeyEquipmentLoadout>();
-                if (!VerifyProductionSkates(loadout, goalies[i].transform, false))
+                if (!VerifyIntegratedSkates(loadout, goalies[i].transform, false))
                     throw new System.InvalidOperationException(
-                        $"Gameplay goalie {goalies[i].Team} does not have production skates.");
+                        $"Gameplay goalie {goalies[i].Team} does not have integrated skates.");
             }
-            Debug.Log("GAMEPLAY_SKATES_RUNTIME_PASS productionSkates=10/10 goalieSkates=2/2");
+            Debug.Log("INTEGRATED_SKATES_RUNTIME_PASS skaters=10/10 goalies=2/2");
         }
 
         public static void Run()
@@ -562,7 +563,7 @@ namespace IceClash.Hockey
                 Transform visualBlade = loadout != null
                     ? loadout.FindEquippedChild(HockeyEquipmentSlot.Stick, "Stick Blade") : null;
                 Material teamMaterial = FirstCharacterMaterial(presentation);
-                bool productionSkates = VerifyProductionSkates(loadout, players[i].transform, true);
+                bool productionSkates = VerifyIntegratedSkates(loadout, players[i].transform, true);
                 if (players[i].Team == TeamId.Blue)
                 {
                     blueTeamMaterial ??= teamMaterial;
@@ -585,8 +586,21 @@ namespace IceClash.Hockey
                     && visualBlade != null && Vector3.Distance(visualBlade.position, players[i].ControlPoint) <= 0.25f;
                 if (!valid)
                 {
-                    Debug.LogWarning($"MODULAR_CHARACTER_PLAYER_FAIL player={players[i].PlayerId} bound={presentation?.IsBound} animator={presentation?.Animator != null} avatarHuman={presentation?.Animator?.avatar?.isHuman} avatarValid={presentation?.Animator?.avatar?.isValid} rootMotion={presentation?.Animator?.applyRootMotion} loadout={loadout?.IsComplete()} productionSkates={productionSkates} rig={rig?.HasValidReferences} leftWeight={rig?.LeftHandConstraint?.weight} rightWeight={rig?.RightHandConstraint?.weight} bladeDistance={(visualBlade != null ? Vector3.Distance(visualBlade.position, players[i].ControlPoint) : -1f):F4} blade={visualBlade?.position} control={players[i].ControlPoint}");
-                    return false;
+                    GameObject skateMarker = loadout?.GetEquipped(HockeyEquipmentSlot.Skates);
+                    Transform integratedVisual = players[i].transform.Find("Visual/Male_Base_IntegratedSkates_Visual");
+                    Animator integratedAnimator = integratedVisual?.GetComponentInChildren<Animator>(true);
+                    throw new System.InvalidOperationException(
+                        $"MODULAR_CHARACTER_PLAYER_FAIL player={players[i].PlayerId} bound={presentation?.IsBound} "
+                        + $"animator={presentation?.Animator != null} loadout={loadout?.IsComplete()} "
+                        + $"productionSkates={productionSkates} rig={rig?.HasValidReferences} "
+                        + $"bladeDistance={(visualBlade != null ? Vector3.Distance(visualBlade.position, players[i].ControlPoint) : -1f):F4} "
+                        + $"marker={skateMarker?.name}/{skateMarker?.activeInHierarchy} visual={integratedVisual != null} "
+                        + $"markerChildren={skateMarker?.transform.childCount} markerRenderers={skateMarker?.GetComponentsInChildren<Renderer>(true).Length} "
+                        + $"markerFollower={skateMarker?.GetComponent<HockeyPairedEquipmentFollower>() != null} renderers={integratedVisual?.GetComponentsInChildren<Renderer>(true).Length} "
+                        + $"retired={players[i].GetComponentsInChildren<Transform>(true).Any(value => value.name == "Skate_L_v1" || value.name == "Skate_R_v1")} "
+                        + $"feet={loadout?.LeftFoot == integratedAnimator?.GetBoneTransform(HumanBodyBones.LeftFoot)}/"
+                        + $"{loadout?.RightFoot == integratedAnimator?.GetBoneTransform(HumanBodyBones.RightFoot)} "
+                        + $"scale={players[i].transform.localScale} visualY={players[i].transform.Find("Visual")?.localPosition.y:F4}");
                 }
             }
             for (int i = 0; i < goalies.Length; i++)
@@ -598,59 +612,46 @@ namespace IceClash.Hockey
                     || presentation.CurrentPresentationState != HockeyPresentationState.Idle
                     || expectedMaterial == null || !AllCharacterRenderersUse(presentation, expectedMaterial)
                     || !WearablesExcludeMaterial(loadout, expectedMaterial)
-                    || !VerifyProductionSkates(loadout, goalies[i].transform, false)) return false;
+                    || !VerifyIntegratedSkates(loadout, goalies[i].transform, false)) return false;
             }
             bool passed = blueTeamMaterial != null && redTeamMaterial != null && blueTeamMaterial != redTeamMaterial;
-            if (passed) Debug.Log("PRODUCTION_SKATES_RUNTIME_PASS productionSkates=10/10 goalieSkates=2/2");
+            if (passed) Debug.Log("INTEGRATED_SKATES_RUNTIME_PASS skaters=10/10 goalies=2/2");
             return passed;
         }
 
-        private static bool VerifyProductionSkates(HockeyEquipmentLoadout loadout,
+        private static bool VerifyIntegratedSkates(HockeyEquipmentLoadout loadout,
             Transform actorRoot, bool requireIceContact)
         {
             GameObject item = loadout != null ? loadout.GetEquipped(HockeyEquipmentSlot.Skates) : null;
-            HockeyPairedEquipmentFollower follower = item != null
-                ? item.GetComponent<HockeyPairedEquipmentFollower>() : null;
-            follower?.RefreshPose();
-            Transform left = item != null ? item.transform.Find("Skate_L_v1") : null;
-            Transform right = item != null ? item.transform.Find("Skate_R_v1") : null;
-            Transform leftContact = left != null ? left.Find("BladeContact") : null;
-            Transform rightContact = right != null ? right.Find("BladeContact") : null;
-            MeshFilter leftFilter = left != null ? left.GetComponentInChildren<MeshFilter>(true) : null;
-            MeshFilter rightFilter = right != null ? right.GetComponentInChildren<MeshFilter>(true) : null;
-            Renderer leftRenderer = left != null ? left.GetComponentInChildren<Renderer>(true) : null;
-            Renderer rightRenderer = right != null ? right.GetComponentInChildren<Renderer>(true) : null;
             Transform characterVisual = actorRoot != null
-                ? actorRoot.Find("Visual/Male_Base_v1_1_Clean_Visual") : null;
-            Vector3 expectedSkateScale = characterVisual != null
-                ? Vector3.one * characterVisual.localScale.x : Vector3.zero;
-            bool contact = !requireIceContact || (leftContact != null && rightContact != null
-                && Mathf.Abs(leftContact.position.y - 0.2f) <= 0.08f
-                && Mathf.Abs(rightContact.position.y - 0.2f) <= 0.08f);
-            bool aligned = follower != null && follower.IsAligned(0.015f);
-            bool valid = item != null && item.activeInHierarchy && item.transform.childCount == 2
-                && follower != null && follower.FirstVisual == left && follower.SecondVisual == right
-                && aligned && leftContact != null && rightContact != null
-                && leftFilter?.sharedMesh != null && rightFilter?.sharedMesh != null
-                && CountTriangles(leftFilter.sharedMesh) == 4136 && CountTriangles(rightFilter.sharedMesh) == 4136
-                && leftRenderer?.sharedMaterial != null && rightRenderer?.sharedMaterial != null
-                && leftRenderer.sharedMaterial.name.StartsWith("Skate_Base_v1")
-                && rightRenderer.sharedMaterial.name.StartsWith("Skate_Base_v1")
-                && left.localScale.x > 0f && left.localScale.y > 0f && left.localScale.z > 0f
-                && right.localScale.x > 0f && right.localScale.y > 0f && right.localScale.z > 0f
-                && Vector3.Distance(left.localScale, right.localScale) <= 0.001f
-                && characterVisual != null
-                && Vector3.Distance(left.localScale, expectedSkateScale) <= 0.001f
-                && Vector3.Distance(right.localScale, expectedSkateScale) <= 0.001f
-                && contact;
+                ? actorRoot.Find("Visual/Male_Base_IntegratedSkates_Visual") : null;
+            Animator animator = characterVisual != null
+                ? characterVisual.GetComponentInChildren<Animator>(true) : null;
+            Renderer[] renderers = characterVisual != null
+                ? characterVisual.GetComponentsInChildren<Renderer>(true) : System.Array.Empty<Renderer>();
+            Bounds bounds = renderers.Length > 0 ? renderers[0].bounds : default;
+            for (int index = 1; index < renderers.Length; index++) bounds.Encapsulate(renderers[index].bounds);
+            Transform visualRoot = actorRoot != null ? actorRoot.Find("Visual") : null;
+            bool contact = !requireIceContact || (visualRoot != null
+                && Mathf.Abs(visualRoot.localPosition.y - 0.160f) <= 0.002f);
+            bool height = !requireIceContact || (actorRoot != null
+                && Mathf.Abs(actorRoot.localScale.x - 0.68f) <= 0.001f
+                && Mathf.Abs(actorRoot.localScale.y - 0.68f) <= 0.001f
+                && Mathf.Abs(actorRoot.localScale.z - 0.68f) <= 0.001f);
+            bool retiredObjects = actorRoot != null && actorRoot.GetComponentsInChildren<Transform>(true)
+                .Any(transform => transform.name == "Skate_L_v1" || transform.name == "Skate_R_v1");
+            bool valid = item != null && item.activeInHierarchy && item.name == "Integrated Skates"
+                && item.transform.childCount == 0
+                && item.GetComponentsInChildren<Renderer>(true).Length == 0
+                && item.GetComponent<HockeyPairedEquipmentFollower>() == null
+                && characterVisual != null && animator != null && renderers.Length > 0
+                && loadout.LeftFoot == animator.GetBoneTransform(HumanBodyBones.LeftFoot)
+                && loadout.RightFoot == animator.GetBoneTransform(HumanBodyBones.RightFoot)
+                && !retiredObjects && contact && height;
             if (!valid)
-                Debug.LogWarning($"GAMEPLAY_SKATES_DIAGNOSTIC actor={actorRoot.name} aligned={aligned} "
-                    + $"contact={contact} left={left?.position:F4} right={right?.position:F4} "
-                    + $"leftContact={leftContact?.position:F4} rightContact={rightContact?.position:F4} "
-                    + $"children={item?.transform.childCount} leftScale={left?.lossyScale:F4} "
-                    + $"rightScale={right?.lossyScale:F4} leftMaterial={leftRenderer?.sharedMaterial?.name} "
-                    + $"rightMaterial={rightRenderer?.sharedMaterial?.name} "
-                    + $"leftTriangles={CountTriangles(leftFilter?.sharedMesh)} rightTriangles={CountTriangles(rightFilter?.sharedMesh)}");
+                Debug.LogWarning($"INTEGRATED_SKATES_DIAGNOSTIC actor={actorRoot?.name} marker={item?.name} "
+                    + $"renderers={renderers.Length} contact={contact} minY={bounds.min.y:F4} "
+                    + $"height={bounds.size.y:F4} retiredObjects={retiredObjects}");
             return valid;
         }
 
@@ -1890,7 +1891,7 @@ namespace IceClash.Hockey
             if (player == null || camera == null) return;
             CharacterController collider = player.GetComponent<CharacterController>();
             Transform visual = player.transform.Find("Visual");
-            Transform clean = visual != null ? visual.Find("Male_Base_v1_1_Clean_Visual") : null;
+            Transform clean = visual != null ? visual.Find("Male_Base_IntegratedSkates_Visual") : null;
             HockeyCharacterPresentation presentation = player.GetComponent<HockeyCharacterPresentation>();
             Animator animator = clean != null ? clean.GetComponentInChildren<Animator>(true) : null;
             bool visualPhysics = visual != null && (visual.GetComponentsInChildren<Collider>(true).Length > 0
@@ -1938,6 +1939,9 @@ namespace IceClash.Hockey
                 footAlignmentPassed = leftDistance <= 0.03f && rightDistance <= 0.03f;
                 if (footAlignmentPassed) Debug.Log(
                     $"CLEAN_PLAYER_FOOT_ALIGNMENT_PASS left={leftDistance:F4} right={rightDistance:F4} iceY=0.200");
+                else throw new System.InvalidOperationException(
+                    $"CLEAN_PLAYER_FOOT_ALIGNMENT_FAIL left={leftDistance:F4} right={rightDistance:F4} "
+                    + $"leftY={leftContact:F4} rightY={rightContact:F4} rootY={player.transform.position.y:F4}");
             }
             presentation?.ClearPreview();
         }
@@ -2035,7 +2039,7 @@ namespace IceClash.Hockey
             foreach (SkinnedMeshRenderer renderer in clean.GetComponentsInChildren<SkinnedMeshRenderer>(true))
             {
                 Mesh baked = new Mesh();
-                renderer.BakeMesh(baked);
+                renderer.BakeMesh(baked, true);
                 Matrix4x4 bakedToWorld = Matrix4x4.TRS(
                     renderer.transform.position, renderer.transform.rotation, Vector3.one);
                 foreach (Vector3 vertex in baked.vertices)

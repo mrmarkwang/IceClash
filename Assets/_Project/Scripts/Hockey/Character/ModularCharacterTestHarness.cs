@@ -1,8 +1,9 @@
 /*
  * IceClash modular clean-character scene validation harness.
- * Exercises ten Humanoids, Idle/temporary Running playback, supported wearables
- * and right-hand-authoritative two-hand IK contracts, including live
- * SecondaryGrip rebinding, main-visual material tinting, and the puck system.
+ * Exercises ten integrated-skates Humanoids, Idle/temporary Running playback,
+ * supported equipment and right-hand-authoritative two-hand IK contracts,
+ * including live SecondaryGrip rebinding, main-visual material tinting, and
+ * the puck system without requiring detachable skate renderers.
  */
 
 using System;
@@ -144,9 +145,11 @@ namespace IceClash.Hockey.Character
                     || rig.LeftHandTarget != stableLeftTarget || rig.EquippedSecondaryGrip != null
                     || rig.RightHandTarget != stableRightTarget))
                     throw new InvalidOperationException("Clearing Stick did not safely disable and unbind the two-hand IK rig.");
-                GameObject replacement = slot == HockeyEquipmentSlot.Gloves || slot == HockeyEquipmentSlot.Skates
+                GameObject replacement = slot == HockeyEquipmentSlot.Gloves
                     ? CreatePairedReplacement(slot)
-                    : GameObject.CreatePrimitive(PrimitiveType.Cube);
+                    : slot == HockeyEquipmentSlot.Skates
+                        ? new GameObject("Validation Integrated Skates")
+                        : GameObject.CreatePrimitive(PrimitiveType.Cube);
                 replacement.name = $"Validation {slot}";
                 Collider collider = replacement.GetComponent<Collider>();
                 if (collider != null) Destroy(collider);
@@ -166,7 +169,7 @@ namespace IceClash.Hockey.Character
                     || !rig.EquippedSecondaryGrip.IsChildOf(loadout.GetEquipped(HockeyEquipmentSlot.Stick).transform)
                     || rig.RightHandTarget != stableRightTarget))
                     throw new InvalidOperationException("Replacing Stick did not rebind the SecondaryGrip IK target.");
-                if (slot == HockeyEquipmentSlot.Gloves || slot == HockeyEquipmentSlot.Skates)
+                if (slot == HockeyEquipmentSlot.Gloves)
                 {
                     HockeyPairedEquipmentFollower replacementFollower = loadout.GetEquipped(slot)
                         .GetComponent<HockeyPairedEquipmentFollower>();
@@ -239,9 +242,12 @@ namespace IceClash.Hockey.Character
                     + $"{rig.EquippedSecondaryGrip?.name}/{secondaryGrip?.name}, proxyDistance="
                     + $"{(secondaryGrip != null ? Vector3.Distance(rig.LeftHandTarget.TransformPoint(rig.LeftPalmGripOffset), secondaryGrip.position) : -1f):F3}).");
             Transform visibleShaft = player.Equipment.FindEquippedChild(HockeyEquipmentSlot.Stick, "Stick Shaft");
-            if (visibleShaft == null || !ContainsCubePoint(visibleShaft, rig.LeftHandTarget.position)
+            Vector3 leftPalmGrip = rig.LeftHandTarget.TransformPoint(rig.LeftPalmGripOffset);
+            if (visibleShaft == null || !ContainsCubePoint(visibleShaft, leftPalmGrip)
                 || !ContainsCubePoint(visibleShaft, primaryGrip.position))
-                throw new InvalidOperationException("Both hand targets are not on the rendered stick shaft.");
+                throw new InvalidOperationException("Both hand targets are not on the rendered stick shaft: "
+                    + $"shaft={visibleShaft?.name} leftLocal={visibleShaft?.InverseTransformPoint(leftPalmGrip)} "
+                    + $"primaryLocal={visibleShaft?.InverseTransformPoint(primaryGrip.position)}.");
             Transform leftHand = player.Animator.GetBoneTransform(HumanBodyBones.LeftHand);
             Transform rightHand = player.Animator.GetBoneTransform(HumanBodyBones.RightHand);
             float leftDistance = leftHand != null ? Vector3.Distance(leftHand.position, rig.LeftHandTarget.position) : float.PositiveInfinity;
@@ -291,23 +297,22 @@ namespace IceClash.Hockey.Character
             HockeyEquipmentLoadout loadout = player.Equipment;
             HockeyPairedEquipmentFollower gloves = loadout.GetEquipped(HockeyEquipmentSlot.Gloves)
                 ?.GetComponent<HockeyPairedEquipmentFollower>();
-            HockeyPairedEquipmentFollower skates = loadout.GetEquipped(HockeyEquipmentSlot.Skates)
-                ?.GetComponent<HockeyPairedEquipmentFollower>();
-            if (gloves == null || skates == null || !gloves.IsAligned(0.03f) || !skates.IsAligned(0.03f))
-                throw new InvalidOperationException("Paired gloves or skates did not follow their animated Humanoid bones.");
+            GameObject integratedSkates = loadout.GetEquipped(HockeyEquipmentSlot.Skates);
+            if (gloves == null || !gloves.IsAligned(0.03f))
+                throw new InvalidOperationException("Paired gloves did not follow their animated Humanoid hand bones.");
             Transform leftHand = player.Animator.GetBoneTransform(HumanBodyBones.LeftHand);
             Transform rightHand = player.Animator.GetBoneTransform(HumanBodyBones.RightHand);
             if (leftHand == null || rightHand == null
                 || Vector3.Distance(gloves.FirstVisual.position, leftHand.position) > 0.03f
                 || Vector3.Distance(gloves.SecondVisual.position, rightHand.position) > 0.03f)
                 throw new InvalidOperationException("Glove centers are not attached to the animated hand bones.");
-            Transform leftSkate = loadout.FindEquippedChild(HockeyEquipmentSlot.Skates, "Skates L");
-            Transform rightSkate = loadout.FindEquippedChild(HockeyEquipmentSlot.Skates, "Skates R");
-            float leftVertical = leftSkate != null ? Mathf.Abs(Vector3.Dot(leftSkate.forward, Vector3.up)) : 1f;
-            float rightVertical = rightSkate != null ? Mathf.Abs(Vector3.Dot(rightSkate.forward, Vector3.up)) : 1f;
-            if (leftVertical > 0.5f || rightVertical > 0.5f)
+            if (integratedSkates == null || integratedSkates.name != "Integrated Skates"
+                || integratedSkates.GetComponentsInChildren<Renderer>(true).Length != 0
+                || integratedSkates.GetComponent<HockeyPairedEquipmentFollower>() != null
+                || loadout.LeftFoot != player.Animator.GetBoneTransform(HumanBodyBones.LeftFoot)
+                || loadout.RightFoot != player.Animator.GetBoneTransform(HumanBodyBones.RightFoot))
                 throw new InvalidOperationException(
-                    $"Skate long axes are not oriented along the ice (left={leftVertical:F3}, right={rightVertical:F3}).");
+                    "Integrated skates did not preserve the active equipment marker and Humanoid foot bindings.");
         }
 
         private static bool ContainsCubePoint(Transform cube, Vector3 worldPoint)

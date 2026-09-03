@@ -119,508 +119,7 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
---- !u!1001 &59031929
-PrefabInstance:
-  m_ObjectHideFlags: 0
-  serializedVersion: 2
-  m_Modification:
-    serializedVersion: 3
-    m_TransformParent: {fileID: 0}
-    m_Modifications:
-    - target: {fileID: 1462926401050856570, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
-      propertyPath: m_Name
-      value: Test HockeyPlayer 03
-      objectReference: {fileID: 0}
-    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
-      propertyPath: m_LocalPosition.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
-      propertyPath: m_LocalPosition.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
-      propertyPath: m_LocalPosition.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
-      propertyPath: m_LocalRotation.w
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
-      propertyPath: m_LocalRotation.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
-      propertyPath: m_LocalRotation.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
-      propertyPath: m_LocalRotation.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.z
-      value: 0
-      objectReference: {fileID: 0}
-    m_RemovedComponents: []
-    m_RemovedGameObjects: []
-    m_AddedGameObjects: []
-    m_AddedComponents: []
-  m_SourcePrefab: {fileID: 100100000, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
---- !u!1001 &71065961
-PrefabInstance:
-  m_ObjectHideFlags: 0
-  serializedVersion: 2
-  m_Modification:
-    serializedVersion: 3
-    m_TransformParent: {fileID: 0}
-    m_Modifications:
-    - target: {fileID: 1462926401050856570, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
-      propertyPath: m_Name
-      value: Test HockeyPlayer 09
-      objectReference: {fileID: 0}
-    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
-      propertyPath: m_LocalPosition.x
-      value: 2.4
-      objectReference: {fileID: 0}
-    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
-      propertyPath: m_LocalPosition.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
-      propertyPath: m_LocalPosition.z
-      value: 3.2
-      objectReference: {fileID: 0}
-    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
-      propertyPath: m_LocalRotation.w
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
-      propertyPath: m_LocalRotation.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
-      propertyPath: m_LocalRotation.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
-      propertyPath: m_LocalRotation.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.z
-      value: 0
-      objectReference: {fileID: 0}
-    m_RemovedComponents: []
-    m_RemovedGameObjects: []
-    m_AddedGameObjects: []
-    m_AddedComponents: []
-  m_SourcePrefab: {fileID: 100100000, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
---- !u!1001 &115460629
-PrefabInstance:
-  m_ObjectHideFlags: 0
-  serializedVersion: 2
-  m_Modification:
-    serializedVersion: 3
-    m_TransformParent: {fileID: 0}
-    m_Modifications:
-    - target: {fileID: 1462926401050856570, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
-      propertyPath: m_Name
-      value: Test HockeyPlayer 02
-      objectReference: {fileID: 0}
-    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
-      propertyPath: m_LocalPosition.x
-      value: -2.4
-      objectReference: {fileID: 0}
-    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
-      propertyPath: m_LocalPosition.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
-      propertyPath: m_LocalPosition.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
-      propertyPath: m_LocalRotation.w
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
-      propertyPath: m_LocalRotation.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
-      propertyPath: m_LocalRotation.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
-      propertyPath: m_LocalRotation.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.z
-      value: 0
-      objectReference: {fileID: 0}
-    m_RemovedComponents: []
-    m_RemovedGameObjects: []
-    m_AddedGameObjects: []
-    m_AddedComponents: []
-  m_SourcePrefab: {fileID: 100100000, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
---- !u!1001 &386849870
-PrefabInstance:
-  m_ObjectHideFlags: 0
-  serializedVersion: 2
-  m_Modification:
-    serializedVersion: 3
-    m_TransformParent: {fileID: 0}
-    m_Modifications:
-    - target: {fileID: 1462926401050856570, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
-      propertyPath: m_Name
-      value: Test HockeyPlayer 07
-      objectReference: {fileID: 0}
-    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
-      propertyPath: m_LocalPosition.x
-      value: -2.4
-      objectReference: {fileID: 0}
-    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
-      propertyPath: m_LocalPosition.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
-      propertyPath: m_LocalPosition.z
-      value: 3.2
-      objectReference: {fileID: 0}
-    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
-      propertyPath: m_LocalRotation.w
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
-      propertyPath: m_LocalRotation.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
-      propertyPath: m_LocalRotation.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
-      propertyPath: m_LocalRotation.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.z
-      value: 0
-      objectReference: {fileID: 0}
-    m_RemovedComponents: []
-    m_RemovedGameObjects: []
-    m_AddedGameObjects: []
-    m_AddedComponents: []
-  m_SourcePrefab: {fileID: 100100000, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
---- !u!1001 &465199336
-PrefabInstance:
-  m_ObjectHideFlags: 0
-  serializedVersion: 2
-  m_Modification:
-    serializedVersion: 3
-    m_TransformParent: {fileID: 0}
-    m_Modifications:
-    - target: {fileID: 1462926401050856570, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
-      propertyPath: m_Name
-      value: Test HockeyPlayer 10
-      objectReference: {fileID: 0}
-    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
-      propertyPath: m_LocalPosition.x
-      value: 4.8
-      objectReference: {fileID: 0}
-    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
-      propertyPath: m_LocalPosition.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
-      propertyPath: m_LocalPosition.z
-      value: 3.2
-      objectReference: {fileID: 0}
-    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
-      propertyPath: m_LocalRotation.w
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
-      propertyPath: m_LocalRotation.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
-      propertyPath: m_LocalRotation.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
-      propertyPath: m_LocalRotation.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.z
-      value: 0
-      objectReference: {fileID: 0}
-    m_RemovedComponents: []
-    m_RemovedGameObjects: []
-    m_AddedGameObjects: []
-    m_AddedComponents: []
-  m_SourcePrefab: {fileID: 100100000, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
---- !u!1001 &933084323
-PrefabInstance:
-  m_ObjectHideFlags: 0
-  serializedVersion: 2
-  m_Modification:
-    serializedVersion: 3
-    m_TransformParent: {fileID: 0}
-    m_Modifications:
-    - target: {fileID: 1462926401050856570, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
-      propertyPath: m_Name
-      value: Test HockeyPlayer 08
-      objectReference: {fileID: 0}
-    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
-      propertyPath: m_LocalPosition.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
-      propertyPath: m_LocalPosition.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
-      propertyPath: m_LocalPosition.z
-      value: 3.2
-      objectReference: {fileID: 0}
-    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
-      propertyPath: m_LocalRotation.w
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
-      propertyPath: m_LocalRotation.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
-      propertyPath: m_LocalRotation.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
-      propertyPath: m_LocalRotation.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.z
-      value: 0
-      objectReference: {fileID: 0}
-    m_RemovedComponents: []
-    m_RemovedGameObjects: []
-    m_AddedGameObjects: []
-    m_AddedComponents: []
-  m_SourcePrefab: {fileID: 100100000, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
---- !u!1001 &950748872
-PrefabInstance:
-  m_ObjectHideFlags: 0
-  serializedVersion: 2
-  m_Modification:
-    serializedVersion: 3
-    m_TransformParent: {fileID: 0}
-    m_Modifications:
-    - target: {fileID: 1462926401050856570, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
-      propertyPath: m_Name
-      value: Test HockeyPlayer 05
-      objectReference: {fileID: 0}
-    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
-      propertyPath: m_LocalPosition.x
-      value: 4.8
-      objectReference: {fileID: 0}
-    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
-      propertyPath: m_LocalPosition.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
-      propertyPath: m_LocalPosition.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
-      propertyPath: m_LocalRotation.w
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
-      propertyPath: m_LocalRotation.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
-      propertyPath: m_LocalRotation.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
-      propertyPath: m_LocalRotation.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.z
-      value: 0
-      objectReference: {fileID: 0}
-    m_RemovedComponents: []
-    m_RemovedGameObjects: []
-    m_AddedGameObjects: []
-    m_AddedComponents: []
-  m_SourcePrefab: {fileID: 100100000, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
---- !u!1 &1247278867
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1247278869}
-  - component: {fileID: 1247278868}
-  m_Layer: 0
-  m_Name: Modular Character Test Harness
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &1247278868
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1247278867}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 611471c863e214007b72c9c1190b9596, type: 3}
-  m_Name:
-  m_EditorClassIdentifier: Assembly-CSharp::IceClash.Hockey.Character.ModularCharacterTestHarness
-  puck: {fileID: 1870493738}
---- !u!4 &1247278869
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1247278867}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1001 &1601913703
-PrefabInstance:
-  m_ObjectHideFlags: 0
-  serializedVersion: 2
-  m_Modification:
-    serializedVersion: 3
-    m_TransformParent: {fileID: 0}
-    m_Modifications:
-    - target: {fileID: 1462926401050856570, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
-      propertyPath: m_Name
-      value: Test HockeyPlayer 06
-      objectReference: {fileID: 0}
-    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
-      propertyPath: m_LocalPosition.x
-      value: -4.8
-      objectReference: {fileID: 0}
-    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
-      propertyPath: m_LocalPosition.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
-      propertyPath: m_LocalPosition.z
-      value: 3.2
-      objectReference: {fileID: 0}
-    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
-      propertyPath: m_LocalRotation.w
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
-      propertyPath: m_LocalRotation.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
-      propertyPath: m_LocalRotation.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
-      propertyPath: m_LocalRotation.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.z
-      value: 0
-      objectReference: {fileID: 0}
-    m_RemovedComponents: []
-    m_RemovedGameObjects: []
-    m_AddedGameObjects: []
-    m_AddedComponents: []
-  m_SourcePrefab: {fileID: 100100000, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
---- !u!1001 &1644797402
+--- !u!1001 &268528707
 PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
@@ -677,7 +176,396 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
---- !u!1001 &1679704327
+--- !u!1 &376511615
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 376511621}
+  - component: {fileID: 376511620}
+  - component: {fileID: 376511619}
+  - component: {fileID: 376511618}
+  - component: {fileID: 376511617}
+  - component: {fileID: 376511616}
+  m_Layer: 0
+  m_Name: Test Puck
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &376511616
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 376511615}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 592d7c7a4451246429eb688b2604fdac, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::IceClash.Puck.PuckController
+  linearDamping: 0.55
+  angularDamping: 1.2
+  controlStrength: 32
+  controlVelocityDamping: 10
+  maximumCarrySpeed: 14
+  releasingPlayerReclaimDelay: 0.22
+--- !u!54 &376511617
+Rigidbody:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 376511615}
+  serializedVersion: 5
+  m_Mass: 0.17
+  m_LinearDamping: 0
+  m_AngularDamping: 0.05
+  m_CenterOfMass: {x: 0, y: 0, z: 0}
+  m_InertiaTensor: {x: 1, y: 1, z: 1}
+  m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ImplicitCom: 1
+  m_ImplicitTensor: 1
+  m_UseGravity: 1
+  m_IsKinematic: 0
+  m_Interpolate: 0
+  m_Constraints: 0
+  m_CollisionDetection: 0
+--- !u!23 &376511618
+MeshRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 376511615}
+  m_Enabled: 1
+  m_CastShadows: 1
+  m_ReceiveShadows: 1
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 10303, guid: 0000000000000000f000000000000000, type: 0}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 1
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 3
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  m_MaskInteraction: 0
+  m_AdditionalVertexStreams: {fileID: 0}
+--- !u!136 &376511619
+CapsuleCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 376511615}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Radius: 0.5
+  m_Height: 2
+  m_Direction: 1
+  m_Center: {x: 0, y: 0, z: 0}
+--- !u!33 &376511620
+MeshFilter:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 376511615}
+  m_Mesh: {fileID: 10206, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!4 &376511621
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 376511615}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0.28, z: 0}
+  m_LocalScale: {x: 0.42, y: 0.06, z: 0.42}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1001 &569243682
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 1462926401050856570, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
+      propertyPath: m_Name
+      value: Test HockeyPlayer 06
+      objectReference: {fileID: 0}
+    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -4.8
+      objectReference: {fileID: 0}
+    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 3.2
+      objectReference: {fileID: 0}
+    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
+--- !u!1001 &601294649
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 1462926401050856570, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
+      propertyPath: m_Name
+      value: Test HockeyPlayer 09
+      objectReference: {fileID: 0}
+    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 2.4
+      objectReference: {fileID: 0}
+    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 3.2
+      objectReference: {fileID: 0}
+    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
+--- !u!1001 &970276651
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 1462926401050856570, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
+      propertyPath: m_Name
+      value: Test HockeyPlayer 02
+      objectReference: {fileID: 0}
+    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -2.4
+      objectReference: {fileID: 0}
+    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
+--- !u!1001 &983096809
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 1462926401050856570, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
+      propertyPath: m_Name
+      value: Test HockeyPlayer 05
+      objectReference: {fileID: 0}
+    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 4.8
+      objectReference: {fileID: 0}
+    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
+--- !u!1001 &1172228717
 PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
@@ -734,7 +622,121 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
---- !u!1 &1870493737
+--- !u!1001 &1241885326
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 1462926401050856570, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
+      propertyPath: m_Name
+      value: Test HockeyPlayer 07
+      objectReference: {fileID: 0}
+    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -2.4
+      objectReference: {fileID: 0}
+    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 3.2
+      objectReference: {fileID: 0}
+    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
+--- !u!1001 &1481009316
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 1462926401050856570, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
+      propertyPath: m_Name
+      value: Test HockeyPlayer 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 4.8
+      objectReference: {fileID: 0}
+    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 3.2
+      objectReference: {fileID: 0}
+    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
+--- !u!1 &1587987937
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -742,172 +744,170 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 1870493743}
-  - component: {fileID: 1870493742}
-  - component: {fileID: 1870493741}
-  - component: {fileID: 1870493740}
-  - component: {fileID: 1870493739}
-  - component: {fileID: 1870493738}
+  - component: {fileID: 1587987939}
+  - component: {fileID: 1587987938}
   m_Layer: 0
-  m_Name: Test Puck
+  m_Name: Modular Character Test Harness
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1870493738
+--- !u!114 &1587987938
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1870493737}
+  m_GameObject: {fileID: 1587987937}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 592d7c7a4451246429eb688b2604fdac, type: 3}
-  m_Name:
-  m_EditorClassIdentifier: Assembly-CSharp::IceClash.Puck.PuckController
-  linearDamping: 0.55
-  angularDamping: 1.2
-  controlStrength: 32
-  controlVelocityDamping: 10
-  maximumCarrySpeed: 14
-  releasingPlayerReclaimDelay: 0.22
---- !u!54 &1870493739
-Rigidbody:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1870493737}
-  serializedVersion: 5
-  m_Mass: 0.17
-  m_LinearDamping: 0
-  m_AngularDamping: 0.05
-  m_CenterOfMass: {x: 0, y: 0, z: 0}
-  m_InertiaTensor: {x: 1, y: 1, z: 1}
-  m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ImplicitCom: 1
-  m_ImplicitTensor: 1
-  m_UseGravity: 1
-  m_IsKinematic: 0
-  m_Interpolate: 0
-  m_Constraints: 0
-  m_CollisionDetection: 0
---- !u!23 &1870493740
-MeshRenderer:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1870493737}
-  m_Enabled: 1
-  m_CastShadows: 1
-  m_ReceiveShadows: 1
-  m_DynamicOccludee: 1
-  m_StaticShadowCaster: 0
-  m_MotionVectors: 1
-  m_LightProbeUsage: 1
-  m_ReflectionProbeUsage: 1
-  m_RayTracingMode: 2
-  m_RayTraceProcedural: 0
-  m_RayTracingAccelStructBuildFlagsOverride: 0
-  m_RayTracingAccelStructBuildFlags: 1
-  m_SmallMeshCulling: 1
-  m_ForceMeshLod: -1
-  m_MeshLodSelectionBias: 0
-  m_RenderingLayerMask: 1
-  m_RendererPriority: 0
-  m_Materials:
-  - {fileID: 10303, guid: 0000000000000000f000000000000000, type: 0}
-  m_StaticBatchInfo:
-    firstSubMesh: 0
-    subMeshCount: 0
-  m_StaticBatchRoot: {fileID: 0}
-  m_ProbeAnchor: {fileID: 0}
-  m_LightProbeVolumeOverride: {fileID: 0}
-  m_ScaleInLightmap: 1
-  m_ReceiveGI: 1
-  m_PreserveUVs: 1
-  m_IgnoreNormalsForChartDetection: 0
-  m_ImportantGI: 0
-  m_StitchLightmapSeams: 1
-  m_SelectedEditorRenderState: 3
-  m_MinimumChartSize: 4
-  m_AutoUVMaxDistance: 0.5
-  m_AutoUVMaxAngle: 89
-  m_LightmapParameters: {fileID: 0}
-  m_GlobalIlluminationMeshLod: 0
-  m_SortingLayerID: 0
-  m_SortingLayer: 0
-  m_SortingOrder: 0
-  m_MaskInteraction: 0
-  m_AdditionalVertexStreams: {fileID: 0}
---- !u!136 &1870493741
-CapsuleCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1870493737}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 2
-  m_Radius: 0.5
-  m_Height: 2
-  m_Direction: 1
-  m_Center: {x: 0, y: 0, z: 0}
---- !u!33 &1870493742
-MeshFilter:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1870493737}
-  m_Mesh: {fileID: 10206, guid: 0000000000000000e000000000000000, type: 0}
---- !u!4 &1870493743
+  m_Script: {fileID: 11500000, guid: 611471c863e214007b72c9c1190b9596, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::IceClash.Hockey.Character.ModularCharacterTestHarness
+  puck: {fileID: 376511616}
+--- !u!4 &1587987939
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1870493737}
+  m_GameObject: {fileID: 1587987937}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.28, z: 0}
-  m_LocalScale: {x: 0.42, y: 0.06, z: 0.42}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1001 &1838740844
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 1462926401050856570, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
+      propertyPath: m_Name
+      value: Test HockeyPlayer 08
+      objectReference: {fileID: 0}
+    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 3.2
+      objectReference: {fileID: 0}
+    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
+--- !u!1001 &2008540439
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 1462926401050856570, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
+      propertyPath: m_Name
+      value: Test HockeyPlayer 03
+      objectReference: {fileID: 0}
+    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3831331526400151168, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 6c6bb83d49b624f17aa9bbe09172f5a0, type: 3}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
   m_Roots:
-  - {fileID: 1679704327}
-  - {fileID: 115460629}
-  - {fileID: 59031929}
-  - {fileID: 1644797402}
-  - {fileID: 950748872}
-  - {fileID: 1601913703}
-  - {fileID: 386849870}
-  - {fileID: 933084323}
-  - {fileID: 71065961}
-  - {fileID: 465199336}
-  - {fileID: 1870493743}
-  - {fileID: 1247278869}
+  - {fileID: 1172228717}
+  - {fileID: 970276651}
+  - {fileID: 2008540439}
+  - {fileID: 268528707}
+  - {fileID: 983096809}
+  - {fileID: 569243682}
+  - {fileID: 1241885326}
+  - {fileID: 1838740844}
+  - {fileID: 601294649}
+  - {fileID: 1481009316}
+  - {fileID: 376511621}
+  - {fileID: 1587987939}
