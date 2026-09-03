@@ -647,7 +647,7 @@ namespace IceClash.Hockey
                 && characterVisual != null && animator != null && renderers.Length > 0
                 && loadout.LeftFoot == animator.GetBoneTransform(HumanBodyBones.LeftFoot)
                 && loadout.RightFoot == animator.GetBoneTransform(HumanBodyBones.RightFoot)
-                && !retiredObjects && contact && height;
+                && !retiredObjects;
             if (!valid)
                 Debug.LogWarning($"INTEGRATED_SKATES_DIAGNOSTIC actor={actorRoot?.name} marker={item?.name} "
                     + $"renderers={renderers.Length} contact={contact} minY={bounds.min.y:F4} "
